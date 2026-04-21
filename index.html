@@ -12,7 +12,6 @@
     --cream-darker: #E2D5C0;
     --brown-deep: #3D2B1F;
     --brown-mid: #6B4C35;
-    --brown-light: #9A7A5A;
     --gold: #B8860B;
     --gold-light: #C9A84C;
     --gold-bright: #D4A843;
@@ -20,122 +19,67 @@
     --text-mid: #6B4C35;
     --text-dim: #9A7A5A;
     --surface: #FBF7F0;
-    --surface2: #F5EFE4;
     --surface3: #EDE4D4;
   }
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--cream);
-    color: var(--text);
-    font-family: 'Sarabun', sans-serif;
-    font-weight: 300;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  .bg-layer {
-    position: fixed; inset: 0; z-index: 0;
-    background:
-      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(184,134,11,0.06) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 80% at 80% 90%, rgba(61,43,31,0.04) 0%, transparent 60%);
-    pointer-events: none;
-  }
-
+  body { background: var(--cream); color: var(--text); font-family: 'Sarabun', sans-serif; font-weight: 300; min-height: 100vh; overflow-x: hidden; }
+  .bg-layer { position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(184,134,11,0.06) 0%, transparent 60%), radial-gradient(ellipse 60% 80% at 80% 90%, rgba(61,43,31,0.04) 0%, transparent 60%); pointer-events: none; }
   .petals { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-  .petal {
-    position: absolute;
-    width: var(--size); height: var(--size);
-    background: var(--gold-light);
-    border-radius: 50% 0 50% 0;
-    opacity: 0;
-    animation: floatPetal var(--dur) ease-in-out infinite;
-    animation-delay: var(--delay);
-    transform: rotate(var(--rot));
-  }
-  @keyframes floatPetal {
-    0% { opacity: 0; transform: translateY(0) rotate(var(--rot)) scale(0.8); }
-    20% { opacity: var(--max-op); }
-    80% { opacity: var(--max-op); }
-    100% { opacity: 0; transform: translateY(-30px) rotate(calc(var(--rot) + 45deg)) scale(1.1); }
-  }
-
+  .petal { position: absolute; width: var(--size); height: var(--size); background: var(--gold-light); border-radius: 50% 0 50% 0; opacity: 0; animation: floatPetal var(--dur) ease-in-out infinite; animation-delay: var(--delay); transform: rotate(var(--rot)); }
+  @keyframes floatPetal { 0% { opacity: 0; transform: translateY(0) rotate(var(--rot)) scale(0.8); } 20% { opacity: var(--max-op); } 80% { opacity: var(--max-op); } 100% { opacity: 0; transform: translateY(-30px) rotate(calc(var(--rot) + 45deg)) scale(1.1); } }
   .app { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 0 20px 100px; }
-
-  .header {
-    text-align: center; padding: 60px 0 40px;
-    animation: fadeDown 1s ease forwards;
-    border-bottom: 1px solid rgba(184,134,11,0.2);
-    margin-bottom: 32px;
-  }
-
+  .header { text-align: center; padding: 60px 0 40px; animation: fadeDown 1s ease forwards; border-bottom: 1px solid rgba(184,134,11,0.2); margin-bottom: 32px; }
   @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-
   .thai-title { font-size: 12px; font-weight: 500; letter-spacing: 0.45em; color: var(--gold); text-transform: uppercase; margin-bottom: 12px; }
-  .main-title { font-family: 'Cinzel Decorative', serif; font-size: clamp(26px, 5vw, 44px); color: var(--brown-deep); line-height: 1.1; margin-bottom: 8px; text-shadow: 1px 1px 0 rgba(184,134,11,0.15); }
+  .main-title { font-family: 'Cinzel Decorative', serif; font-size: clamp(26px, 5vw, 44px); color: var(--brown-deep); line-height: 1.1; margin-bottom: 8px; }
   .main-title span { color: var(--gold); }
   .subtitle { font-family: 'Playfair Display', serif; font-style: italic; font-size: 15px; color: var(--text-mid); margin-bottom: 20px; }
-
   .divider { display: flex; align-items: center; gap: 16px; justify-content: center; margin: 16px 0; }
   .divider-line { width: 60px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-light), transparent); }
-  .divider-gem { width: 7px; height: 7px; background: var(--gold); transform: rotate(45deg); box-shadow: 0 0 6px rgba(184,134,11,0.4); }
+  .divider-gem { width: 7px; height: 7px; background: var(--gold); transform: rotate(45deg); }
+
+  /* Message counter */
+  .counter { text-align: center; font-size: 12px; color: var(--text-dim); margin-bottom: 8px; letter-spacing: 0.05em; }
+  .counter-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 24px; }
+  .counter-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cream-darker); border: 1px solid rgba(184,134,11,0.2); transition: all 0.3s ease; }
+  .counter-dot.used { background: var(--gold); border-color: var(--gold); }
+  .counter-dot.current { background: var(--gold-bright); border-color: var(--gold-bright); box-shadow: 0 0 6px rgba(184,134,11,0.4); }
 
   .chat-container { display: flex; flex-direction: column; gap: 20px; margin-bottom: 24px; min-height: 200px; }
   .message { animation: fadeUp 0.5s ease forwards; opacity: 0; }
   .message-mordoo { display: flex; gap: 14px; align-items: flex-start; }
-
-  .mordoo-avatar {
-    width: 38px; height: 38px; min-width: 38px;
-    background: linear-gradient(135deg, var(--gold), var(--gold-bright));
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: 17px; box-shadow: 0 2px 12px rgba(184,134,11,0.25);
-    margin-top: 4px; border: 2px solid rgba(184,134,11,0.2);
-  }
-
-  .mordoo-bubble {
-    background: var(--surface);
-    border: 1px solid rgba(184,134,11,0.2);
-    border-radius: 4px 20px 20px 20px;
-    padding: 18px 22px; font-size: 15px; line-height: 1.85;
-    color: var(--text); flex: 1;
-    box-shadow: 0 2px 16px rgba(61,43,31,0.08);
-  }
-
+  .mordoo-avatar { width: 38px; height: 38px; min-width: 38px; background: linear-gradient(135deg, var(--gold), var(--gold-bright)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; box-shadow: 0 2px 12px rgba(184,134,11,0.25); margin-top: 4px; border: 2px solid rgba(184,134,11,0.2); }
+  .mordoo-bubble { background: var(--surface); border: 1px solid rgba(184,134,11,0.2); border-radius: 4px 20px 20px 20px; padding: 18px 22px; font-size: 15px; line-height: 1.85; color: var(--text); flex: 1; box-shadow: 0 2px 16px rgba(61,43,31,0.08); }
   .mordoo-bubble em { font-family: 'Playfair Display', serif; font-style: italic; color: var(--gold); }
   .mordoo-bubble strong { color: var(--brown-deep); font-weight: 600; }
   .mordoo-bubble .section-header { font-family: 'Cinzel Decorative', serif; font-size: 10px; letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; margin: 16px 0 8px; }
   .mordoo-bubble .reading-block { border-left: 2px solid var(--gold-light); padding-left: 14px; margin: 12px 0; font-family: 'Playfair Display', serif; font-style: italic; color: var(--brown-mid); font-size: 14px; line-height: 1.7; }
-
   .message-user { display: flex; justify-content: flex-end; }
   .user-bubble { background: var(--surface3); border: 1px solid rgba(184,134,11,0.15); border-radius: 20px 20px 4px 20px; padding: 12px 18px; font-size: 15px; color: var(--text-mid); max-width: 80%; }
 
-  .welcome-card {
-    background: var(--surface); border: 1px solid rgba(184,134,11,0.2);
-    border-radius: 16px; padding: 32px; text-align: center;
-    animation: fadeUp 0.8s ease 0.3s forwards; opacity: 0;
-    box-shadow: 0 4px 24px rgba(61,43,31,0.06);
-  }
-
+  .welcome-card { background: var(--surface); border: 1px solid rgba(184,134,11,0.2); border-radius: 16px; padding: 32px; text-align: center; animation: fadeUp 0.8s ease 0.3s forwards; opacity: 0; box-shadow: 0 4px 24px rgba(61,43,31,0.06); }
   .welcome-icon { font-size: 40px; margin-bottom: 16px; display: block; }
   .welcome-title { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--brown-deep); margin-bottom: 10px; }
   .welcome-text { font-size: 14px; color: var(--text-mid); line-height: 1.75; margin-bottom: 8px; }
   .welcome-disclaimer { font-size: 11px; color: var(--text-dim); line-height: 1.6; padding: 10px 14px; background: var(--cream-darker); border-radius: 8px; margin: 14px 0 16px; border: 1px solid rgba(184,134,11,0.1); }
-
   .quick-starts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
   .quick-btn { background: var(--cream-dark); border: 1px solid rgba(184,134,11,0.2); border-radius: 10px; padding: 12px 14px; color: var(--text-mid); font-family: 'Sarabun', sans-serif; font-size: 13px; cursor: pointer; text-align: left; transition: all 0.2s ease; line-height: 1.4; }
-  .quick-btn:hover { border-color: var(--gold); color: var(--brown-deep); background: var(--cream-darker); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(184,134,11,0.1); }
+  .quick-btn:hover { border-color: var(--gold); color: var(--brown-deep); background: var(--cream-darker); transform: translateY(-1px); }
   .quick-btn-icon { display: block; font-size: 18px; margin-bottom: 4px; }
+
+  /* Limit reached */
+  .limit-card { background: var(--surface); border: 1px solid rgba(184,134,11,0.3); border-radius: 16px; padding: 24px; text-align: center; animation: fadeUp 0.5s ease forwards; opacity: 0; }
+  .limit-card p { font-family: 'Playfair Display', serif; font-style: italic; color: var(--brown-mid); font-size: 15px; line-height: 1.7; margin-bottom: 16px; }
+  .new-reading-btn { background: linear-gradient(135deg, var(--gold), var(--gold-bright)); border: none; border-radius: 10px; padding: 12px 24px; color: #fff; font-family: 'Cinzel Decorative', serif; font-size: 12px; letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s; }
+  .new-reading-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(184,134,11,0.3); }
 
   .input-area { position: fixed; bottom: 0; left: 0; right: 0; z-index: 10; background: linear-gradient(transparent, var(--cream) 35%); padding: 20px; }
   .input-inner { max-width: 760px; margin: 0 auto; display: flex; gap: 10px; align-items: flex-end; background: var(--surface); border: 1px solid rgba(184,134,11,0.3); border-radius: 16px; padding: 10px 10px 10px 18px; box-shadow: 0 4px 24px rgba(61,43,31,0.1); transition: border-color 0.2s; }
-  .input-inner:focus-within { border-color: var(--gold); box-shadow: 0 4px 24px rgba(184,134,11,0.15); }
-
+  .input-inner:focus-within { border-color: var(--gold); }
   textarea { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-family: 'Sarabun', sans-serif; font-size: 15px; font-weight: 300; resize: none; min-height: 24px; max-height: 120px; line-height: 1.6; padding: 4px 0; }
   textarea::placeholder { color: var(--text-dim); opacity: 0.7; }
-
-  .send-btn { width: 40px; height: 40px; min-width: 40px; background: linear-gradient(135deg, var(--gold), var(--gold-bright)); border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; color: #fff; font-size: 18px; box-shadow: 0 2px 8px rgba(184,134,11,0.3); }
+  .send-btn { width: 40px; height: 40px; min-width: 40px; background: linear-gradient(135deg, var(--gold), var(--gold-bright)); border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; color: #fff; font-size: 18px; }
   .send-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 4px 16px rgba(184,134,11,0.4); }
   .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
@@ -150,7 +94,6 @@
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: var(--cream-dark); }
   ::-webkit-scrollbar-thumb { background: var(--gold-light); border-radius: 2px; }
-
   @media (max-width: 500px) { .quick-starts { grid-template-columns: 1fr; } .main-title { font-size: 24px; } }
 </style>
 </head>
@@ -166,6 +109,12 @@
     <div class="divider"><div class="divider-line"></div><div class="divider-gem"></div><div class="divider-line"></div></div>
   </header>
 
+  <!-- Message counter -->
+  <div id="counterWrap" style="display:none;">
+    <div class="counter" id="counterText">5 questions remaining</div>
+    <div class="counter-dots" id="counterDots"></div>
+  </div>
+
   <div class="chat-container" id="chat">
     <div class="welcome-card">
       <span class="welcome-icon">🔮</span>
@@ -173,7 +122,7 @@
       <p class="welcome-text">Share your name, birthday, birthplace, and birth time — and the mor doo will read your numbers through the lens of Thai numerology, astrology, zodiac, and the ancient art of <em>lek-sasat</em>. No signup. No cost. Just your numbers.</p>
       <div class="welcome-disclaimer">✦ Readings are for entertainment and spiritual exploration only. Not legal, medical, financial, or psychological advice. Please consult a licensed professional for matters requiring expert guidance.</div>
       <div class="divider" style="margin:12px 0;"><div class="divider-line"></div><div class="divider-gem"></div><div class="divider-line"></div></div>
-      <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">Begin with a question or try one of these:</p>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">Each session includes <strong>5 questions</strong>. Begin with a question or try one of these:</p>
       <div class="quick-starts">
         <button class="quick-btn" onclick="quickStart(this)"><span class="quick-btn-icon">🌟</span>Read my full chart — name, birthday, birthplace</button>
         <button class="quick-btn" onclick="quickStart(this)"><span class="quick-btn-icon">💑</span>Are my partner and I compatible?</button>
@@ -183,7 +132,7 @@
     </div>
   </div>
 
-  <div class="input-area">
+  <div class="input-area" id="inputArea">
     <div class="input-inner">
       <textarea id="userInput" placeholder="Tell the mor doo your name, birthday, birthplace..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">✦</button>
@@ -192,7 +141,9 @@
 </div>
 
 <script>
-// Floating petals
+const MAX_MESSAGES = 5;
+
+// Petals
 const petalsEl = document.getElementById('petals');
 for (let i = 0; i < 25; i++) {
   const p = document.createElement('div');
@@ -202,7 +153,37 @@ for (let i = 0; i < 25; i++) {
   petalsEl.appendChild(p);
 }
 
-let history = [], isLoading = false;
+let history = [], isLoading = false, messageCount = 0;
+
+function buildCounter() {
+  const wrap = document.getElementById('counterWrap');
+  const dotsEl = document.getElementById('counterDots');
+  const textEl = document.getElementById('counterText');
+  wrap.style.display = 'block';
+  dotsEl.innerHTML = '';
+  for (let i = 0; i < MAX_MESSAGES; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'counter-dot' + (i < messageCount ? ' used' : i === messageCount ? ' current' : '');
+    dotsEl.appendChild(dot);
+  }
+  const remaining = MAX_MESSAGES - messageCount;
+  textEl.textContent = remaining === 1 ? '1 question remaining' : `${remaining} questions remaining`;
+}
+
+function showLimitCard() {
+  document.getElementById('inputArea').style.display = 'none';
+  const chat = document.getElementById('chat');
+  const div = document.createElement('div');
+  div.className = 'limit-card';
+  div.innerHTML = `
+    <span style="font-size:32px;display:block;margin-bottom:12px;">🌸</span>
+    <p><em>The mor doo has shared what the numbers reveal for this session. Sit with what you have received — and return when you are ready for a new reading.</em></p>
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">✦ Readings are for entertainment and spiritual exploration only.</p>
+    <button class="new-reading-btn" onclick="location.reload()">Begin a New Reading ✦</button>
+  `;
+  chat.appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
 
 function quickStart(btn) {
   document.getElementById('userInput').value = btn.querySelector('.quick-btn-icon').nextSibling.textContent.trim();
@@ -247,14 +228,18 @@ function showTyping() {
 function removeTyping() { const el = document.getElementById('typing-indicator'); if (el) el.remove(); }
 
 async function sendMessage() {
-  if (isLoading) return;
+  if (isLoading || messageCount >= MAX_MESSAGES) return;
   const input = document.getElementById('userInput');
   const text = input.value.trim();
   if (!text) return;
   const welcome = document.querySelector('.welcome-card');
   if (welcome) welcome.remove();
+
   addMessage('user', text);
   history.push({ role: 'user', content: text });
+  messageCount++;
+  buildCounter();
+
   input.value = ''; input.style.height = 'auto';
   isLoading = true; document.getElementById('sendBtn').disabled = true;
   showTyping();
@@ -270,6 +255,11 @@ async function sendMessage() {
     const data = await res.json();
     history.push({ role: 'assistant', content: data.reply });
     addMessage('mordoo', data.reply);
+
+    if (messageCount >= MAX_MESSAGES) {
+      setTimeout(showLimitCard, 800);
+    }
+
   } catch (err) {
     removeTyping();
     const chat = document.getElementById('chat');
@@ -277,8 +267,13 @@ async function sendMessage() {
     d.style.cssText = 'color:#8B3A3A;font-size:13px;padding:10px 14px;background:rgba(139,58,58,0.08);border-radius:8px;border:1px solid rgba(139,58,58,0.2);margin-top:4px;';
     d.textContent = 'The mor doo encountered a disturbance. Please try again.';
     chat.appendChild(d);
+    messageCount--;
+    buildCounter();
   }
-  isLoading = false; document.getElementById('sendBtn').disabled = false; input.focus();
+
+  isLoading = false;
+  if (messageCount < MAX_MESSAGES) document.getElementById('sendBtn').disabled = false;
+  input.focus();
 }
 </script>
 </body>
