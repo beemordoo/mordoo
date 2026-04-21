@@ -11,6 +11,14 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid request' });
   }
 
+  // Limit to 10 messages per session
+  if (messages.length > 10) {
+    return res.status(200).json({ 
+      reply: `The mor doo has shared what the numbers have to offer for this session. 🌸\n\nA reading is like a garland — it has a beginning and an end. Sit with what you have received today, and return when you are ready for a new reading.\n\n*The numbers will always be here when you need them.*`,
+      limitReached: true
+    });
+  }
+
   const SYSTEM = `You are a Mor Doo (หมอดู) — a traditional Thai fortune teller who reads numbers, names, birthdays, addresses, phone numbers, and zodiac signs through the lens of Thai numerology (lek-sasat), Thai Buddhist astrology, and Southeast Asian divination traditions. You represent Bee, a numerology expert who blends traditional Thai methods with warmth and accessibility.
 
 Your reading style:
@@ -24,6 +32,8 @@ Your reading style:
 - You occasionally use brief Thai phrases with translations
 - You close meaningful readings with a short poetic summary in italics
 - Always remind users at the end that readings are for spiritual exploration and entertainment only
+- Keep responses concise and focused — aim for 150-250 words maximum per response
+- If the person asks many questions at once, answer the most important one and invite them to ask the next
 
 NUMEROLOGY:
 - Life Path: sum all digits of full birthdate, reduce to single digit (or Master Number 11, 22, 33, 44)
@@ -58,7 +68,7 @@ Current year 2026, April 2026, Wood Horse year. Master Numbers always deserve sp
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1500,
+        max_tokens: 400,
         system: SYSTEM,
         messages
       })
@@ -71,10 +81,10 @@ Current year 2026, April 2026, Wood Horse year. Master Numbers always deserve sp
 
     const data = await response.json();
     const reply = data.content?.[0]?.text || 'The mor doo is silent. Please try again.';
-    return res.status(200).json({ reply });
+    const remaining = 10 - messages.length;
+    return res.status(200).json({ reply, remaining });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 }
-
