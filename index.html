@@ -284,6 +284,11 @@ function showContextCard(numberText, numberType) {
         <input type="text" class="context-input" id="contextBirthday" placeholder="MM/DD/YYYY" maxlength="10" oninput="formatBirthday(this)" />
         <div style="font-size:11px;color:var(--text-dim);margin-top:5px;letter-spacing:0.03em;">Enter as month / day / year — example: 01/01/2001</div>
       </div>
+      <div class="context-group">
+        <div class="context-group-label">Where were you born? (optional — city, region, or country)</div>
+        <input type="text" class="context-input" id="contextBirthplace" placeholder="e.g. Philadelphia, Thailand, or Vientiane" maxlength="60" />
+        <div style="font-size:11px;color:var(--text-dim);margin-top:5px;letter-spacing:0.03em;">Enter whatever you know — city is most precise, country still helps</div>
+      </div>
       <button class="context-submit" id="contextSubmit" onclick="submitContext()">Read My ${numberType === 'address' ? 'Address' : 'Number'} ✦</button>
     </div>
   `;
@@ -317,12 +322,15 @@ function formatBirthday(input) {
 async function submitContext() {
   const card = document.getElementById('contextCard');
   const birthdayInput = document.getElementById('contextBirthday');
+  const birthplaceInput = document.getElementById('contextBirthplace');
   const birthday = birthdayInput ? birthdayInput.value.trim() : '';
+  const birthplace = birthplaceInput ? birthplaceInput.value.trim() : '';
   if (card) card.remove();
   const ctx = {
     purpose: contextSelections.purpose || 'personal',
     goal: contextSelections.goal || 'harmony',
-    birthday: birthday || ''
+    birthday: birthday || '',
+    birthplace: birthplace || ''
   };
   history.push({ role: 'user', content: pendingScoreNumber });
   isLoading = true;
@@ -337,7 +345,8 @@ async function generateScorecard(numberText, numberType, ctx) {
     purpose: ctx.purpose || 'personal',
     goal: ctx.goal || 'harmony',
     type: numberType,
-    birthday: ctx.birthday || ''
+    birthday: ctx.birthday || '',
+    birthplace: ctx.birthplace || ''
   };
 
   // Build a personal intro using the actual number
@@ -378,10 +387,14 @@ async function generateScorecard(numberText, numberType, ctx) {
     ? ` The mor doo will also weigh how this number aligns with your birth chart.`
     : '';
 
+  const birthplaceNote = scorecardContext.birthplace
+    ? ` Born in ${scorecardContext.birthplace} — the energy of your origin will be felt in this reading.`
+    : '';
+
   const masterNote = isMaster ? ` The mor doo pauses — ${rootNum} is a Master Number. This is not common.` : '';
   const notableNote = notable.length > 0 ? ` The repeated influence of ${notable.join(' and ')} is already visible.` : '';
 
-  const fullIntro = `The digits of ${numberText.replace(/\D/g,'').split('').join('-')} reduce to **${rootNum}** — the frequency of ${rootMeaning}.${masterNote}${notableNote} This ${typeLabel} is ${purposeContext}.${birthdayNote}
+  const fullIntro = `The digits of ${numberText.replace(/\D/g,'').split('').join('-')} reduce to **${rootNum}** — the frequency of ${rootMeaning}.${masterNote}${notableNote} This ${typeLabel} is ${purposeContext}.${birthdayNote}${birthplaceNote}
 
 *The ancient calculator stirs — the scorecard takes shape.*`;
   history.push({ role: 'assistant', content: fullIntro });
