@@ -208,7 +208,7 @@
       <textarea id="userInput" placeholder="Tell the mor doo your name, birthday, birthplace..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">✦</button>
     </div>
-    <div style="text-align:center;font-size:10px;color:var(--text-dim);opacity:0.7;margin-top:6px;letter-spacing:0.04em;">
+    <div style="text-align:center;font-size:12px;color:var(--text-dim);opacity:0.85;margin-top:6px;letter-spacing:0.03em;">
       🔒 Your information is not stored and is only used within this session. Nothing is saved after you leave.
     </div>
   </div>
@@ -339,20 +339,32 @@ async function generateScorecard(numberText, numberType, ctx) {
     birthday: ctx.birthday || ''
   };
 
+  // Ensure history has at least one message before calling chat API
+  const safeHistory = history.length > 0 ? history : [{ role: 'user', content: numberText }];
+
   try {
-    const [chatRes, scoreRes] = await Promise.all([
-      fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: history }) }),
-      fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: history, scorecard: true, scorecardContext }) })
+    // Run both API calls in parallel
+    const [scoreRes, chatRes] = await Promise.all([
+      fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: safeHistory, scorecard: true, scorecardContext })
+      }),
+      fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: safeHistory })
+      })
     ]);
 
     removeTyping();
 
-    const chatData = await chatRes.json();
-    const scoreData = await scoreRes.json();
+    // Parse responses safely
+    let scoreData = null, chatData = null;
+    try { scoreData = await scoreRes.json(); } catch(e) { console.error('Score parse error:', e); }
+    try { chatData = await chatRes.json(); } catch(e) { console.error('Chat parse error:', e); }
 
-    console.log('Score response:', JSON.stringify(scoreData).substring(0,200));
-
-    if (chatData.reply) {
+    if (chatData && chatData.reply) {
       history.push({ role: 'assistant', content: chatData.reply });
       addMessage('mordoo', chatData.reply);
     }
@@ -360,14 +372,12 @@ async function generateScorecard(numberText, numberType, ctx) {
     if (scoreData && scoreData.scoreData) {
       addScorecard(scoreData.scoreData, scorecardContext);
     } else {
-      const chat = document.getElementById('chat');
-      const d = document.createElement('div');
-      d.style.cssText = 'color:#8B3A3A;font-size:11px;padding:6px 10px;background:rgba(139,58,58,0.06);border-radius:6px;margin-top:4px;';
-      d.textContent = 'Debug: ' + JSON.stringify(scoreData).substring(0,100);
-      chat.appendChild(d);
+      console.error('No scoreData:', JSON.stringify(scoreData));
     }
+
   } catch(err) {
     removeTyping();
+    console.error('generateScorecard error:', err);
     const chat = document.getElementById('chat');
     const d = document.createElement('div');
     d.style.cssText = 'color:#8B3A3A;font-size:13px;padding:10px 14px;background:rgba(139,58,58,0.08);border-radius:8px;';
