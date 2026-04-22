@@ -195,8 +195,8 @@
       <div class="quick-starts">
         <button class="quick-btn" onclick="quickStart(this)"><span class="quick-btn-icon">🌟</span>Read my full chart — name, birthday, birthplace</button>
         <button class="quick-btn" onclick="quickStart(this)"><span class="quick-btn-icon">💑</span>Are my partner and I compatible?</button>
-        <button class="quick-btn" onclick="quickStart(this)"><span class="quick-btn-icon">📱</span>Score my phone number</button>
-        <button class="quick-btn" onclick="quickStart(this)"><span class="quick-btn-icon">🏠</span>Score my home address</button>
+        <button class="quick-btn" onclick="promptNumber('phone')"><span class="quick-btn-icon">📱</span>Score my phone number</button>
+        <button class="quick-btn" onclick="promptNumber('address')"><span class="quick-btn-icon">🏠</span>Score my home address</button>
       </div>
     </div>
   </div>
@@ -504,6 +504,19 @@ async function submitWaitlist() {
 function quickStart(btn) {
   document.getElementById('userInput').value = btn.querySelector('.quick-btn-icon').nextSibling.textContent.trim();
   sendMessage();
+}
+
+function promptNumber(type) {
+  const input = document.getElementById('userInput');
+  if (type === 'phone') {
+    input.placeholder = 'Enter your phone number e.g. 2153564693';
+    input.value = '';
+  } else {
+    input.placeholder = 'Enter your address e.g. 1709 Hartranft Street';
+    input.value = '';
+  }
+  input.focus();
+  autoResize(input);
 }
 function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
 function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
