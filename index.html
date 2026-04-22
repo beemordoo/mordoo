@@ -208,7 +208,7 @@
       <textarea id="userInput" placeholder="Tell the mor doo your name, birthday, birthplace..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">✦</button>
     </div>
-    <div style="text-align:center;font-size:12px;color:var(--text-dim);opacity:0.85;margin-top:6px;letter-spacing:0.03em;">
+    <div style="text-align:center;font-size:14px;color:var(--text-dim);opacity:0.9;margin-top:7px;letter-spacing:0.02em;">
       🔒 Your information is not stored and is only used within this session. Nothing is saved after you leave.
     </div>
   </div>
@@ -605,6 +605,9 @@ async function sendMessage() {
     pendingScoreNumber = text;
     pendingScoreType = numType;
     contextSelections = {};
+    // Remove welcome card only after user bubble is added
+    const welcomeEl = document.querySelector('.welcome-card');
+    if (welcomeEl) welcomeEl.remove();
     showContextCard(text, numType);
     input.focus();
     return;
