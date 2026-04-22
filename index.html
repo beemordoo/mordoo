@@ -202,7 +202,7 @@
   </div>
   <div class="input-area" id="inputArea">
     <div class="input-inner">
-      <textarea id="userInput" placeholder="Tell the mor doo your name, birthday, phone number..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <textarea id="userInput" placeholder="Tell the mor doo your name, birthday, birthplace..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">✦</button>
     </div>
   </div>
@@ -509,11 +509,18 @@ function quickStart(btn) {
 function promptNumber(type) {
   const input = document.getElementById('userInput');
   if (type === 'phone') {
-    input.placeholder = 'Enter your phone number e.g. 2153564693';
+    input.placeholder = 'Enter your phone number...';
     input.value = '';
   } else {
-    input.placeholder = 'Enter your address e.g. 1709 Hartranft Street';
+    input.placeholder = 'Enter your home or business address...';
     input.value = '';
+  }
+  // Remove welcome card so the conversation starts
+  const welcome = document.querySelector('.welcome-card');
+  if (welcome) welcome.remove();
+  // Show counter
+  if (document.getElementById('counterWrap').style.display === 'none') {
+    buildCounter();
   }
   input.focus();
   autoResize(input);
