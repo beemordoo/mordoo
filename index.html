@@ -344,8 +344,16 @@ async function generateScorecard(numberText, numberType, ctx) {
   const typeLabel = numberType === 'address' ? 'address' : 'number';
   const purposeLabel = scorecardContext.purpose === 'work' ? 'work' : 'personal';
   const goalLabel = scorecardContext.goal === 'wealth' ? 'wealth and success' : 'harmony and peace';
-  const introText = `Ah, a ${typeLabel} that carries its own vibration. The mor doo reads this through the lens of ${purposeLabel} purpose and ${goalLabel} — the scorecard is preparing now.`;
-  const introItalic = `*The digits arrange themselves before the ancient eyes of the mor doo...*`;
+  const introLines = {
+    'work-wealth': ['This number carries the energy of commerce and ambition.', '*The mor doo sees wealth written in your digits...*'],
+    'work-harmony': ['A number meant for professional steadiness and trust.', '*The mor doo aligns the planets of your work path...*'],
+    'personal-wealth': ['The digits of abundance — the mor doo reads what prosperity this number holds.', '*Wealth and beauty stir within these numbers...*'],
+    'personal-harmony': ['A number meant to carry you through the quiet and sacred moments of life.', '*The mor doo listens to what peace lives in your digits...*']
+  };
+  const introKey = purposeLabel + '-' + (scorecardContext.goal || 'harmony');
+  const lines = introLines[introKey] || introLines['personal-harmony'];
+  const introText = lines[0];
+  const introItalic = lines[1];
   const fullIntro = introText + '\n\n' + introItalic;
   history.push({ role: 'assistant', content: fullIntro });
 
@@ -370,7 +378,11 @@ async function generateScorecard(numberText, numberType, ctx) {
     if (scoreData && scoreData.scoreData) {
       addScorecard(scoreData.scoreData, scorecardContext);
     } else {
-      console.error('No scoreData:', JSON.stringify(scoreData));
+      const chat = document.getElementById('chat');
+      const d = document.createElement('div');
+      d.style.cssText = 'color:#8B3A3A;font-size:12px;padding:8px 12px;background:rgba(139,58,58,0.06);border-radius:8px;margin-top:4px;';
+      d.textContent = 'Scorecard error: ' + (scoreData ? JSON.stringify(scoreData).substring(0,120) : 'no response');
+      chat.appendChild(d);
     }
 
   } catch(err) {
