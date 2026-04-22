@@ -340,25 +340,72 @@ async function generateScorecard(numberText, numberType, ctx) {
     birthday: ctx.birthday || ''
   };
 
-  // Show a warm hardcoded intro — no extra API call needed
+  // Build a personal intro using the actual number
   const typeLabel = numberType === 'address' ? 'address' : 'number';
   const purposeLabel = scorecardContext.purpose === 'work' ? 'work' : 'personal';
-  const goalLabel = scorecardContext.goal === 'wealth' ? 'wealth and success' : 'harmony and peace';
-  const introLines = {
-    'work-wealth': ['This number carries the energy of commerce and ambition.', '*The mor doo sees wealth written in your digits...*'],
-    'work-harmony': ['A number meant for professional steadiness and trust.', '*The mor doo aligns the planets of your work path...*'],
-    'personal-wealth': ['The digits of abundance — the mor doo reads what prosperity this number holds.', '*Wealth and beauty stir within these numbers...*'],
-    'personal-harmony': ['A number meant to carry you through the quiet and sacred moments of life.', '*The mor doo listens to what peace lives in your digits...*']
+
+  // Extract digits and calculate root for the intro
+  const rawDigits = numberText.replace(/\D/g, '');
+  const digitSum = rawDigits.split('').reduce((a, b) => a + parseInt(b), 0);
+  let rootNum = digitSum;
+  while (rootNum > 9 && rootNum !== 11 && rootNum !== 22 && rootNum !== 33 && rootNum !== 44) {
+    rootNum = rootNum.toString().split('').reduce((a, b) => a + parseInt(b), 0);
+  }
+  const rootMeanings = {
+    1: 'leadership and the pioneer spirit', 2: 'partnership and deep intuition',
+    3: 'creativity and the gift of expression', 4: 'foundation and lasting structure',
+    5: 'freedom and constant movement', 6: 'harmony, beauty, and love',
+    7: 'spiritual depth and the seeking mind', 8: 'material authority and wealth',
+    9: 'wisdom and humanitarian purpose', 11: 'illumination — a Master Number',
+    22: 'the Master Builder — rare and powerful', 33: 'the Master Teacher — extraordinarily rare',
+    44: 'the Master Builder at its most elevated'
   };
-  const introKey = purposeLabel + '-' + (scorecardContext.goal || 'harmony');
-  const lines = introLines[introKey] || introLines['personal-harmony'];
-  const introText = lines[0];
-  const introItalic = lines[1];
-  const fullIntro = introText + '\n\n' + introItalic;
+  const rootMeaning = rootMeanings[rootNum] || 'deep numerological power';
+  const isMaster = [11,22,33,44].includes(rootNum);
+
+  // Count notable digits
+  const digitCounts = {};
+  rawDigits.split('').forEach(d => { digitCounts[d] = (digitCounts[d] || 0) + 1; });
+  const notable = Object.entries(digitCounts)
+    .filter(([d, c]) => c >= 2 && ['6','8','9','1'].includes(d))
+    .map(([d]) => ({ '6':'Venus', '8':'Saturn', '9':'Mars', '1':'Sun' }[d]));
+
+  const purposeContext = scorecardContext.purpose === 'work'
+    ? (scorecardContext.goal === 'wealth' ? 'built for commerce, sales, and wealth generation' : 'calibrated for professional steadiness and trust')
+    : (scorecardContext.goal === 'wealth' ? 'carrying the frequency of personal abundance' : 'meant to bring peace, family warmth, and balance');
+
+  const birthdayNote = scorecardContext.birthday
+    ? ` The mor doo will also weigh how this number aligns with your birth chart.`
+    : '';
+
+  const masterNote = isMaster ? ` The mor doo pauses — ${rootNum} is a Master Number. This is not common.` : '';
+  const notableNote = notable.length > 0 ? ` The repeated influence of ${notable.join(' and ')} is already visible.` : '';
+
+  const fullIntro = `The digits of ${numberText.replace(/\D/g,'').split('').join('-')} reduce to **${rootNum}** — the frequency of ${rootMeaning}.${masterNote}${notableNote} This ${typeLabel} is ${purposeContext}.${birthdayNote}
+
+*The ancient calculator stirs — the scorecard takes shape.*`;
   history.push({ role: 'assistant', content: fullIntro });
 
   removeTyping();
   addMessage('mordoo', fullIntro);
+
+  // Show scorecard loading indicator
+  const chat = document.getElementById('chat');
+  const loadingDiv = document.createElement('div');
+  loadingDiv.id = 'scorecardLoading';
+  loadingDiv.style.cssText = 'text-align:center;padding:20px;animation:fadeUp 0.4s ease forwards;opacity:0;';
+  loadingDiv.innerHTML = `
+    <div style="display:inline-flex;align-items:center;gap:10px;background:var(--surface);border:1px solid rgba(184,134,11,0.2);border-radius:12px;padding:12px 20px;box-shadow:0 2px 12px rgba(61,43,31,0.06);">
+      <div style="display:flex;gap:5px;align-items:center;">
+        <div style="width:6px;height:6px;background:var(--gold);border-radius:50%;animation:dotPulse 1.4s ease-in-out infinite;"></div>
+        <div style="width:6px;height:6px;background:var(--gold);border-radius:50%;animation:dotPulse 1.4s ease-in-out infinite;animation-delay:0.2s;"></div>
+        <div style="width:6px;height:6px;background:var(--gold);border-radius:50%;animation:dotPulse 1.4s ease-in-out infinite;animation-delay:0.4s;"></div>
+      </div>
+      <span style="font-family:'Playfair Display',serif;font-style:italic;font-size:13px;color:var(--text-mid);">The scorecard is being prepared...</span>
+    </div>
+  `;
+  chat.appendChild(loadingDiv);
+  setTimeout(() => loadingDiv.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
 
   // Now fetch only the scorecard
   // Use a clean single-message history — just the number
@@ -375,6 +422,10 @@ async function generateScorecard(numberText, numberType, ctx) {
     let scoreData = null;
     try { scoreData = await scoreRes.json(); } catch(e) { console.error('Score parse error:', e); }
 
+    // Remove loading indicator
+    const loadingEl = document.getElementById('scorecardLoading');
+    if (loadingEl) loadingEl.remove();
+
     if (scoreData && scoreData.scoreData) {
       addScorecard(scoreData.scoreData, scorecardContext);
     } else {
@@ -387,6 +438,8 @@ async function generateScorecard(numberText, numberType, ctx) {
 
   } catch(err) {
     console.error('generateScorecard error:', err);
+    const loadingEl2 = document.getElementById('scorecardLoading');
+    if (loadingEl2) loadingEl2.remove();
     const chat = document.getElementById('chat');
     const d = document.createElement('div');
     d.style.cssText = 'color:#8B3A3A;font-size:13px;padding:10px 14px;background:rgba(139,58,58,0.08);border-radius:8px;';
