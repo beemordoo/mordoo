@@ -71,7 +71,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 24px;
+  padding: 40px 24px 20px;
   text-align: center;
   position: relative;
 }
@@ -243,10 +243,6 @@ body {
 .hero-cta:hover::before { opacity: 1; }
 
 .hero-scroll {
-  position: absolute;
-  bottom: 32px;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -254,27 +250,28 @@ body {
   opacity: 0;
   animation: fadeUp 1s ease 1.8s forwards;
   cursor: pointer;
+  margin-top: 24px;
 }
 
 .scroll-text { font-size: 10px; letter-spacing: 0.3em; color: var(--text-dim); text-transform: uppercase; }
-.scroll-line { width: 1px; height: 40px; background: linear-gradient(to bottom, var(--gold-light), transparent); animation: scrollPulse 2s ease-in-out infinite; }
+.scroll-line { width: 1px; height: 24px; background: linear-gradient(to bottom, var(--gold-light), transparent); animation: scrollPulse 2s ease-in-out infinite; }
 
 @keyframes scrollPulse { 0%, 100% { opacity: 0.4; transform: scaleY(1); } 50% { opacity: 1; transform: scaleY(1.2); } }
 
 /* ── SECTION 2: QUIZ ── */
 .quiz-section {
-  min-height: 100vh;
+  min-height: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px 24px;
+  padding: 40px 24px;
   position: relative;
 }
 
 .quiz-header {
   text-align: center;
-  margin-bottom: 48px;
+  margin-bottom: 28px;
   opacity: 0;
   transform: translateY(30px);
   transition: all 0.8s ease;
@@ -482,7 +479,7 @@ body {
 
 /* ── SECTION 3: FEATURES ── */
 .features-section {
-  padding: 80px 24px;
+  padding: 40px 24px;
   max-width: 900px;
   margin: 0 auto;
 }
@@ -536,7 +533,7 @@ body {
 
 /* ── SECTION 4: FINAL CTA ── */
 .final-section {
-  padding: 100px 24px;
+  padding: 60px 24px;
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -706,6 +703,15 @@ body {
     </div>
   </section>
 
+  <!-- ── DIVIDER ── -->
+  <div style="text-align:center;padding:8px 0 0;position:relative;z-index:2;">
+    <div style="display:flex;align-items:center;gap:16px;justify-content:center;max-width:400px;margin:0 auto;">
+      <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(184,134,11,0.3),transparent);"></div>
+      <div style="font-size:10px;letter-spacing:0.4em;color:var(--gold);text-transform:uppercase;">✦ ✦ ✦</div>
+      <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(184,134,11,0.3),transparent);"></div>
+    </div>
+  </div>
+
   <!-- ── QUIZ ── -->
   <section class="quiz-section" id="quizSection">
     <div class="quiz-header" id="quizHeader">
@@ -816,6 +822,15 @@ body {
       </div>
     </div>
   </section>
+
+  <!-- ── DIVIDER ── -->
+  <div style="text-align:center;padding:8px 0 0;position:relative;z-index:2;">
+    <div style="display:flex;align-items:center;gap:16px;justify-content:center;max-width:400px;margin:0 auto;">
+      <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(184,134,11,0.3),transparent);"></div>
+      <div style="font-size:10px;letter-spacing:0.4em;color:var(--gold);text-transform:uppercase;">✦ ✦ ✦</div>
+      <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(184,134,11,0.3),transparent);"></div>
+    </div>
+  </div>
 
   <!-- ── FEATURES ── -->
   <section class="features-section">
