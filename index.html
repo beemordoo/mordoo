@@ -361,15 +361,15 @@ async function generateScorecard(numberText, numberType, ctx) {
   addMessage('mordoo', fullIntro);
 
   // Now fetch only the scorecard
+  // Use a clean single-message history — just the number
+  // API requires last message to be from user
   try {
-    const safeHistory = history.filter(m => m.role === 'user').length > 0
-      ? history
-      : [{ role: 'user', content: numberText }];
+    const scorecardMessages = [{ role: 'user', content: numberText }];
 
     const scoreRes = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: safeHistory, scorecard: true, scorecardContext })
+      body: JSON.stringify({ messages: scorecardMessages, scorecard: true, scorecardContext })
     });
 
     let scoreData = null;
