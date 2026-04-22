@@ -225,10 +225,14 @@ let history = [], isLoading = false, messageCount = 0;
 let pendingScoreNumber = null, pendingScoreType = null;
 
 function isPhoneOrAddress(text) {
-  const phone = /(\+?1?\s?)?(\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4})/;
+  const t = text.trim();
+  const phone = /(\+?1?\s?)?(\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4})/;
   const address = /\d+\s+\w+.*(street|st|ave|avenue|blvd|boulevard|road|rd|lane|ln|drive|dr|court|ct|way|place|pl|circle|cir)/i;
-  const simple = /^\s*[\d\s\-\(\)\+]{7,}\s*$/;
-  return phone.test(text) || address.test(text) || simple.test(text);
+  // Plain digits — 7 or more consecutive digits possibly with spaces/dashes
+  const digitsOnly = /^[\d\s\-\(\)\+\.]{7,}$/.test(t);
+  // Short phrase with a number embedded like "my number is 2153564693"
+  const embeddedNumber = /\b\d{7,}\b/.test(t) && t.length < 60;
+  return phone.test(t) || address.test(t) || digitsOnly || embeddedNumber;
 }
 
 function detectNumberType(text) {
