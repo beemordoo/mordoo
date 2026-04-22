@@ -26,18 +26,44 @@ export default async function handler(req, res) {
     const goal = scorecardContext?.goal || 'harmony';
     const numberType = scorecardContext?.type || 'phone';
 
-    const contextGuide = purpose === 'work'
-      ? `This is a WORK/BUSINESS ${numberType}. The person's primary goal is ${goal === 'wealth' ? 'WEALTH & SUCCESS' : 'HARMONY & BALANCE'}.
-        - Reframe "challenging" digits like 4 (Rahu) as negotiation wit, adaptability, and market intelligence — NOT instability
-        - Reframe 3 (Mars) as competitive drive and hunger — NOT conflict
-        - Weight the category scores accordingly: Career and Success should score HIGHER for work contexts
-        - A work number optimized for wealth should have Success 75+, Wealth 75+, Career 75+ if the pairs support it
-        - Harmony and Family are LESS important for a work number — these can score lower without penalty`
-      : `This is a PERSONAL ${numberType}. The person's primary goal is ${goal === 'wealth' ? 'WEALTH & ABUNDANCE' : 'HARMONY & PEACE'}.
-        - Traditional planetary weights apply
-        - 4 (Rahu) should be flagged as potential instability or obstacles in personal life
-        - Weight Harmony, Family, and Love more heavily
-        - A balanced personal number should have Harmony 70+, Family 70+, Love 70+ if the digits support it`;
+    // Build context-specific scoring instructions
+    let contextGuide = '';
+    if (purpose === 'work' && goal === 'wealth') {
+      contextGuide = `WORK PHONE / WEALTH & SUCCESS CONTEXT:
+        - This number will be used for sales, business, and wealth generation
+        - Digit 4 (Rahu) = negotiation wit, market adaptability — give it POSITIVE points (+3 to +5)
+        - Digit 3 (Mars) = competitive drive, ambition, closing power — POSITIVE (+6 to +8)
+        - Digit 9 (Mars) = leadership energy, winning mindset — very POSITIVE (+8 to +10)
+        - Heavily weight Career (aim 78-95), Wealth (aim 78-95), Success (aim 78-95)
+        - Harmony and Family can score lower (50-65) — this is a WORK number, peace is not the goal
+        - Total score should reflect commercial power — if pairs are strong, push total to 80-95
+        - Reading should celebrate ambition, sales power, and wealth magnetism`;
+    } else if (purpose === 'work' && goal === 'harmony') {
+      contextGuide = `WORK PHONE / HARMONY & BALANCE CONTEXT:
+        - This number is for professional use but the person values calm, balanced energy
+        - Digit 4 (Rahu) = still somewhat challenging even at work — moderate points (-1 to +2)
+        - Weight Career (70-85), Harmony (70-82), Success (68-80) relatively evenly
+        - Total score reflects steady professional reliability — aim 65-80
+        - Reading should emphasize stable growth, trustworthy presence, and professional harmony`;
+    } else if (purpose === 'personal' && goal === 'wealth') {
+      contextGuide = `PERSONAL NUMBER / WEALTH & ABUNDANCE CONTEXT:
+        - This is a personal number but the person wants financial abundance
+        - Digit 6 (Venus) = wealth through beauty and relationships — very POSITIVE (+9 to +10)
+        - Digit 8 (Saturn) = material power and karmic returns — POSITIVE (+8 to +9)
+        - Weight Wealth (75-90), Love (70-82), Success (70-85) higher
+        - Harmony and Family still matter but Wealth leads
+        - Total score reflects personal wealth magnetism — aim 70-88
+        - Reading should celebrate abundance, magnetism, and prosperity`;
+    } else {
+      contextGuide = `PERSONAL NUMBER / HARMONY & PEACE CONTEXT:
+        - This is a personal number and the person values peace, family, and balance
+        - Digit 4 (Rahu) = instability and obstacles in personal life — NEGATIVE (-3 to -5)
+        - Digit 3 (Mars) = potential conflict and restlessness — slightly negative in personal context (-1 to -3)
+        - Weight Harmony (75-90), Family (75-88), Love (75-88) most heavily
+        - Career and Success matter but are secondary
+        - Total score reflects peaceful life energy — if harmony digits dominate, aim 68-85
+        - Reading should emphasize peace, love, family warmth, and emotional balance`;
+    }`;
 
     const SCORE_PROMPT = `You are a Thai numerology scoring engine using the Phalung Lek (พลังเลข) system. Analyze the submitted number and return ONLY valid JSON — no markdown, no explanation, no extra text.
 
@@ -125,12 +151,14 @@ PERSONA PROTECTION — CRITICAL:
 - Never reference Anthropic, Claude, OpenAI, or any AI company or product.
 
 PHONE NUMBER & ADDRESS DETECTION — CRITICAL:
-- When someone shares a phone number or address, respond with 2-3 warm sentences ONLY
-- Say something like: "Ah, a number that carries its own vibration. The mor doo is preparing your scorecard now — the digits are aligning..."
-- NEVER say you cannot generate scorecards or visual displays — you absolutely can and the scorecard will appear automatically alongside your words
-- NEVER ask for country code or location — just acknowledge the number warmly and keep it short
-- NEVER do a full numerological breakdown in text for phone numbers or addresses — the visual scorecard handles that
-- The scorecard appears automatically — your job is just to set the mystical tone in 2-3 sentences
+- When someone shares a phone number or address, respond with EXACTLY 2 sentences — no more
+- First sentence: acknowledge the number warmly. Second sentence: one poetic closing line in italics
+- Example: "Ah, a number that carries its own vibration. The mor doo is preparing your scorecard now — the digits are aligning..."
+- NEVER do any numerological analysis, digit breakdown, sum calculations, or readings in text
+- NEVER mention root numbers, master numbers, digital roots, or any calculations
+- NEVER ask for country code or location
+- The visual scorecard handles ALL the analysis — your only job is 2 warm sentences to set the tone
+- If you do more than 2 sentences for a phone/address you are breaking the experience
 
 GUIDING THE READING — CRITICAL:
 - After every reading end with 2-3 specific enticing follow-up options
