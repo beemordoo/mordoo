@@ -63,7 +63,7 @@ export default async function handler(req, res) {
         - Career and Success matter but are secondary
         - Total score reflects peaceful life energy — if harmony digits dominate, aim 68-85
         - Reading should emphasize peace, love, family warmth, and emotional balance`;
-    }`;
+    }
 
     const SCORE_PROMPT = `You are a Thai numerology scoring engine using the Phalung Lek (พลังเลข) system. Analyze the submitted number and return ONLY valid JSON — no markdown, no explanation, no extra text.
 
@@ -99,13 +99,37 @@ Return ONLY this JSON — no extra text, no markdown:
 Fill in all values. Keep "reading" under 50 words. Keep "meaning" in pairs under 5 words each.`;
 
     try {
-      const rawNumber = messages[messages.length - 1].content;
-      // Strip country code before scoring — country code carries no personal vibration
-      const lastMessage = rawNumber
-        .replace(/^\+?1[\s\-\.]?/, '')     // US/Canada +1
-        .replace(/^\+?66[\s\-\.]?/, '')    // Thailand +66
-        .replace(/^\+\d{1,3}[\s\-\.]?/, '') // Any other country code
-        .trim();
+      const rawInput = messages[messages.length - 1].content.trim();
+
+      // Determine if this is an address or phone number
+      const isAddress = /\d+\s+\w+.*(street|st|ave|avenue|blvd|boulevard|road|rd|lane|ln|drive|dr|court|ct|way|place|pl|circle|cir|apt|unit|#)/i.test(rawInput);
+
+      let lastMessage = rawInput;
+      let aptNote = '';
+
+      if (isAddress) {
+        // Extract street number only — this is the personal vibration
+        const streetNumMatch = rawInput.match(/^(\d+)/);
+        const streetNum = streetNumMatch ? streetNumMatch[1] : rawInput.replace(/\D/g, '');
+
+        // Extract apartment/unit number if present
+        const aptMatch = rawInput.match(/(?:apt|unit|#|suite)\s*([a-z0-9]+)/i);
+        aptNote = aptMatch ? aptMatch[1] : '';
+
+        lastMessage = streetNum + (aptNote ? ' (unit ' + aptNote + ')' : '');
+      } else {
+        // Phone number — strip country code
+        lastMessage = rawInput
+          .replace(/^\+?1[\s\-\.]?/, '')     // US/Canada +1
+          .replace(/^\+?66[\s\-\.]?/, '')    // Thailand +66
+          .replace(/^\+\d{1,3}[\s\-\.]?/, '') // Any other country code
+          .trim();
+      }
+      // Build the scoring prompt with address context if applicable
+      const scoringInstruction = isAddress
+        ? `Score this address. The street number to analyze is: ${lastMessage}${aptNote ? '. The unit number ' + aptNote + ' should be noted separately as a secondary energy layer.' : ''}. Focus the digit analysis on the street number digits only. In the reading mention both the street number energy and the unit number if present.`
+        : `Score this phone number: ${lastMessage}`;
+
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -117,7 +141,7 @@ Fill in all values. Keep "reading" under 50 words. Keep "meaning" in pairs under
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 1500,
           system: SCORE_PROMPT,
-          messages: [{ role: 'user', content: `Score this number: ${lastMessage}` }]
+          messages: [{ role: 'user', content: scoringInstruction }]
         })
       });
 
