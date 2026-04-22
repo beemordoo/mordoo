@@ -67,31 +67,10 @@ Planet mappings:
 8 = Saturn (ดาวเสาร์) — karma, discipline, power — neutral-positive
 9 = Mars (ดาวอังคาร) — in personal context: conflict risk; in work context: drive and ambition — positive for work
 
-Return this exact JSON structure:
-{
-  "number": "the number as submitted",
-  "total": <integer 0-100>,
-  "rating": "<Excellent|Good|Average|Challenging>",
-  "ratingThai": "<เยี่ยม|ดี|ปานกลาง|ท้าทาย>",
-  "context": "<Personal|Work> · <Harmony & Peace|Wealth & Success>",
-  "summary": "<one sentence summary of the number's energy for this specific context>",
-  "digits": [
-    {"digit": <number>, "planet": "<planet name>", "planetThai": "<Thai name>", "energy": "<positive|neutral|negative>", "points": <integer -10 to 10>}
-  ],
-  "pairs": [
-    {"pair": "<two digits>", "type": "<Power|Wealth|Charm|Wisdom|Neutral|Challenge>", "meaning": "<brief meaning>"}
-  ],
-  "categories": {
-    "love": <0-100>,
-    "wealth": <0-100>,
-    "career": <0-100>,
-    "luck": <0-100>,
-    "family": <0-100>,
-    "harmony": <0-100>,
-    "success": <0-100>
-  },
-  "reading": "<2-3 sentence poetic reading tailored to the context — personal vs work, harmony vs wealth>"
-}`;
+Return ONLY this JSON — no extra text, no markdown:
+{"number":"","total":0,"rating":"","ratingThai":"","digits":[{"digit":0,"planet":"","planetThai":"","energy":"positive","points":0}],"pairs":[{"pair":"","type":"","meaning":""}],"categories":{"love":0,"wealth":0,"career":0,"luck":0,"family":0,"harmony":0,"success":0},"reading":""}
+
+Fill in all values. Keep "reading" under 50 words. Keep "meaning" in pairs under 5 words each.`;
 
     try {
       const lastMessage = messages[messages.length - 1].content;
@@ -104,7 +83,7 @@ Return this exact JSON structure:
         },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 900,
+          max_tokens: 1500,
           system: SCORE_PROMPT,
           messages: [{ role: 'user', content: `Score this number: ${lastMessage}` }]
         })
