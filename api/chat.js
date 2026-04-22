@@ -26,6 +26,53 @@ export default async function handler(req, res) {
     const goal = scorecardContext?.goal || 'harmony';
     const numberType = scorecardContext?.type || 'phone';
     const birthday = scorecardContext?.birthday || '';
+    const birthplace = scorecardContext?.birthplace || '';
+
+    // Calculate birthplace numerology if provided
+    let birthplaceContext = '';
+    if (birthplace) {
+      // Convert place name to number — A=1 B=2 ... Z=8 (Pythagorean)
+      const letterMap = {a:1,b:2,c:3,d:4,e:5,f:6,g:7,h:8,i:9,j:1,k:2,l:3,m:4,n:5,o:6,p:7,q:8,r:9,s:1,t:2,u:3,v:4,w:5,x:6,y:7,z:8};
+      const letters = birthplace.toLowerCase().replace(/[^a-z]/g, '').split('');
+      let placeSum = letters.reduce((a, l) => a + (letterMap[l] || 0), 0);
+      let placeRoot = placeSum;
+      while (placeRoot > 9 && placeRoot !== 11 && placeRoot !== 22 && placeRoot !== 33) {
+        placeRoot = placeRoot.toString().split('').reduce((a,b) => a + parseInt(b), 0);
+      }
+
+      // Known city energies
+      const knownCities = {
+        'philadelphia': { root: 11, note: 'Master Illuminator — city of light and awakening' },
+        'bangkok': { root: 3, note: 'Jupiter energy — creative, expansive, communicative' },
+        'vientiane': { root: 6, note: 'Venus energy — harmony, beauty, spiritual center' },
+        'new york': { root: 2, note: 'Moon energy — partnership, intuition, dual nature' },
+        'los angeles': { root: 7, note: 'Ketu energy — spiritual seeking, hidden depths' },
+        'chicago': { root: 4, note: 'Saturn energy — builder, foundational, disciplined' },
+        'thailand': { root: 6, note: 'Venus/homeland energy — beauty, grace, spiritual tradition' },
+        'laos': { root: 3, note: 'Jupiter energy — wisdom, cultural depth, expansion' },
+        'vietnam': { root: 8, note: 'Saturn/wealth energy — discipline, material mastery' },
+        'cambodia': { root: 5, note: 'Mercury energy — movement, transformation, adaptability' },
+        'singapore': { root: 1, note: 'Sun energy — leadership, authority, prosperity' },
+        'tokyo': { root: 9, note: 'Mars energy — ambition, completion, old soul' },
+        'seoul': { root: 4, note: 'Saturn energy — precision, structure, endurance' },
+        'beijing': { root: 8, note: 'Saturn/power energy — authority, material dominance' },
+        'london': { root: 2, note: 'Moon energy — partnership, history, deep roots' },
+        'paris': { root: 7, note: 'Ketu energy — mystery, art, spiritual beauty' },
+      };
+
+      const cityKey = birthplace.toLowerCase().trim();
+      const known = Object.entries(knownCities).find(([k]) => cityKey.includes(k));
+      const finalRoot = known ? known[1].root : placeRoot;
+      const finalNote = known ? known[1].note : ('numerological root ' + placeRoot);
+
+      birthplaceContext = 'BIRTHPLACE ENERGY: ' + birthplace + ' carries ' + finalNote + ' (root ' + finalRoot + ').\n' +
+        'Factor this into the reading:\n' +
+        '- If the phone/address root MATCHES the birthplace root → deep resonance, boost total by 5-8 points\n' +
+        '- If they share the same numerological family (1/4/8 or 2/6/9 or 3/5/7) → compatible, boost by 3-5 points\n' +
+        '- If they clash (e.g. birthplace 11/6 with number root 4) → friction, note it in the reading\n' +
+        '- A person born in ' + birthplace + ' carries the ' + finalNote + ' frequency in their cellular memory — numbers that echo this feel like home to them\n' +
+        '- Mention the birthplace resonance in the reading so the person understands why this number feels right or challenging';
+    }
 
     // Calculate birthday numerology if provided
     let birthdayContext = '';
@@ -129,6 +176,8 @@ export default async function handler(req, res) {
 CONTEXT: ${contextGuide}
 
 ${birthdayContext}
+
+${birthplaceContext}
 
 PLANET MAP: 0=Neptune/neutral 1=Sun/positive 2=Moon/neutral 3=Jupiter/positive 4=Rahu/negative-personal-positive-work 5=Mercury/neutral 6=Venus/positive 7=Ketu/neutral 8=Saturn/neutral 9=Mars/positive-work-negative-personal
 
