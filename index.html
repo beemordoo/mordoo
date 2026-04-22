@@ -291,8 +291,12 @@ function selectContext(btn) {
 async function submitContext() {
   const card = document.getElementById('contextCard');
   if (card) card.remove();
-  contextSelections = {};
+  // Now push the number to history and fire API calls
+  history.push({ role: 'user', content: pendingScoreNumber });
+  isLoading = true;
+  document.getElementById('sendBtn').disabled = true;
   await generateScorecard(pendingScoreNumber, pendingScoreType, contextSelections);
+  contextSelections = {};
 }
 
 async function generateScorecard(numberText, numberType, ctx) {
@@ -526,27 +530,27 @@ async function sendMessage() {
   if (welcome) welcome.remove();
 
   addMessage('user', text);
-  history.push({ role: 'user', content: text });
-  messageCount++;
-  buildCounter();
-
   input.value = ''; input.style.height = 'auto';
-  isLoading = true; document.getElementById('sendBtn').disabled = true;
 
   const needsScorecard = isPhoneOrAddress(text);
 
   if (needsScorecard) {
-    // Show context card first — no API call yet, no question consumed for context
-    const numType = detectNumberType(text);
+    // Push to history and increment counter AFTER context selection
+    // so the chat API doesn't fire a full text reading prematurely
+    pendingScoreNumber = text;
+    pendingScoreType = detectNumberType(text);
     contextSelections = {};
-    showContextCard(text, numType);
-    // The actual API calls happen after they select context in submitContext()
-    // Counter already incremented above — that's correct, this IS their question
-    isLoading = false;
-    document.getElementById('sendBtn').disabled = false;
+    messageCount++;
+    buildCounter();
+    showContextCard(text, pendingScoreType);
     input.focus();
     return;
   }
+
+  history.push({ role: 'user', content: text });
+  messageCount++;
+  buildCounter();
+  isLoading = true; document.getElementById('sendBtn').disabled = true;
 
   // Normal chat
   try {
