@@ -203,7 +203,7 @@
     <div class="welcome-card">
       <span class="welcome-icon">🔮</span>
       <div class="welcome-title">The Mor Doo Awaits</div>
-      <p class="welcome-text">Share your name, birthday, birthplace, and birth time — and the mor doo will read your numbers through the lens of Thai numerology, astrology, zodiac, and the ancient art of <em>lek-sasat</em>. No signup. No cost. Just your numbers.</p>
+      <p class="welcome-text">Share your name, birthday, birthplace, and birth time — and the Mor Doo will read your numbers through the lens of Thai numerology, astrology, zodiac, and the ancient art of <em>lek-sasat</em>. No signup. No cost. Just your numbers.</p>
       <div class="welcome-disclaimer">✦ Readings are for entertainment and spiritual exploration only. Not legal, medical, financial, or psychological advice. Please consult a licensed professional for matters requiring expert guidance.</div>
       <div class="divider" style="margin:12px 0;"><div class="divider-line"></div><div class="divider-gem"></div><div class="divider-line"></div></div>
       <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">Each session includes <strong>5 questions</strong>. Begin with a question or try one of these:</p>
@@ -217,7 +217,7 @@
   </div>
   <div class="input-area" id="inputArea">
     <div class="input-inner">
-      <textarea id="userInput" placeholder="Tell the mor doo your name, birthday, birthplace..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <textarea id="userInput" placeholder="Tell the Mor Doo your name, birthday, birthplace..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">✦</button>
     </div>
     <div style="text-align:center;font-size:14px;color:var(--text-dim);opacity:0.9;margin-top:7px;letter-spacing:0.02em;">
@@ -292,7 +292,7 @@ function showContextCard(numberText, numberType) {
   const label = numberType === 'address' ? 'address' : 'number';
   div.innerHTML = `
     <div class="context-card">
-      <div class="context-title">Before the mor doo reads this ${label}, help her understand its purpose.</div>
+      <div class="context-title">Before the Mor Doo reads this ${label}, help her understand its purpose.</div>
       <div class="context-group">
         <div class="context-group-label">This is my...</div>
         <div class="context-btns">
@@ -422,7 +422,7 @@ async function generateScorecard(numberText, numberType, ctx) {
     : (scorecardContext.goal === 'wealth' ? 'carrying the frequency of personal abundance' : 'meant to bring peace, family warmth, and balance');
 
   const birthdayNote = scorecardContext.birthday
-    ? ` The mor doo will also weigh how this number aligns with your birth chart.`
+    ? ` The Mor Doo will also weigh how this number aligns with your birth chart.`
     : '';
 
   const birthplaceNote = scorecardContext.birthplace
@@ -430,10 +430,10 @@ async function generateScorecard(numberText, numberType, ctx) {
     : '';
 
   const birthTimeNote = scorecardContext.birthTime
-    ? ` The mor doo also reads the hora-sasat of your birth hour — ${scorecardContext.birthTime} carries its own planetary signature.`
+    ? ` The Mor Doo also reads the hora-sasat of your birth hour — ${scorecardContext.birthTime} carries its own planetary signature.`
     : '';
 
-  const masterNote = isMaster ? ` The mor doo pauses — ${rootNum} is a Master Number. This is not common.` : '';
+  const masterNote = isMaster ? ` The Mor Doo pauses — ${rootNum} is a Master Number. This is not common.` : '';
   const notableNote = notable.length > 0 ? ` The repeated influence of ${notable.join(' and ')} is already visible.` : '';
 
   const fullIntro = `The digits of ${numberText.replace(/\D/g,'').split('').join('-')} reduce to **${rootNum}** — the frequency of ${rootMeaning}.${masterNote}${notableNote} This ${typeLabel} is ${purposeContext}.${birthdayNote}${birthplaceNote}${birthTimeNote}
@@ -499,7 +499,7 @@ async function generateScorecard(numberText, numberType, ctx) {
     const chat = document.getElementById('chat');
     const d = document.createElement('div');
     d.style.cssText = 'color:#8B3A3A;font-size:13px;padding:10px 14px;background:rgba(139,58,58,0.08);border-radius:8px;';
-    d.textContent = 'The mor doo encountered a disturbance. Please try again.';
+    d.textContent = 'The Mor Doo encountered a disturbance. Please try again.';
     chat.appendChild(d);
   }
 
@@ -612,7 +612,7 @@ function showWaitlistCard() {
   div.innerHTML = `
     <span class="waitlist-icon">🌸</span>
     <div class="waitlist-title">Your Reading Is Complete</div>
-    <p class="waitlist-text">The mor doo has shared what the numbers reveal for this session.<br><br>Want to go deeper? Join the waitlist and be the first to know when full access opens.</p>
+    <p class="waitlist-text">The Mor Doo has shared what the numbers reveal for this session.<br><br>Want to go deeper? Join the waitlist and be the first to know when full access opens.</p>
     <div id="waitlistFormWrap">
       <div class="waitlist-form">
         <input type="text" class="waitlist-input" id="wlName" placeholder="Your name" />
@@ -643,7 +643,7 @@ async function submitWaitlist() {
       <div class="waitlist-success">
         <span class="waitlist-success-icon">✨</span>
         <div class="waitlist-success-title">You are on the list, ${name}.</div>
-        <p class="waitlist-success-text">The mor doo will find you when the doors open.<br>Watch your inbox — the numbers are already working.</p>
+        <p class="waitlist-success-text">The Mor Doo will find you when the doors open.<br>Watch your inbox — the numbers are already working.</p>
       </div>`;
   } catch(err) {
     btn.disabled = false; btn.textContent = 'Join the Waitlist ✦';
@@ -765,7 +765,7 @@ async function sendMessage() {
     const chat = document.getElementById('chat');
     const d = document.createElement('div');
     d.style.cssText = 'color:#8B3A3A;font-size:13px;padding:10px 14px;background:rgba(139,58,58,0.08);border-radius:8px;border:1px solid rgba(139,58,58,0.2);margin-top:4px;';
-    d.textContent = 'The mor doo encountered a disturbance. Please try again.';
+    d.textContent = 'The Mor Doo encountered a disturbance. Please try again.';
     chat.appendChild(d);
     messageCount--; buildCounter();
   }
