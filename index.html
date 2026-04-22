@@ -150,6 +150,9 @@
   .waitlist-success-text { font-size: 13px; color: var(--text-mid); line-height: 1.75; }
   .new-reading-btn { background: transparent; border: 1px solid rgba(184,134,11,0.25); border-radius: 10px; padding: 10px 20px; color: var(--text-dim); font-family: 'Sarabun', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.2s; margin-top: 18px; display: inline-block; }
   .new-reading-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .reset-btn { position: fixed; top: 16px; right: 16px; z-index: 20; background: var(--surface); border: 1px solid rgba(184,134,11,0.2); border-radius: 20px; padding: 7px 14px; color: var(--text-dim); font-family: 'Sarabun', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.2s; display: none; box-shadow: 0 2px 8px rgba(61,43,31,0.08); }
+  .reset-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--cream-dark); }
+  .reset-btn.visible { display: block; animation: fadeDown 0.4s ease forwards; }
 
   /* Input */
   .input-area { position: fixed; bottom: 0; left: 0; right: 0; z-index: 10; background: linear-gradient(transparent, var(--cream) 35%); padding: 20px; }
@@ -176,6 +179,7 @@
 <body>
 <div class="bg-layer"></div>
 <div class="petals" id="petals"></div>
+<button class="reset-btn" id="resetBtn" onclick="location.reload()" title="Start a new reading">✦ New Reading</button>
 <div class="app">
   <header class="header">
     <div class="thai-title">หมอดู · The Seer Who Sees</div>
@@ -651,6 +655,9 @@ function addMessage(role, content) {
   }
   chat.appendChild(div);
   setTimeout(() => div.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
+  // Show reset button after first interaction
+  const resetBtn = document.getElementById('resetBtn');
+  if (resetBtn) resetBtn.classList.add('visible');
 }
 
 function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
