@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>หมอดู · Mor Doo · Thai Fortune Telling</title>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-T19WQEB31W"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-T19WQEB31W');
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Sarabun:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -179,7 +187,7 @@
 <body>
 <div class="bg-layer"></div>
 <div class="petals" id="petals"></div>
-<button class="reset-btn" id="resetBtn" onclick="location.reload()" title="Start a new reading">✦ New Reading</button>
+<button class="reset-btn" id="resetBtn" onclick="gtag('event','new_reading_started',{event_category:'engagement',event_label:'reset_button'});location.reload();" title="Start a new reading">✦ New Reading</button>
 <div class="app">
   <header class="header">
     <div class="thai-title">หมอดู · The Seer Who Sees</div>
@@ -201,7 +209,7 @@
       <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">Each session includes <strong>5 questions</strong>. Begin with a question or try one of these:</p>
       <div class="quick-starts">
         <button class="quick-btn" onclick="quickStart(this)"><span class="quick-btn-icon">🌟</span>Read my full chart — name, birthday, birthplace</button>
-        <button class="quick-btn" onclick="quickStart(this)"><span class="quick-btn-icon">💑</span>Are my partner and I compatible?</button>
+        <button class="quick-btn" onclick="quickStart(this)"><span class="quick-btn-icon">🔗</span>Read a compatibility between two people</button>
         <button class="quick-btn" onclick="promptNumber('phone')"><span class="quick-btn-icon">📱</span>Score my phone number</button>
         <button class="quick-btn" onclick="promptNumber('address')"><span class="quick-btn-icon">🏠</span>Score my home address</button>
       </div>
@@ -345,6 +353,7 @@ function formatBirthday(input) {
 }
 
 async function submitContext() {
+  gtag('event', 'context_selected', {event_category: 'engagement', event_label: (contextSelections.purpose||'personal') + '_' + (contextSelections.goal||'harmony')});
   const card = document.getElementById('contextCard');
   const birthdayInput = document.getElementById('contextBirthday');
   const birthplaceInput = document.getElementById('contextBirthplace');
@@ -473,6 +482,7 @@ async function generateScorecard(numberText, numberType, ctx) {
     if (loadingEl) loadingEl.remove();
 
     if (scoreData && scoreData.scoreData) {
+      gtag('event', 'scorecard_generated', {event_category: 'engagement', event_label: scorecardContext.purpose + '_' + scorecardContext.goal, value: scoreData.scoreData.total});
       addScorecard(scoreData.scoreData, scorecardContext);
     } else {
       const chat = document.getElementById('chat');
@@ -626,6 +636,7 @@ async function submitWaitlist() {
   const btn = document.getElementById('wlSubmit');
   if (!name || !email || !email.includes('@')) { errEl.style.display = 'block'; return; }
   errEl.style.display = 'none'; btn.disabled = true; btn.textContent = 'Joining...';
+  gtag('event', 'waitlist_signup', {event_category: 'conversion', event_label: 'joined_waitlist'});
   try {
     await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, phone }) });
     document.getElementById('waitlistFormWrap').innerHTML = `
@@ -641,7 +652,9 @@ async function submitWaitlist() {
 }
 
 function quickStart(btn) {
-  document.getElementById('userInput').value = btn.querySelector('.quick-btn-icon').nextSibling.textContent.trim();
+  const label = btn.querySelector('.quick-btn-icon').nextSibling.textContent.trim();
+  gtag('event', 'quick_start_clicked', {event_category: 'engagement', event_label: label.substring(0,50)});
+  document.getElementById('userInput').value = label;
   sendMessage();
 }
 
@@ -743,7 +756,10 @@ async function sendMessage() {
       history.push({ role: 'assistant', content: data.reply });
       addMessage('mordoo', data.reply);
     }
-    if (messageCount >= MAX_MESSAGES) setTimeout(showWaitlistCard, 1000);
+    if (messageCount >= MAX_MESSAGES) {
+      gtag('event', 'session_limit_reached', {event_category: 'engagement', event_label: '5_questions_used'});
+      setTimeout(showWaitlistCard, 1000);
+    }
   } catch(err) {
     removeTyping();
     const chat = document.getElementById('chat');
