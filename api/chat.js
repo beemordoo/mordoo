@@ -27,6 +27,67 @@ export default async function handler(req, res) {
     const numberType = scorecardContext?.type || 'phone';
     const birthday = scorecardContext?.birthday || '';
     const birthplace = scorecardContext?.birthplace || '';
+    const birthTime = scorecardContext?.birthTime || '';
+
+    // Hora-sasat: birth hour analysis
+    let horaSaatContext = '';
+    if (birthTime) {
+      // Parse hour from time string
+      let hour = -1;
+      const timeMatch = birthTime.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+      if (timeMatch) {
+        hour = parseInt(timeMatch[1]);
+        const ampm = (timeMatch[3] || '').toLowerCase();
+        if (ampm === 'pm' && hour !== 12) hour += 12;
+        if (ampm === 'am' && hour === 12) hour = 0;
+      } else {
+        const approx = birthTime.toLowerCase();
+        if (approx.includes('morning') || approx.includes('dawn')) hour = 7;
+        else if (approx.includes('noon') || approx.includes('midday')) hour = 12;
+        else if (approx.includes('afternoon')) hour = 14;
+        else if (approx.includes('evening') || approx.includes('sunset')) hour = 18;
+        else if (approx.includes('night') || approx.includes('midnight')) hour = 0;
+        else if (approx.includes('late night')) hour = 2;
+      }
+
+      // Thai birth hour animals and their ruling planets
+      const hourAnimals = [
+        { name: 'Rat', planet: 'Neptune/Water', hours: [23,0], energy: 'perceptive, intuitive, ambitious in quiet', digits: [2,7] },
+        { name: 'Ox', planet: 'Saturn', hours: [1,2], energy: 'enduring, determined, slow-burning strength', digits: [8,4] },
+        { name: 'Tiger', planet: 'Mars', hours: [3,4], energy: 'bold, magnetic, restless fire', digits: [9,3] },
+        { name: 'Rabbit', planet: 'Moon', hours: [5,6], energy: 'gentle, graceful, artistic intuition', digits: [2,6] },
+        { name: 'Dragon', planet: 'Sun/Rahu', hours: [7,8], energy: 'powerful, visionary, commanding presence', digits: [1,4] },
+        { name: 'Snake', planet: 'Venus/Ketu', hours: [9,10], energy: 'wise, strategic, elegant and private', digits: [6,7] },
+        { name: 'Horse', planet: 'Mercury/Sun', hours: [11,12], energy: 'charismatic, free, born to move', digits: [5,1] },
+        { name: 'Goat', planet: 'Moon/Venus', hours: [13,14], energy: 'creative, sensitive, artistic soul', digits: [2,6] },
+        { name: 'Monkey', planet: 'Mercury', hours: [15,16], energy: 'clever, adaptable, strategically brilliant', digits: [5,3] },
+        { name: 'Rooster', planet: 'Venus/Sun', hours: [17,18], energy: 'precise, expressive, commanding confidence', digits: [6,1] },
+        { name: 'Dog', planet: 'Saturn/Mars', hours: [19,20], energy: 'loyal, protective, unwavering devotion', digits: [8,9] },
+        { name: 'Pig', planet: 'Jupiter', hours: [21,22], energy: 'generous, pleasure-seeking, spiritual warmth', digits: [3,6] },
+      ];
+
+      let birthHourAnimal = null;
+      if (hour >= 0) {
+        const h = hour % 24;
+        birthHourAnimal = hourAnimals.find(a => a.hours.includes(h) || a.hours.includes(h-1));
+        if (!birthHourAnimal && h === 23) birthHourAnimal = hourAnimals[0]; // Rat
+      }
+
+      if (birthHourAnimal) {
+        horaSaatContext = 'HORA-SASAT (โหราศาสตร์) BIRTH HOUR ANALYSIS:\n' +
+          'Born in the ' + birthHourAnimal.name + ' hour (' + birthTime + ') — ruling planet: ' + birthHourAnimal.planet + '\n' +
+          'Hour energy: ' + birthHourAnimal.energy + '\n' +
+          'Resonant digits for this birth hour: ' + birthHourAnimal.digits.join(' and ') + '\n\n' +
+          'Apply hora-sasat weighting:\n' +
+          '- If the number contains the resonant digits ' + birthHourAnimal.digits.join(' or ') + ' — boost those digit points by +2 to +4\n' +
+          '- The birth hour planet (' + birthHourAnimal.planet + ') amplifies compatible digits in the number\n' +
+          '- ' + birthHourAnimal.name + ' hour people carry ' + birthHourAnimal.energy + ' — a number that mirrors this energy scores 5-8 points higher\n' +
+          '- Mention the hora-sasat birth hour finding in the reading — it is considered sacred knowledge in Thai tradition\n' +
+          '- Combined lek-sasat + hora-sasat creates the most complete reading — acknowledge this integration';
+      } else {
+        horaSaatContext = 'Birth time provided but could not determine exact hour animal. Apply general hora-sasat principle: numbers whose root planet aligns with the time of day (morning=Sun/active, midday=peak energy, evening=Venus/social, night=Moon/intuitive) score 3-5 points higher.';
+      }
+    }
 
     // Calculate birthplace numerology if provided
     let birthplaceContext = '';
@@ -178,6 +239,8 @@ CONTEXT: ${contextGuide}
 ${birthdayContext}
 
 ${birthplaceContext}
+
+${horaSaatContext}
 
 PLANET MAP: 0=Neptune/neutral 1=Sun/positive 2=Moon/neutral 3=Jupiter/positive 4=Rahu/negative-personal-positive-work 5=Mercury/neutral 6=Venus/positive 7=Ketu/neutral 8=Saturn/neutral 9=Mars/positive-work-negative-personal
 
