@@ -208,6 +208,9 @@
       <textarea id="userInput" placeholder="Tell the mor doo your name, birthday, birthplace..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">✦</button>
     </div>
+    <div style="text-align:center;font-size:10px;color:var(--text-dim);opacity:0.7;margin-top:6px;letter-spacing:0.04em;">
+      🔒 Your information is not stored and is only used within this session. Nothing is saved after you leave.
+    </div>
   </div>
 </div>
 
@@ -231,10 +234,9 @@ function isPhoneOrAddress(text) {
   const t = text.trim();
   const phone = /(\+?1?\s?)?(\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4})/;
   const address = /\d+\s+\w+.*(street|st|ave|avenue|blvd|boulevard|road|rd|lane|ln|drive|dr|court|ct|way|place|pl|circle|cir)/i;
-  // Plain digits — 7 or more consecutive digits possibly with spaces/dashes
   const digitsOnly = /^[\d\s\-\(\)\+\.]{7,}$/.test(t);
-  // Short phrase with a number embedded like "my number is 1234567890"
-  const embeddedNumber = /\b\d{7,}\b/.test(t) && t.length < 60;
+  // Any phrase containing 7+ consecutive digits
+  const embeddedNumber = /\b\d{7,}\b/.test(t) && t.length < 100;
   return phone.test(t) || address.test(t) || digitsOnly || embeddedNumber;
 }
 
