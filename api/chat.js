@@ -67,27 +67,20 @@ export default async function handler(req, res) {
       const dayName = days[date.getDay()];
       const planet = planets[date.getDay()];
 
-      birthdayContext = \`
-BIRTHDAY COMPATIBILITY ANALYSIS:
-The person was born on \${birthday}.
-- Life Path Number: \${lpSum} — factor this into compatibility with the number's root
-- Birth Day Number: \${bdSum}
-- Thai Zodiac: Year of the \${zodiac}
-- Born on \${dayName} — ruling planet: \${planet}
-
-Compatibility rules:
-- If the number's root digit MATCHES the Life Path → VERY compatible (+8 to +12 points to total)
-- If the number's root digit is in the same numerological family (1/4/8 or 2/6/9 or 3/5/7) → compatible (+4 to +6 points)
-- If the number's root digit CLASHES with Life Path (e.g. LP4 with root 5, LP8 with root 3) → reduce total by 3-6 points
-- Mercury/Wednesday born people resonate with 5s — boost Mercury digit scores
-- Sun/Sunday born resonate with 1s and 9s — boost Sun digit scores  
-- Venus/Friday born resonate with 6s — boost Venus digit scores
-- Jupiter/Thursday born resonate with 3s — boost Jupiter digit scores
-- Saturn/Saturday born resonate with 8s — boost Saturn digit scores
-- Moon/Monday born resonate with 2s — boost Moon digit scores
-- Mars/Tuesday born resonate with 9s — boost Mars digit scores
-- Zodiac compatibility: Monkey/Rat/Dragon support bold numbers (3,9,1). Dog/Horse/Tiger support freedom numbers (5,1,9). Rabbit/Goat/Pig support harmony numbers (2,6,4). Ox/Snake/Rooster support disciplined numbers (4,8,7).
-Adjust the total score and category scores based on this birthday compatibility. Mention the compatibility finding in the reading.\`;
+      birthdayContext = 'BIRTHDAY COMPATIBILITY ANALYSIS:\n' +
+        'The person was born on ' + birthday + '.\n' +
+        '- Life Path Number: ' + lpSum + ' — factor this into compatibility with the number root\n' +
+        '- Birth Day Number: ' + bdSum + '\n' +
+        '- Thai Zodiac: Year of the ' + zodiac + '\n' +
+        '- Born on ' + dayName + ' — ruling planet: ' + planet + '\n\n' +
+        'Compatibility rules:\n' +
+        '- If the number root digit MATCHES the Life Path → VERY compatible (+8 to +12 points to total)\n' +
+        '- If the number root digit is in the same family (1/4/8 or 2/6/9 or 3/5/7) → compatible (+4 to +6 points)\n' +
+        '- If the number root digit CLASHES with Life Path → reduce total by 3-6 points\n' +
+        '- ' + planet + '/' + dayName + ' born resonate with their ruling planet digits\n' +
+        '- Mercury/Wednesday born resonate with 5s. Sun/Sunday with 1s and 9s. Venus/Friday with 6s. Jupiter/Thursday with 3s. Saturn/Saturday with 8s. Moon/Monday with 2s. Mars/Tuesday with 9s.\n' +
+        '- Zodiac: Monkey/Rat/Dragon support bold numbers (3,9,1). Dog/Horse/Tiger support freedom numbers (5,1,9). Rabbit/Goat/Pig support harmony numbers (2,6,4). Ox/Snake/Rooster support disciplined numbers (4,8,7).\n' +
+        'Adjust the total score and category scores based on birthday compatibility. Mention the compatibility in the reading.';
     } else {
       birthdayContext = 'No birthday provided — score based on number and context only.';
     }
@@ -131,40 +124,21 @@ Adjust the total score and category scores based on this birthday compatibility.
         - Reading should emphasize peace, love, family warmth, and emotional balance`;
     }
 
-    const SCORE_PROMPT = `You are a Thai numerology scoring engine using the Phalung Lek (พลังเลข) system. Analyze the submitted number and return ONLY valid JSON — no markdown, no explanation, no extra text.
+    const SCORE_PROMPT = `Thai numerology scorer. Return ONLY valid JSON, no markdown.
 
-CONTEXT FOR THIS READING:
-${contextGuide}
+CONTEXT: ${contextGuide}
 
 ${birthdayContext}
 
-PAIR ANALYSIS (critical — analyze these internal pairs):
-For each consecutive pair of digits, identify if they are:
-- Power pairs (15, 51, 39, 93, 19, 91) — authority and achievement
-- Wealth pairs (56, 65, 89, 98, 69, 96) — money and abundance  
-- Charm pairs (46, 64, 24, 42) — persuasion and magnetism
-- Wisdom pairs (13, 31, 35, 53) — intellect and strategy
-- Neutral pairs (22, 55, 00) — stable but unremarkable
-- Challenge pairs (14, 41, 44) — obstacles and instability
+PLANET MAP: 0=Neptune/neutral 1=Sun/positive 2=Moon/neutral 3=Jupiter/positive 4=Rahu/negative-personal-positive-work 5=Mercury/neutral 6=Venus/positive 7=Ketu/neutral 8=Saturn/neutral 9=Mars/positive-work-negative-personal
 
-The presence of multiple power/wealth/charm pairs should SIGNIFICANTLY boost the total score. A number with all good pairs should score 85-100.
+PAIRS: Power(15,51,39,93,19,91) Wealth(56,65,89,98,69,96) Charm(46,64,24,42) Wisdom(13,31,35,53) Challenge(14,41,44)
+Good pairs boost total. Multiple good pairs = 80-95. Challenge pairs reduce total.
 
-Planet mappings:
-0 = Neptune (ดาวเนปจูน) — flow, void — neutral
-1 = Sun (ดาวอาทิตย์) — leadership, vitality — positive
-2 = Moon (ดาวจันทร์) — intuition, emotion — neutral
-3 = Jupiter (ดาวพฤหัส) — wisdom, expansion — positive
-4 = Rahu (ดาวราหู) — in personal context: obstacles; in work context: wit and adaptability
-5 = Mercury (ดาวพุธ) — communication — neutral-positive
-6 = Venus (ดาวศุกร์) — love, beauty, wealth — positive
-7 = Ketu (ดาวเกตุ) — spirituality — neutral
-8 = Saturn (ดาวเสาร์) — karma, discipline, power — neutral-positive
-9 = Mars (ดาวอังคาร) — in personal context: conflict risk; in work context: drive and ambition — positive for work
+Return this JSON structure exactly:
+{"number":"","total":0,"rating":"Excellent|Good|Average|Challenging","ratingThai":"เยี่ยม|ดี|ปานกลาง|ท้าทาย","digits":[{"digit":0,"planet":"","planetThai":"","energy":"positive|neutral|negative","points":0}],"pairs":[{"pair":"","type":"Power|Wealth|Charm|Wisdom|Neutral|Challenge","meaning":""}],"categories":{"love":0,"wealth":0,"career":0,"luck":0,"family":0,"harmony":0,"success":0},"reading":""}
 
-Return ONLY this JSON — no extra text, no markdown:
-{"number":"","total":0,"rating":"","ratingThai":"","digits":[{"digit":0,"planet":"","planetThai":"","energy":"positive","points":0}],"pairs":[{"pair":"","type":"","meaning":""}],"categories":{"love":0,"wealth":0,"career":0,"luck":0,"family":0,"harmony":0,"success":0},"reading":""}
-
-Fill in all values. Keep "reading" under 50 words. Keep "meaning" in pairs under 5 words each.`;
+Rules: reading under 40 words. meaning under 4 words. All digits must be listed. All category values 0-100.`;
 
     try {
       const rawInput = messages[messages.length - 1].content.trim();
