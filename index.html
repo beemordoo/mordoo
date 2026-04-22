@@ -57,6 +57,9 @@
   .context-btn { background: var(--cream-dark); border: 1px solid rgba(184,134,11,0.2); border-radius: 10px; padding: 10px 14px; color: var(--text-mid); font-family: 'Sarabun', sans-serif; font-size: 13px; cursor: pointer; text-align: center; transition: all 0.2s ease; }
   .context-btn:hover { border-color: var(--gold); color: var(--brown-deep); background: var(--cream-darker); }
   .context-btn.selected { background: linear-gradient(135deg, var(--gold), var(--gold-bright)); color: #fff; border-color: var(--gold); }
+  .context-input { width: 100%; background: var(--cream-dark); border: 1px solid rgba(184,134,11,0.2); border-radius: 10px; padding: 10px 14px; color: var(--text); font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 300; outline: none; transition: border-color 0.2s; }
+  .context-input:focus { border-color: var(--gold); }
+  .context-input::placeholder { color: var(--text-dim); opacity: 0.7; }
   .context-submit { width: 100%; margin-top: 12px; background: linear-gradient(135deg, var(--gold), var(--gold-bright)); border: none; border-radius: 10px; padding: 12px; color: #fff; font-family: 'Cinzel Decorative', serif; font-size: 11px; letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s; opacity: 0.4; pointer-events: none; }
   .context-submit.ready { opacity: 1; pointer-events: all; }
   .context-submit.ready:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(184,134,11,0.3); }
@@ -230,7 +233,7 @@ function isPhoneOrAddress(text) {
   const address = /\d+\s+\w+.*(street|st|ave|avenue|blvd|boulevard|road|rd|lane|ln|drive|dr|court|ct|way|place|pl|circle|cir)/i;
   // Plain digits — 7 or more consecutive digits possibly with spaces/dashes
   const digitsOnly = /^[\d\s\-\(\)\+\.]{7,}$/.test(t);
-  // Short phrase with a number embedded like "my number is 2153564693"
+  // Short phrase with a number embedded like "my number is 1234567890"
   const embeddedNumber = /\b\d{7,}\b/.test(t) && t.length < 60;
   return phone.test(t) || address.test(t) || digitsOnly || embeddedNumber;
 }
@@ -273,6 +276,11 @@ function showContextCard(numberText, numberType) {
           <button class="context-btn" data-group="goal" data-val="wealth" onclick="selectContext(this)">💰 Wealth & Success</button>
         </div>
       </div>
+      <div class="context-group">
+        <div class="context-group-label">Your birthday (optional — makes the reading personal)</div>
+        <input type="text" class="context-input" id="contextBirthday" placeholder="MM/DD/YYYY" maxlength="10" oninput="formatBirthday(this)" />
+        <div style="font-size:11px;color:var(--text-dim);margin-top:5px;letter-spacing:0.03em;">Enter as month / day / year — example: 01/01/2001</div>
+      </div>
       <button class="context-submit" id="contextSubmit" onclick="submitContext()">Read My ${numberType === 'address' ? 'Address' : 'Number'} ✦</button>
     </div>
   `;
@@ -295,12 +303,23 @@ function selectContext(btn) {
   }
 }
 
+function formatBirthday(input) {
+  // Auto-format as MM/DD/YYYY
+  let val = input.value.replace(/\D/g, '');
+  if (val.length >= 3 && val.length <= 4) val = val.slice(0,2) + '/' + val.slice(2);
+  else if (val.length > 4) val = val.slice(0,2) + '/' + val.slice(2,4) + '/' + val.slice(4,8);
+  input.value = val;
+}
+
 async function submitContext() {
   const card = document.getElementById('contextCard');
+  const birthdayInput = document.getElementById('contextBirthday');
+  const birthday = birthdayInput ? birthdayInput.value.trim() : '';
   if (card) card.remove();
   const ctx = {
     purpose: contextSelections.purpose || 'personal',
-    goal: contextSelections.goal || 'harmony'
+    goal: contextSelections.goal || 'harmony',
+    birthday: birthday || ''
   };
   history.push({ role: 'user', content: pendingScoreNumber });
   isLoading = true;
@@ -314,7 +333,8 @@ async function generateScorecard(numberText, numberType, ctx) {
   const scorecardContext = {
     purpose: ctx.purpose || 'personal',
     goal: ctx.goal || 'harmony',
-    type: numberType
+    type: numberType,
+    birthday: ctx.birthday || ''
   };
 
   try {
