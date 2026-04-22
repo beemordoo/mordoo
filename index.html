@@ -509,12 +509,13 @@ function quickStart(btn) {
 function promptNumber(type) {
   const input = document.getElementById('userInput');
   if (type === 'phone') {
-    input.placeholder = 'Enter your phone number...';
+    input.value = 'My phone number is ';
   } else {
-    input.placeholder = 'Enter your home or business address...';
+    input.value = 'My address is ';
   }
-  input.value = '';
   input.focus();
+  // Move cursor to end
+  input.setSelectionRange(input.value.length, input.value.length);
   autoResize(input);
 }
 function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
