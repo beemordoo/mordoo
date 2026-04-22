@@ -305,6 +305,7 @@ async function submitContext() {
   history.push({ role: 'user', content: pendingScoreNumber });
   isLoading = true;
   document.getElementById('sendBtn').disabled = true;
+  showTyping();
   await generateScorecard(pendingScoreNumber, pendingScoreType, ctx);
   contextSelections = {};
 }
@@ -555,13 +556,12 @@ async function sendMessage() {
 
   if (needsScorecard) {
     const numType = detectNumberType(text);
-    history.push({ role: 'user', content: text });
     messageCount++;
     buildCounter();
-    isLoading = true;
-    document.getElementById('sendBtn').disabled = true;
-    showTyping();
-    await generateScorecard(text, numType, { purpose: 'personal', goal: 'harmony' });
+    pendingScoreNumber = text;
+    pendingScoreType = numType;
+    contextSelections = {};
+    showContextCard(text, numType);
     input.focus();
     return;
   }
