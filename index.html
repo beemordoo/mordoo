@@ -260,6 +260,7 @@ function showContextCard(numberText, numberType) {
   const div = document.createElement('div');
   div.className = 'message';
   div.id = 'contextCard';
+  div.style.opacity = '1'; // Override animation — context card must always be visible
   const label = numberType === 'address' ? 'address' : 'number';
   div.innerHTML = `
     <div class="context-card">
