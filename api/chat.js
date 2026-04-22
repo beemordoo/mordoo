@@ -11,8 +11,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid request' });
   }
 
-  // Limit to 5 messages per session
-  if (messages.length > 5) {
+  // Count only user messages — not total messages
+  const userMessageCount = messages.filter(m => m.role === 'user').length;
+
+  if (userMessageCount > 5) {
     return res.status(200).json({
       reply: `The mor doo has shared what the numbers have to offer for this session. 🌸\n\nA reading is like a garland — it has a beginning and an end. Sit with what you have received today, and return when you are ready for a new reading.\n\n*The numbers will always be here when you need them.*`,
       limitReached: true
@@ -112,8 +114,7 @@ Current year 2026, April 2026, Wood Horse year. Master Numbers always deserve sp
 
     const data = await response.json();
     const reply = data.content?.[0]?.text || 'The mor doo is silent. Please try again.';
-    const remaining = 5 - messages.length;
-    return res.status(200).json({ reply, remaining });
+    return res.status(200).json({ reply });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
