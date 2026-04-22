@@ -118,11 +118,18 @@ Return this exact JSON structure:
       const data = await response.json();
       const text = data.content?.[0]?.text || '{}';
       try {
-        const clean = text.replace(/```json|```/g, '').trim();
+        // Aggressively clean the response
+        let clean = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+        // Extract just the JSON object
+        const start = clean.indexOf('{');
+        const end = clean.lastIndexOf('}');
+        if (start !== -1 && end !== -1) {
+          clean = clean.substring(start, end + 1);
+        }
         const scoreData = JSON.parse(clean);
         return res.status(200).json({ scoreData });
       } catch(e) {
-        return res.status(200).json({ error: 'Could not parse score' });
+        return res.status(200).json({ error: 'Could not parse score: ' + e.message });
       }
     } catch (err) {
       return res.status(500).json({ error: err.message });
