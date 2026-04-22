@@ -450,7 +450,36 @@ BIRTH HOURS: Rat 11pm-1am, Ox 1-3am, Tiger 3-5am, Rabbit 5-7am, Dragon 7-9am, Sn
 NUMBERS: 1=pioneer, 2=diplomat, 3=communicator, 4=builder, 5=liberator, 6=nurturer, 7=seeker, 8=commander, 9=old soul
 
 AUSPICIOUS: 9 (progress), 8 (wealth), 6 (flow). Avoid 4 in prominent positions.
-Current year 2026, April 2026. The Thai/Chinese zodiac year for 2026 is the FIRE HORSE (ปีมะเส็ง ไฟ) — begins February 17 2026. Always say Fire Horse year when referencing 2026.`;
+${(() => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+
+  // Chinese New Year dates (approximate — always in Jan or Feb)
+  const cnyDates = {
+    2024: [2,10], 2025: [1,29], 2026: [2,17], 2027: [2,6],
+    2028: [1,26], 2029: [2,13], 2030: [2,3]
+  };
+
+  // Determine zodiac year — if before CNY, use previous year's animal
+  const cny = cnyDates[year] || [2,1];
+  const isBeforeCNY = month < cny[0] || (month === cny[0] && day < cny[1]);
+  const zodiacYear = isBeforeCNY ? year - 1 : year;
+
+  const animals = ['Rat','Ox','Tiger','Rabbit','Dragon','Snake','Horse','Goat','Monkey','Rooster','Dog','Pig'];
+  const elements = ['Metal','Metal','Water','Water','Wood','Wood','Fire','Fire','Earth','Earth'];
+  // 2020 = Rat, index 0 of a 12-year cycle
+  const animalIndex = ((zodiacYear - 2020) % 12 + 12) % 12;
+  // Element cycles every 2 years starting from Metal in 2020
+  const elementIndex = ((zodiacYear - 2020) % 10 + 10) % 10;
+  const elementNames = ['Metal','Metal','Water','Water','Wood','Wood','Fire','Fire','Earth','Earth'];
+  const animal = animals[animalIndex];
+  const element = elementNames[elementIndex];
+
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return 'Current date: ' + months[month-1] + ' ' + day + ', ' + year + '. The current Chinese/Thai zodiac year is the ' + element + ' ' + animal + ' year. Always reference the ' + element + ' ' + animal + ' when discussing the current year energy.';
+})()}`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
