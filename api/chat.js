@@ -99,7 +99,13 @@ Return ONLY this JSON — no extra text, no markdown:
 Fill in all values. Keep "reading" under 50 words. Keep "meaning" in pairs under 5 words each.`;
 
     try {
-      const lastMessage = messages[messages.length - 1].content;
+      const rawNumber = messages[messages.length - 1].content;
+      // Strip country code before scoring — country code carries no personal vibration
+      const lastMessage = rawNumber
+        .replace(/^\+?1[\s\-\.]?/, '')     // US/Canada +1
+        .replace(/^\+?66[\s\-\.]?/, '')    // Thailand +66
+        .replace(/^\+\d{1,3}[\s\-\.]?/, '') // Any other country code
+        .trim();
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
