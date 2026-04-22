@@ -510,18 +510,10 @@ function promptNumber(type) {
   const input = document.getElementById('userInput');
   if (type === 'phone') {
     input.placeholder = 'Enter your phone number...';
-    input.value = '';
   } else {
     input.placeholder = 'Enter your home or business address...';
-    input.value = '';
   }
-  // Remove welcome card so the conversation starts
-  const welcome = document.querySelector('.welcome-card');
-  if (welcome) welcome.remove();
-  // Show counter
-  if (document.getElementById('counterWrap').style.display === 'none') {
-    buildCounter();
-  }
+  input.value = '';
   input.focus();
   autoResize(input);
 }
