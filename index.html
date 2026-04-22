@@ -585,6 +585,7 @@ async function sendMessage() {
   isLoading = true; document.getElementById('sendBtn').disabled = true;
 
   // Normal chat
+  showTyping();
   try {
     const res = await fetch('/api/chat', {
       method: 'POST',
