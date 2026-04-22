@@ -340,35 +340,32 @@ async function generateScorecard(numberText, numberType, ctx) {
     birthday: ctx.birthday || ''
   };
 
-  // Ensure history has at least one message before calling chat API
-  const safeHistory = history.length > 0 ? history : [{ role: 'user', content: numberText }];
+  // Show a warm hardcoded intro — no extra API call needed
+  const typeLabel = numberType === 'address' ? 'address' : 'number';
+  const purposeLabel = scorecardContext.purpose === 'work' ? 'work' : 'personal';
+  const goalLabel = scorecardContext.goal === 'wealth' ? 'wealth and success' : 'harmony and peace';
+  const introText = `Ah, a ${typeLabel} that carries its own vibration. The mor doo reads this through the lens of ${purposeLabel} purpose and ${goalLabel} — the scorecard is preparing now.`;
+  const introItalic = `*The digits arrange themselves before the ancient eyes of the mor doo...*`;
+  const fullIntro = introText + '\n\n' + introItalic;
+  history.push({ role: 'assistant', content: fullIntro });
 
+  removeTyping();
+  addMessage('mordoo', fullIntro);
+
+  // Now fetch only the scorecard
   try {
-    // Run both API calls in parallel
-    const [scoreRes, chatRes] = await Promise.all([
-      fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: safeHistory, scorecard: true, scorecardContext })
-      }),
-      fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: safeHistory })
-      })
-    ]);
+    const safeHistory = history.filter(m => m.role === 'user').length > 0
+      ? history
+      : [{ role: 'user', content: numberText }];
 
-    removeTyping();
+    const scoreRes = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: safeHistory, scorecard: true, scorecardContext })
+    });
 
-    // Parse responses safely
-    let scoreData = null, chatData = null;
+    let scoreData = null;
     try { scoreData = await scoreRes.json(); } catch(e) { console.error('Score parse error:', e); }
-    try { chatData = await chatRes.json(); } catch(e) { console.error('Chat parse error:', e); }
-
-    if (chatData && chatData.reply) {
-      history.push({ role: 'assistant', content: chatData.reply });
-      addMessage('mordoo', chatData.reply);
-    }
 
     if (scoreData && scoreData.scoreData) {
       addScorecard(scoreData.scoreData, scorecardContext);
@@ -377,7 +374,6 @@ async function generateScorecard(numberText, numberType, ctx) {
     }
 
   } catch(err) {
-    removeTyping();
     console.error('generateScorecard error:', err);
     const chat = document.getElementById('chat');
     const d = document.createElement('div');
