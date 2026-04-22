@@ -25,6 +25,72 @@ export default async function handler(req, res) {
     const purpose = scorecardContext?.purpose || 'personal';
     const goal = scorecardContext?.goal || 'harmony';
     const numberType = scorecardContext?.type || 'phone';
+    const birthday = scorecardContext?.birthday || '';
+
+    // Calculate birthday numerology if provided
+    let birthdayContext = '';
+    if (birthday && birthday.match(/\d{1,2}\/\d{1,2}\/\d{4}/)) {
+      const parts = birthday.split('/');
+      const month = parseInt(parts[0]);
+      const day = parseInt(parts[1]);
+      const year = parseInt(parts[2]);
+      
+      // Life Path
+      const allDigits = birthday.replace(/\//g, '').split('').map(Number);
+      let lpSum = allDigits.reduce((a,b) => a+b, 0);
+      while (lpSum > 9 && lpSum !== 11 && lpSum !== 22 && lpSum !== 33 && lpSum !== 44) {
+        lpSum = lpSum.toString().split('').map(Number).reduce((a,b) => a+b, 0);
+      }
+      
+      // Birth day
+      let bdSum = day;
+      while (bdSum > 9 && bdSum !== 11 && bdSum !== 22) {
+        bdSum = bdSum.toString().split('').map(Number).reduce((a,b) => a+b, 0);
+      }
+
+      // Zodiac year
+      const zodiacYears = {
+        Rat: [1996,2008,2020], Ox: [1997,2009,2021], Tiger: [1998,2010,2022],
+        Rabbit: [1999,2011,2023], Dragon: [2000,2012,2024], Snake: [2001,2013,2025],
+        Horse: [2002,2014,2026], Goat: [2003,2015,2027], Monkey: [1992,2004,2016],
+        Rooster: [1993,2005,2017], Dog: [1994,2006,2018], Pig: [1995,2007,2019]
+      };
+      let zodiac = 'unknown';
+      for (const [animal, years] of Object.entries(zodiacYears)) {
+        if (years.includes(year)) { zodiac = animal; break; }
+      }
+
+      // Day of week ruling planet
+      const date = new Date(year, month-1, day);
+      const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const planets = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'];
+      const dayName = days[date.getDay()];
+      const planet = planets[date.getDay()];
+
+      birthdayContext = \`
+BIRTHDAY COMPATIBILITY ANALYSIS:
+The person was born on \${birthday}.
+- Life Path Number: \${lpSum} — factor this into compatibility with the number's root
+- Birth Day Number: \${bdSum}
+- Thai Zodiac: Year of the \${zodiac}
+- Born on \${dayName} — ruling planet: \${planet}
+
+Compatibility rules:
+- If the number's root digit MATCHES the Life Path → VERY compatible (+8 to +12 points to total)
+- If the number's root digit is in the same numerological family (1/4/8 or 2/6/9 or 3/5/7) → compatible (+4 to +6 points)
+- If the number's root digit CLASHES with Life Path (e.g. LP4 with root 5, LP8 with root 3) → reduce total by 3-6 points
+- Mercury/Wednesday born people resonate with 5s — boost Mercury digit scores
+- Sun/Sunday born resonate with 1s and 9s — boost Sun digit scores  
+- Venus/Friday born resonate with 6s — boost Venus digit scores
+- Jupiter/Thursday born resonate with 3s — boost Jupiter digit scores
+- Saturn/Saturday born resonate with 8s — boost Saturn digit scores
+- Moon/Monday born resonate with 2s — boost Moon digit scores
+- Mars/Tuesday born resonate with 9s — boost Mars digit scores
+- Zodiac compatibility: Monkey/Rat/Dragon support bold numbers (3,9,1). Dog/Horse/Tiger support freedom numbers (5,1,9). Rabbit/Goat/Pig support harmony numbers (2,6,4). Ox/Snake/Rooster support disciplined numbers (4,8,7).
+Adjust the total score and category scores based on this birthday compatibility. Mention the compatibility finding in the reading.\`;
+    } else {
+      birthdayContext = 'No birthday provided — score based on number and context only.';
+    }
 
     // Build context-specific scoring instructions
     let contextGuide = '';
@@ -69,6 +135,8 @@ export default async function handler(req, res) {
 
 CONTEXT FOR THIS READING:
 ${contextGuide}
+
+${birthdayContext}
 
 PAIR ANALYSIS (critical — analyze these internal pairs):
 For each consecutive pair of digits, identify if they are:
