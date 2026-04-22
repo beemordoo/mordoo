@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mor Doo · Thai Numerology & Fortune Telling</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=Sarabun:wght@300;400;500&display=swap" rel="stylesheet">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-T19WQEB31W"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-T19WQEB31W');
+</script>
+<style>
+:root {
+  --cream: #F5EFE4;
+  --cream-dark: #EDE4D4;
+  --cream-darker: #E2D5C0;
+  --brown-deep: #3D2B1F;
+  --brown-mid: #6B4C35;
+  --gold: #B8860B;
+  --gold-light: #C9A84C;
+  --gold-bright: #D4A843;
+  --gold-glow: rgba(184,134,11,0.3);
+  --text: #3D2B1F;
+  --text-mid: #6B4C35;
+  --text-dim: #9A7A5A;
+  --surface: #FBF7F0;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--cream);
+  color: var(--text);
+  font-family: 'Sarabun', sans-serif;
+  font-weight: 300;
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: default;
+}
+
+/* ── CANVAS BACKGROUND ── */
+#bgCanvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── NOISE TEXTURE OVERLAY ── */
+.noise {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  opacity: 0.03;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 256px;
+}
+
+/* ── MAIN LAYOUT ── */
+.page { position: relative; z-index: 2; }
+
+/* ── SECTION 1: HERO ── */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  position: relative;
+}
+
+.hero-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.5em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  opacity: 0;
+  animation: fadeUp 1s ease 0.3s forwards;
+}
+
+/* ── ORB ── */
+.orb-wrap {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 40px;
+  opacity: 0;
+  animation: fadeUp 1.2s ease 0.1s forwards;
+}
+
+.orb {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%,
+    rgba(212,168,67,0.9) 0%,
+    rgba(184,134,11,0.7) 30%,
+    rgba(107,76,53,0.5) 60%,
+    rgba(61,43,31,0.3) 100%
+  );
+  box-shadow:
+    0 0 40px rgba(184,134,11,0.4),
+    0 0 80px rgba(184,134,11,0.2),
+    0 0 120px rgba(184,134,11,0.1),
+    inset 0 0 40px rgba(255,255,200,0.2);
+  animation: orbPulse 4s ease-in-out infinite;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.orb:hover { transform: scale(1.05); }
+.orb:hover .orb-inner { opacity: 1; }
+
+.orb-inner {
+  position: absolute;
+  inset: 15%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%,
+    rgba(255,248,220,0.6) 0%,
+    transparent 60%
+  );
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+
+.orb-ring {
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  border: 1px solid rgba(184,134,11,0.25);
+  animation: orbRing 4s ease-in-out infinite;
+}
+
+.orb-ring-2 {
+  position: absolute;
+  inset: -24px;
+  border-radius: 50%;
+  border: 1px solid rgba(184,134,11,0.12);
+  animation: orbRing 4s ease-in-out infinite reverse;
+  animation-delay: 0.5s;
+}
+
+.orb-symbol {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 28px;
+  color: rgba(255,248,220,0.9);
+  text-shadow: 0 0 20px rgba(255,220,100,0.8);
+  pointer-events: none;
+}
+
+@keyframes orbPulse {
+  0%, 100% { box-shadow: 0 0 40px rgba(184,134,11,0.4), 0 0 80px rgba(184,134,11,0.2), 0 0 120px rgba(184,134,11,0.1), inset 0 0 40px rgba(255,255,200,0.2); }
+  50% { box-shadow: 0 0 60px rgba(184,134,11,0.6), 0 0 120px rgba(184,134,11,0.3), 0 0 180px rgba(184,134,11,0.15), inset 0 0 60px rgba(255,255,200,0.3); }
+}
+
+@keyframes orbRing {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.5; }
+}
+
+/* ── HERO TEXT ── */
+.hero-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(36px, 8vw, 72px);
+  color: var(--brown-deep);
+  line-height: 1;
+  margin-bottom: 8px;
+  opacity: 0;
+  animation: fadeUp 1s ease 0.5s forwards;
+}
+
+.hero-title span { color: var(--gold); }
+
+.hero-subtitle {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: clamp(15px, 2.5vw, 20px);
+  color: var(--text-mid);
+  margin-bottom: 12px;
+  opacity: 0;
+  animation: fadeUp 1s ease 0.7s forwards;
+}
+
+.hero-tagline {
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  margin-bottom: 48px;
+  opacity: 0;
+  animation: fadeUp 1s ease 0.9s forwards;
+}
+
+.hero-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 48px;
+  opacity: 0;
+  animation: fadeUp 1s ease 1s forwards;
+}
+
+.divider-line { width: 80px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-light), transparent); }
+.divider-gem { width: 8px; height: 8px; background: var(--gold); transform: rotate(45deg); }
+
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-bright));
+  color: #fff;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  padding: 18px 40px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 24px rgba(184,134,11,0.3);
+  opacity: 0;
+  animation: fadeUp 1s ease 1.2s forwards;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-cta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.hero-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(184,134,11,0.4); }
+.hero-cta:hover::before { opacity: 1; }
+
+.hero-scroll {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  animation: fadeUp 1s ease 1.8s forwards;
+  cursor: pointer;
+}
+
+.scroll-text { font-size: 10px; letter-spacing: 0.3em; color: var(--text-dim); text-transform: uppercase; }
+.scroll-line { width: 1px; height: 40px; background: linear-gradient(to bottom, var(--gold-light), transparent); animation: scrollPulse 2s ease-in-out infinite; }
+
+@keyframes scrollPulse { 0%, 100% { opacity: 0.4; transform: scaleY(1); } 50% { opacity: 1; transform: scaleY(1.2); } }
+
+/* ── SECTION 2: QUIZ ── */
+.quiz-section {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  position: relative;
+}
+
+.quiz-header {
+  text-align: center;
+  margin-bottom: 48px;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s ease;
+}
+
+.quiz-header.visible { opacity: 1; transform: translateY(0); }
+
+.quiz-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.4em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.quiz-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(24px, 4vw, 36px);
+  color: var(--brown-deep);
+  margin-bottom: 8px;
+}
+
+.quiz-desc {
+  font-size: 14px;
+  color: var(--text-dim);
+  max-width: 400px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* Quiz Steps */
+.quiz-container {
+  width: 100%;
+  max-width: 600px;
+  position: relative;
+}
+
+.quiz-step {
+  display: none;
+  opacity: 0;
+  transform: translateX(30px);
+  transition: all 0.5s ease;
+}
+
+.quiz-step.active {
+  display: block;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.quiz-step.exit {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+.quiz-question {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: clamp(18px, 3vw, 24px);
+  color: var(--brown-deep);
+  text-align: center;
+  margin-bottom: 32px;
+  line-height: 1.5;
+}
+
+.quiz-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.quiz-option {
+  background: var(--surface);
+  border: 1px solid rgba(184,134,11,0.2);
+  border-radius: 12px;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-family: 'Sarabun', sans-serif;
+  color: var(--text-mid);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.quiz-option:hover {
+  border-color: var(--gold);
+  background: var(--cream-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(184,134,11,0.15);
+}
+
+.quiz-option.selected {
+  background: linear-gradient(135deg, var(--gold), var(--gold-bright));
+  border-color: var(--gold);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(184,134,11,0.3);
+}
+
+.quiz-option-icon { font-size: 20px; display: block; margin-bottom: 6px; }
+.quiz-option-label { font-weight: 500; display: block; margin-bottom: 2px; }
+.quiz-option-sub { font-size: 12px; opacity: 0.8; }
+
+/* Quiz Progress */
+.quiz-progress {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+.quiz-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cream-darker);
+  border: 1px solid rgba(184,134,11,0.2);
+  transition: all 0.3s;
+}
+
+.quiz-dot.active { background: var(--gold); border-color: var(--gold); transform: scale(1.3); }
+.quiz-dot.done { background: var(--gold-light); border-color: var(--gold-light); }
+
+/* Quiz Result */
+.quiz-result {
+  background: var(--surface);
+  border: 1px solid rgba(184,134,11,0.25);
+  border-radius: 20px;
+  padding: 36px;
+  text-align: center;
+  box-shadow: 0 8px 40px rgba(61,43,31,0.08);
+  display: none;
+}
+
+.quiz-result.visible { display: block; animation: fadeUp 0.6s ease forwards; }
+
+.result-icon { font-size: 48px; margin-bottom: 16px; display: block; }
+.result-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 18px;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+
+.result-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  color: var(--brown-deep);
+  margin-bottom: 16px;
+}
+
+.result-reading {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 16px;
+  color: var(--brown-mid);
+  line-height: 1.8;
+  margin-bottom: 24px;
+  padding: 0 16px;
+}
+
+.result-tease {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 28px;
+  line-height: 1.7;
+}
+
+.result-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-bright));
+  color: #fff;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  padding: 16px 32px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(184,134,11,0.3);
+}
+
+.result-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(184,134,11,0.4); }
+
+.retake-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 16px;
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-family: 'Sarabun', sans-serif;
+  transition: color 0.2s;
+}
+
+.retake-btn:hover { color: var(--gold); }
+
+/* ── SECTION 3: FEATURES ── */
+.features-section {
+  padding: 80px 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.features-header {
+  text-align: center;
+  margin-bottom: 56px;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s ease;
+}
+
+.features-header.visible { opacity: 1; transform: translateY(0); }
+
+.features-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.4em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.features-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(22px, 4vw, 32px);
+  color: var(--brown-deep);
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.feature-card {
+  background: var(--surface);
+  border: 1px solid rgba(184,134,11,0.15);
+  border-radius: 16px;
+  padding: 28px;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s ease;
+}
+
+.feature-card.visible { opacity: 1; transform: translateY(0); }
+.feature-card:hover { border-color: rgba(184,134,11,0.3); transform: translateY(-4px); box-shadow: 0 8px 32px rgba(61,43,31,0.08); }
+
+.feature-icon { font-size: 32px; margin-bottom: 14px; display: block; }
+.feature-title { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--brown-deep); margin-bottom: 8px; }
+.feature-desc { font-size: 13px; color: var(--text-dim); line-height: 1.75; }
+
+/* ── SECTION 4: FINAL CTA ── */
+.final-section {
+  padding: 100px 24px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.final-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(184,134,11,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.final-content {
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s ease;
+}
+
+.final-content.visible { opacity: 1; transform: translateY(0); }
+
+.final-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(22px, 4vw, 36px);
+  color: var(--brown-deep);
+  margin-bottom: 12px;
+  line-height: 1.3;
+}
+
+.final-title span { color: var(--gold); }
+
+.final-subtitle {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 16px;
+  color: var(--text-mid);
+  margin-bottom: 40px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.7;
+}
+
+.final-disclaimer {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 20px;
+  opacity: 0.7;
+}
+
+/* ── CANDLES ── */
+.candle-row {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  margin-bottom: 48px;
+}
+
+.candle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.candle-flame {
+  width: 12px;
+  height: 18px;
+  background: radial-gradient(ellipse at 50% 80%, #FFD700, #FF8C00, transparent);
+  border-radius: 50% 50% 30% 30%;
+  animation: flicker 1.5s ease-in-out infinite alternate;
+  filter: blur(1px);
+  position: relative;
+}
+
+.candle-flame::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: #fff;
+  border-radius: 50%;
+  filter: blur(1px);
+}
+
+.candle-body {
+  width: 14px;
+  height: 40px;
+  background: linear-gradient(180deg, #F5EFE4 0%, #EDE4D4 100%);
+  border-radius: 2px;
+  border: 1px solid rgba(184,134,11,0.2);
+  position: relative;
+}
+
+.candle-body::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 2px;
+  width: 3px;
+  height: 100%;
+  background: rgba(255,255,255,0.4);
+  border-radius: 2px;
+}
+
+@keyframes flicker {
+  0% { transform: scaleX(1) scaleY(1) rotate(-2deg); opacity: 0.9; }
+  25% { transform: scaleX(0.9) scaleY(1.1) rotate(1deg); opacity: 1; }
+  50% { transform: scaleX(1.1) scaleY(0.95) rotate(-1deg); opacity: 0.85; }
+  75% { transform: scaleX(0.95) scaleY(1.05) rotate(2deg); opacity: 1; }
+  100% { transform: scaleX(1) scaleY(1) rotate(-1deg); opacity: 0.9; }
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 500px) {
+  .quiz-options { grid-template-columns: 1fr; }
+  .orb-wrap { width: 160px; height: 160px; }
+  .candle-row { gap: 24px; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+<div class="noise"></div>
+
+<div class="page">
+
+  <!-- ── HERO ── -->
+  <section class="hero">
+    <div class="hero-eyebrow">หมอดู · Ancient Thai Numerology</div>
+
+    <div class="orb-wrap" onclick="scrollToQuiz()">
+      <div class="orb">
+        <div class="orb-inner"></div>
+        <div class="orb-symbol">🔮</div>
+      </div>
+      <div class="orb-ring"></div>
+      <div class="orb-ring-2"></div>
+    </div>
+
+    <h1 class="hero-title">Mor <span>Doo</span></h1>
+    <div class="hero-subtitle">The Seer Who Sees</div>
+    <div class="hero-tagline">Thai numerology · Hora-sasat · Lek-sasat · Fortune telling with Bee</div>
+
+    <div class="hero-divider">
+      <div class="divider-line"></div>
+      <div class="divider-gem"></div>
+      <div class="divider-line"></div>
+    </div>
+
+    <a href="/" class="hero-cta" onclick="gtag('event','hero_cta_clicked',{event_category:'engagement'})">
+      Begin Your Reading ✦
+    </a>
+
+    <div class="hero-scroll" onclick="scrollToQuiz()">
+      <span class="scroll-text">Unlock your fortune</span>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- ── QUIZ ── -->
+  <section class="quiz-section" id="quizSection">
+    <div class="quiz-header" id="quizHeader">
+      <div class="quiz-eyebrow">✦ A Taste of the Mor Doo ✦</div>
+      <h2 class="quiz-title">What do your numbers reveal?</h2>
+      <p class="quiz-desc">Three questions. Ancient wisdom. A glimpse of what the mor doo sees in you.</p>
+    </div>
+
+    <div class="quiz-container">
+      <div class="quiz-progress" id="quizProgress">
+        <div class="quiz-dot active" id="dot0"></div>
+        <div class="quiz-dot" id="dot1"></div>
+        <div class="quiz-dot" id="dot2"></div>
+      </div>
+
+      <!-- Step 1: Birth Season -->
+      <div class="quiz-step active" id="step0">
+        <div class="quiz-question">When were you born into this world?</div>
+        <div class="quiz-options">
+          <button class="quiz-option" onclick="selectOption(0, 'spring', this)">
+            <span class="quiz-option-icon">🌸</span>
+            <span class="quiz-option-label">Spring</span>
+            <span class="quiz-option-sub">March · April · May</span>
+          </button>
+          <button class="quiz-option" onclick="selectOption(0, 'summer', this)">
+            <span class="quiz-option-icon">☀️</span>
+            <span class="quiz-option-label">Summer</span>
+            <span class="quiz-option-sub">June · July · August</span>
+          </button>
+          <button class="quiz-option" onclick="selectOption(0, 'autumn', this)">
+            <span class="quiz-option-icon">🍂</span>
+            <span class="quiz-option-label">Autumn</span>
+            <span class="quiz-option-sub">September · October · November</span>
+          </button>
+          <button class="quiz-option" onclick="selectOption(0, 'winter', this)">
+            <span class="quiz-option-icon">❄️</span>
+            <span class="quiz-option-label">Winter</span>
+            <span class="quiz-option-sub">December · January · February</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: What calls to you -->
+      <div class="quiz-step" id="step1">
+        <div class="quiz-question">What do you seek most right now?</div>
+        <div class="quiz-options">
+          <button class="quiz-option" onclick="selectOption(1, 'love', this)">
+            <span class="quiz-option-icon">💑</span>
+            <span class="quiz-option-label">Love & Connection</span>
+            <span class="quiz-option-sub">Relationships, soulmates, union</span>
+          </button>
+          <button class="quiz-option" onclick="selectOption(1, 'wealth', this)">
+            <span class="quiz-option-icon">💰</span>
+            <span class="quiz-option-label">Wealth & Success</span>
+            <span class="quiz-option-sub">Money, career, abundance</span>
+          </button>
+          <button class="quiz-option" onclick="selectOption(1, 'purpose', this)">
+            <span class="quiz-option-icon">🌟</span>
+            <span class="quiz-option-label">Purpose & Path</span>
+            <span class="quiz-option-sub">Direction, meaning, destiny</span>
+          </button>
+          <button class="quiz-option" onclick="selectOption(1, 'peace', this)">
+            <span class="quiz-option-icon">☮️</span>
+            <span class="quiz-option-label">Peace & Harmony</span>
+            <span class="quiz-option-sub">Balance, calm, healing</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: Instinct number -->
+      <div class="quiz-step" id="step2">
+        <div class="quiz-question">A number calls to you — which one?</div>
+        <div class="quiz-options">
+          <button class="quiz-option" onclick="selectOption(2, '1-3', this)">
+            <span class="quiz-option-icon">✨</span>
+            <span class="quiz-option-label">1, 2, or 3</span>
+            <span class="quiz-option-sub">Pioneer · Diplomat · Creator</span>
+          </button>
+          <button class="quiz-option" onclick="selectOption(2, '4-6', this)">
+            <span class="quiz-option-icon">🏛️</span>
+            <span class="quiz-option-label">4, 5, or 6</span>
+            <span class="quiz-option-sub">Builder · Liberator · Nurturer</span>
+          </button>
+          <button class="quiz-option" onclick="selectOption(2, '7-9', this)">
+            <span class="quiz-option-icon">🔮</span>
+            <span class="quiz-option-label">7, 8, or 9</span>
+            <span class="quiz-option-sub">Seeker · Commander · Old Soul</span>
+          </button>
+          <button class="quiz-option" onclick="selectOption(2, '11-22', this)">
+            <span class="quiz-option-icon">⚡</span>
+            <span class="quiz-option-label">11 or 22</span>
+            <span class="quiz-option-sub">Master Numbers — rare energy</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div class="quiz-result" id="quizResult">
+        <span class="result-icon" id="resultIcon">🔮</span>
+        <div class="result-title">The Mor Doo Sees</div>
+        <div class="result-name" id="resultName">The Illuminator</div>
+        <div class="result-reading" id="resultReading">Your reading appears here...</div>
+        <div class="result-tease" id="resultTease">This is only a glimpse. A full reading reveals your name energy, birth path, hora-sasat chart, and what 2026 holds for you specifically.</div>
+        <a href="/" class="result-cta" onclick="gtag('event','quiz_cta_clicked',{event_category:'conversion',event_label:'after_quiz'})">
+          Begin My Full Reading ✦
+        </a>
+        <button class="retake-btn" onclick="retakeQuiz()">↩ Take the quiz again</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FEATURES ── -->
+  <section class="features-section">
+    <div class="features-header" id="featuresHeader">
+      <div class="features-eyebrow">✦ What the Mor Doo Reads ✦</div>
+      <h2 class="features-title">Ancient sciences. Personal wisdom.</h2>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card" id="fc0">
+        <span class="feature-icon">📱</span>
+        <div class="feature-title">Phone & Address Scores</div>
+        <p class="feature-desc">Every number you live with carries a vibration. The mor doo scores your phone and home numbers across 7 life categories — love, wealth, career, luck, family, harmony, and success.</p>
+      </div>
+      <div class="feature-card" id="fc1">
+        <span class="feature-icon">🌟</span>
+        <div class="feature-title">Full Birth Chart Reading</div>
+        <p class="feature-desc">Your name, birthday, birthplace, and birth time combine into a complete reading. The mor doo weaves lek-sasat numerology with hora-sasat astrology for a reading unlike any other.</p>
+      </div>
+      <div class="feature-card" id="fc2">
+        <span class="feature-icon">🔗</span>
+        <div class="feature-title">Compatibility Readings</div>
+        <p class="feature-desc">Two people. Two energies. Whether romantic, family, or business — the mor doo reads how birth paths, name frequencies, and zodiac animals interact. Where you harmonize. Where friction lives. What the bond is truly for.</p>
+      </div>
+      <div class="feature-card" id="fc3">
+        <span class="feature-icon">📅</span>
+        <div class="feature-title">Monthly Forecasts</div>
+        <p class="feature-desc">What does 2026 hold for you month by month? The Fire Horse year amplifies everything — the mor doo reads your personal cycle against the year's energy to reveal what's coming.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FINAL CTA ── -->
+  <section class="final-section">
+    <div class="final-bg"></div>
+    <div class="final-content" id="finalContent">
+      <div class="candle-row">
+        <div class="candle"><div class="candle-flame" style="animation-delay:0s"></div><div class="candle-body"></div></div>
+        <div class="candle"><div class="candle-flame" style="animation-delay:0.3s"></div><div class="candle-body"></div></div>
+        <div class="candle"><div class="candle-flame" style="animation-delay:0.6s"></div><div class="candle-body"></div></div>
+        <div class="candle"><div class="candle-flame" style="animation-delay:0.2s"></div><div class="candle-body"></div></div>
+        <div class="candle"><div class="candle-flame" style="animation-delay:0.5s"></div><div class="candle-body"></div></div>
+      </div>
+      <h2 class="final-title">The numbers are<br><span>already speaking.</span></h2>
+      <p class="final-subtitle">Five questions. No account needed. No signup. Just your name, your numbers, and the ancient wisdom of the mor doo.</p>
+      <a href="/" class="hero-cta" onclick="gtag('event','final_cta_clicked',{event_category:'conversion'})">
+        Begin Your Reading ✦
+      </a>
+      <div class="final-disclaimer">🔒 Your information is not stored and is only used within your session.</div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+// ── FLOATING PARTICLES CANVAS ──
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+let W, H;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+class Particle {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * W;
+    this.y = H + 20;
+    this.size = 2 + Math.random() * 4;
+    this.speedY = -(0.3 + Math.random() * 0.7);
+    this.speedX = (Math.random() - 0.5) * 0.4;
+    this.opacity = 0;
+    this.maxOpacity = 0.06 + Math.random() * 0.1;
+    this.life = 0;
+    this.maxLife = 200 + Math.random() * 200;
+    this.rotation = Math.random() * Math.PI * 2;
+    this.rotSpeed = (Math.random() - 0.5) * 0.02;
+    this.type = Math.random() > 0.5 ? 'petal' : 'dot';
+  }
+  update() {
+    this.x += this.speedX;
+    this.y += this.speedY;
+    this.rotation += this.rotSpeed;
+    this.life++;
+    if (this.life < 30) this.opacity = (this.life / 30) * this.maxOpacity;
+    else if (this.life > this.maxLife - 30) this.opacity = ((this.maxLife - this.life) / 30) * this.maxOpacity;
+    else this.opacity = this.maxOpacity;
+    if (this.life >= this.maxLife) this.reset();
+  }
+  draw() {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotation);
+    ctx.globalAlpha = this.opacity;
+    ctx.fillStyle = '#B8860B';
+    if (this.type === 'petal') {
+      ctx.beginPath();
+      ctx.ellipse(0, 0, this.size, this.size * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.arc(0, 0, this.size * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+for (let i = 0; i < 40; i++) {
+  const p = new Particle();
+  p.y = Math.random() * H;
+  p.life = Math.random() * p.maxLife;
+  particles.push(p);
+}
+
+function animateCanvas() {
+  ctx.clearRect(0, 0, W, H);
+  particles.forEach(p => { p.update(); p.draw(); });
+  requestAnimationFrame(animateCanvas);
+}
+animateCanvas();
+
+// ── SCROLL ANIMATIONS ──
+const observers = [];
+function observeEl(el) {
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  }, { threshold: 0.2 });
+  obs.observe(el);
+}
+
+['quizHeader','featuresHeader','finalContent'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) observeEl(el);
+});
+
+['fc0','fc1','fc2','fc3'].forEach((id, i) => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.style.transitionDelay = (i * 0.12) + 's';
+    observeEl(el);
+  }
+});
+
+// ── SCROLL TO QUIZ ──
+function scrollToQuiz() {
+  document.getElementById('quizSection').scrollIntoView({ behavior: 'smooth' });
+  gtag('event', 'quiz_started', { event_category: 'engagement' });
+}
+
+// ── QUIZ LOGIC ──
+let answers = {};
+let currentStep = 0;
+
+const quizData = {
+  spring: {
+    name: 'The Awakener',
+    icon: '🌸',
+    reading: 'Born as the earth renews itself, your soul carries the energy of beginnings and bold new starts. The mor doo sees someone who initiates — who plants seeds that others eventually harvest. Your numbers carry a restlessness that is actually your greatest gift.'
+  },
+  summer: {
+    name: 'The Illuminator',
+    icon: '☀️',
+    reading: 'The height of light shaped your arrival. The mor doo sees someone who commands attention without seeking it — your energy fills rooms before you speak. There is a fire in your numerological blueprint that the Fire Horse year of 2026 will amplify greatly.'
+  },
+  autumn: {
+    name: 'The Harvester',
+    icon: '🍂',
+    reading: 'Born as the world releases what it has grown, you carry the energy of completion and wisdom. The mor doo sees someone who finishes what others abandon — whose patience is often mistaken for slowness. Your numbers speak of a late bloom that outlasts everything else.'
+  },
+  winter: {
+    name: 'The Deep One',
+    icon: '❄️',
+    reading: 'In stillness you arrived, and stillness is where your power lives. The mor doo sees someone whose inner world is vastly more complex than what they show. Your numbers carry spiritual depth that makes you rare — and sometimes lonely. This is the year to let someone in.'
+  }
+};
+
+const seekReadings = {
+  love: 'The mor doo notes that love is your current call — and your numbers have things to say about who is truly compatible with your frequency.',
+  wealth: 'Wealth is your current focus — and the numbers around you (your phone, your address, your birth path) are either supporting or resisting that flow.',
+  purpose: 'Purpose is your seeking — and this is exactly what a full birth path reading reveals. The mor doo sees direction written in your numbers.',
+  peace: 'Peace is what you need — and the mor doo reads harmony scores in every number around you. Some of yours may be creating resistance you haven\'t noticed.'
+};
+
+function selectOption(step, value, btn) {
+  document.querySelectorAll(`#step${step} .quiz-option`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  answers[step] = value;
+
+  setTimeout(() => {
+    if (step < 2) {
+      goToStep(step + 1);
+    } else {
+      showResult();
+    }
+  }, 400);
+}
+
+function goToStep(next) {
+  const current = document.getElementById('step' + currentStep);
+  current.classList.add('exit');
+  setTimeout(() => {
+    current.classList.remove('active', 'exit');
+    current.style.display = 'none';
+    currentStep = next;
+    const nextEl = document.getElementById('step' + next);
+    nextEl.style.display = 'block';
+    setTimeout(() => nextEl.classList.add('active'), 10);
+    updateProgress();
+  }, 300);
+}
+
+function updateProgress() {
+  for (let i = 0; i < 3; i++) {
+    const dot = document.getElementById('dot' + i);
+    dot.classList.remove('active', 'done');
+    if (i < currentStep) dot.classList.add('done');
+    else if (i === currentStep) dot.classList.add('active');
+  }
+}
+
+function showResult() {
+  const seasonKey = answers[0];
+  const seekKey = answers[1];
+  const data = quizData[seasonKey] || quizData['summer'];
+  const seekText = seekReadings[seekKey] || seekReadings['purpose'];
+
+  document.getElementById('resultIcon').textContent = data.icon;
+  document.getElementById('resultName').textContent = data.name;
+  document.getElementById('resultReading').textContent = data.reading;
+  document.getElementById('resultTease').textContent = seekText + ' Begin your full reading to find out.';
+
+  document.querySelectorAll('.quiz-step').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
+  document.getElementById('quizProgress').style.display = 'none';
+
+  const result = document.getElementById('quizResult');
+  result.classList.add('visible');
+
+  gtag('event', 'quiz_completed', {
+    event_category: 'engagement',
+    event_label: seasonKey + '_' + seekKey
+  });
+}
+
+function retakeQuiz() {
+  answers = {};
+  currentStep = 0;
+  document.getElementById('quizResult').classList.remove('visible');
+  document.getElementById('quizProgress').style.display = 'flex';
+  document.querySelectorAll('.quiz-step').forEach(s => { s.classList.remove('active', 'exit'); s.style.display = 'none'; });
+  document.querySelectorAll('.quiz-option').forEach(b => b.classList.remove('selected'));
+  const step0 = document.getElementById('step0');
+  step0.style.display = 'block';
+  setTimeout(() => step0.classList.add('active'), 10);
+  updateProgress();
+  gtag('event', 'quiz_retaken', { event_category: 'engagement' });
+}
+</script>
+</body>
+</html>
