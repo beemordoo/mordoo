@@ -285,21 +285,27 @@ function selectContext(btn) {
   const group = btn.dataset.group;
   const val = btn.dataset.val;
   contextSelections[group] = val;
+  // Update visual selection
   document.querySelectorAll(`[data-group="${group}"]`).forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
-  if (contextSelections.purpose && contextSelections.goal) {
-    document.getElementById('contextSubmit').classList.add('ready');
+  // Enable submit only when both are selected
+  const submit = document.getElementById('contextSubmit');
+  if (submit && contextSelections.purpose && contextSelections.goal) {
+    submit.classList.add('ready');
   }
 }
 
 async function submitContext() {
   const card = document.getElementById('contextCard');
   if (card) card.remove();
-  // Now push the number to history and fire API calls
+  const ctx = {
+    purpose: contextSelections.purpose || 'personal',
+    goal: contextSelections.goal || 'harmony'
+  };
   history.push({ role: 'user', content: pendingScoreNumber });
   isLoading = true;
   document.getElementById('sendBtn').disabled = true;
-  await generateScorecard(pendingScoreNumber, pendingScoreType, contextSelections);
+  await generateScorecard(pendingScoreNumber, pendingScoreType, ctx);
   contextSelections = {};
 }
 
@@ -539,14 +545,14 @@ async function sendMessage() {
   const needsScorecard = isPhoneOrAddress(text);
 
   if (needsScorecard) {
-    // Push to history and increment counter AFTER context selection
-    // so the chat API doesn't fire a full text reading prematurely
-    pendingScoreNumber = text;
-    pendingScoreType = detectNumberType(text);
-    contextSelections = {};
+    const numType = detectNumberType(text);
+    history.push({ role: 'user', content: text });
     messageCount++;
     buildCounter();
-    showContextCard(text, pendingScoreType);
+    isLoading = true;
+    document.getElementById('sendBtn').disabled = true;
+    showTyping();
+    await generateScorecard(text, numType, { purpose: 'personal', goal: 'harmony' });
     input.focus();
     return;
   }
