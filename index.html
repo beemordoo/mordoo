@@ -237,22 +237,27 @@ let pendingScoreNumber = null, pendingScoreType = null;
 function isPhoneOrAddress(text) {
   const t = text.trim();
 
-  // NEVER trigger scorecard if message looks like compatibility or personal info
-  // These patterns indicate a conversational reading not a number score
-  const isConversational = /\b(partner|spouse|husband|wife|boyfriend|girlfriend|compatible|compatibility|born|birth|my name|his name|her name|their name|and i|and me|we are|we were|\d{1,2}\/\d{1,2}\/\d{4}.*\d{1,2}\/\d{1,2}\/\d{4})/i.test(t);
-  if (isConversational) return false;
+  // Check conversational patterns FIRST — these should never trigger scorecard
+  const hasMultipleDates = (t.match(/\d{1,2}\/\d{1,2}\/\d{4}/g) || []).length >= 2;
+  const hasCompatibilityWords = /\b(partner|spouse|husband|wife|boyfriend|girlfriend|compatible|compatibility|born|birth|my name|his name|her name|their name|and i|and me|we are|we were)\b/i.test(t);
+  if (hasMultipleDates || hasCompatibilityWords) return false;
 
-  // Also skip if message has multiple words with letters — likely conversational
+  // Address pattern — matches regardless of length
+  const address = /\d+\s+\w+.*(street|st|ave|avenue|blvd|boulevard|road|rd|lane|ln|drive|dr|court|ct|way|place|pl|circle|cir)/i;
+  if (address.test(t)) return true;
+
+  // Phone pattern
+  const phone = /(\+?1?\s?)?(\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4})/;
+  if (phone.test(t)) return true;
+
+  // Skip long conversational messages
   const wordCount = t.split(/\s+/).filter(w => /[a-zA-Z]/.test(w)).length;
   if (wordCount > 4) return false;
 
-  const phone = /(\+?1?\s?)?(\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4})/;
-  const address = /\d+\s+\w+.*(street|st|ave|avenue|blvd|boulevard|road|rd|lane|ln|drive|dr|court|ct|way|place|pl|circle|cir)/i;
+  // Plain digit strings
   const digitsOnly = /^[\d\s\-\(\)\+\.]{7,}$/.test(t);
-  // Embedded number only if message is short and mostly numeric
   const embeddedNumber = /\b\d{7,}\b/.test(t) && t.length < 30;
-
-  return phone.test(t) || address.test(t) || digitsOnly || embeddedNumber;
+  return digitsOnly || embeddedNumber;
 }
 
 function detectNumberType(text) {
