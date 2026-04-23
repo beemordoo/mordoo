@@ -245,24 +245,32 @@ let pendingScoreNumber = null, pendingScoreType = null;
 function isPhoneOrAddress(text) {
   const t = text.trim();
 
-  // Check conversational patterns FIRST — these should never trigger scorecard
+  // Address check first — before any other filtering
+  const address = /\d+\s+\w+.*(street|st\b|ave|avenue|blvd|boulevard|road|rd\b|lane|ln\b|drive|dr\b|court|ct\b|way|place|pl\b|circle|cir)/i;
+  if (address.test(t)) return true;
+
+  // Strip dates before phone detection so MM/DD/YYYY doesn't match as a phone number
+  const stripped = t.replace(/\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/g, '');
+
+  // Conversational patterns — never trigger scorecard
   const hasMultipleDates = (t.match(/\d{1,2}\/\d{1,2}\/\d{4}/g) || []).length >= 2;
   const hasCompatibilityWords = /\b(partner|spouse|husband|wife|boyfriend|girlfriend|compatible|compatibility|born|birth|my name|his name|her name|their name|and i|and me|we are|we were)\b/i.test(t);
   if (hasMultipleDates || hasCompatibilityWords) return false;
 
-  // Address pattern — matches regardless of length
-  const address = /\d+\s+\w+.*(street|st|ave|avenue|blvd|boulevard|road|rd|lane|ln|drive|dr|court|ct|way|place|pl|circle|cir)/i;
-  if (address.test(t)) return true;
+  // If way more letters than digits it's a conversation not a number submission
+  const digitCount = (stripped.match(/\d/g) || []).length;
+  const letterCount = (t.match(/[a-zA-Z]/g) || []).length;
+  if (letterCount > digitCount * 2 && digitCount < 7) return false;
 
-  // Phone pattern
+  // Phone pattern — run on date-stripped text
   const phone = /(\+?1?\s?)?(\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4})/;
-  if (phone.test(t)) return true;
+  if (phone.test(stripped)) return true;
 
   // Skip long conversational messages
   const wordCount = t.split(/\s+/).filter(w => /[a-zA-Z]/.test(w)).length;
   if (wordCount > 4) return false;
 
-  // Plain digit strings
+  // Plain digit strings or short messages with embedded long number
   const digitsOnly = /^[\d\s\-\(\)\+\.]{7,}$/.test(t);
   const embeddedNumber = /\b\d{7,}\b/.test(t) && t.length < 30;
   return digitsOnly || embeddedNumber;
@@ -281,18 +289,79 @@ function getRatingClass(r) {
   return 'challenging';
 }
 
+function extractFromHistory() {
+  // Scan conversation history for birthday, birthplace, birth time already shared
+  const allText = history.map(m => m.content).join(' ');
+
+  // Birthday: MM/DD/YYYY
+  const bdMatch = allText.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b/);
+  const birthday = bdMatch ? bdMatch[1].replace(/-/g,'/') : '';
+
+  // Birthplace: look for city/state/country patterns after keywords
+  const bpMatch = allText.match(/(?:born in|birthplace[:\s]+|from\s+|in\s+)([A-Z][a-zA-Z\s,]+?)(?:\s+at|\s+on|\s+\d|[,\.\n]|$)/i);
+  const birthplace = bpMatch ? bpMatch[1].trim() : '';
+
+  // Birth time: look for time patterns
+  const btMatch = allText.match(/\b(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)|morning|afternoon|evening|night)\b/i);
+  const birthTime = btMatch ? btMatch[1] : '';
+
+  return { birthday, birthplace, birthTime };
+}
+
 function showContextCard(numberText, numberType) {
   pendingScoreNumber = numberText;
   pendingScoreType = numberType;
+
+  // Extract any info already shared in conversation
+  const extracted = extractFromHistory();
+  const hasBirthday = extracted.birthday || (savedContext && savedContext.birthday);
+  const hasBirthplace = extracted.birthplace || (savedContext && savedContext.birthplace);
+  const hasBirthTime = extracted.birthTime || (savedContext && savedContext.birthTime);
+  const prefillBirthday = (savedContext && savedContext.birthday) || extracted.birthday || '';
+  const prefillBirthplace = (savedContext && savedContext.birthplace) || extracted.birthplace || '';
+  const prefillBirthTime = (savedContext && savedContext.birthTime) || extracted.birthTime || '';
+
   const chat = document.getElementById('chat');
   const div = document.createElement('div');
   div.className = 'message';
   div.id = 'contextCard';
-  div.style.opacity = '1'; // Override animation — context card must always be visible
+  div.style.opacity = '1';
   const label = numberType === 'address' ? 'address' : 'number';
+
+  // Build birthday field — hidden with value if already known, shown if not
+  const birthdayField = hasBirthday ? `
+      <input type="hidden" id="contextBirthday" value="${prefillBirthday}" />` : `
+      <div class="context-group">
+        <div class="context-group-label">Your birthday (optional — makes the reading personal)</div>
+        <input type="text" class="context-input" id="contextBirthday" placeholder="MM/DD/YYYY" maxlength="10" oninput="formatBirthday(this)" value="${prefillBirthday}" />
+        <div style="font-size:11px;color:var(--text-dim);margin-top:5px;letter-spacing:0.03em;">Enter as month / day / year — example: 01/01/2001</div>
+      </div>`;
+
+  const birthplaceField = hasBirthplace ? `
+      <input type="hidden" id="contextBirthplace" value="${prefillBirthplace}" />` : `
+      <div class="context-group">
+        <div class="context-group-label">Where were you born? (optional — city, region, or country)</div>
+        <input type="text" class="context-input" id="contextBirthplace" placeholder="e.g. Philadelphia, Thailand, or Vientiane" maxlength="60" value="${prefillBirthplace}" />
+        <div style="font-size:11px;color:var(--text-dim);margin-top:5px;letter-spacing:0.03em;">Enter whatever you know — city is most precise, country still helps</div>
+      </div>`;
+
+  const birthTimeField = hasBirthTime ? `
+      <input type="hidden" id="contextBirthTime" value="${prefillBirthTime}" />` : `
+      <div class="context-group">
+        <div class="context-group-label">Birth time (optional — hora-sasat deepens the reading)</div>
+        <input type="text" class="context-input" id="contextBirthTime" placeholder="e.g. 12:15 AM or morning / afternoon / evening" maxlength="30" value="${prefillBirthTime}" />
+        <div style="font-size:11px;color:var(--text-dim);margin-top:5px;letter-spacing:0.03em;">Even approximate is helpful — morning, afternoon, evening, or night</div>
+      </div>`;
+
+  // If all three are already known, show a simpler card
+  const alreadyKnowsYou = hasBirthday && hasBirthplace;
+  const titleText = alreadyKnowsYou
+    ? `The Mor Doo already knows you. Just tell her the purpose of this ${label}.`
+    : `Before the Mor Doo reads this ${label}, help her understand its purpose.`;
+
   div.innerHTML = `
     <div class="context-card">
-      <div class="context-title">Before the Mor Doo reads this ${label}, help her understand its purpose.</div>
+      <div class="context-title">${titleText}</div>
       <div class="context-group">
         <div class="context-group-label">This is my...</div>
         <div class="context-btns">
@@ -307,21 +376,9 @@ function showContextCard(numberText, numberType) {
           <button class="context-btn" data-group="goal" data-val="wealth" onclick="selectContext(this)">💰 Wealth & Success</button>
         </div>
       </div>
-      <div class="context-group">
-        <div class="context-group-label">Your birthday (optional — makes the reading personal)</div>
-        <input type="text" class="context-input" id="contextBirthday" placeholder="MM/DD/YYYY" maxlength="10" oninput="formatBirthday(this)" />
-        <div style="font-size:11px;color:var(--text-dim);margin-top:5px;letter-spacing:0.03em;">Enter as month / day / year — example: 01/01/2001</div>
-      </div>
-      <div class="context-group">
-        <div class="context-group-label">Where were you born? (optional — city, region, or country)</div>
-        <input type="text" class="context-input" id="contextBirthplace" placeholder="e.g. Philadelphia, Thailand, or Vientiane" maxlength="60" />
-        <div style="font-size:11px;color:var(--text-dim);margin-top:5px;letter-spacing:0.03em;">Enter whatever you know — city is most precise, country still helps</div>
-      </div>
-      <div class="context-group">
-        <div class="context-group-label">Birth time (optional — hora-sasat deepens the reading)</div>
-        <input type="text" class="context-input" id="contextBirthTime" placeholder="e.g. 12:15 AM or morning / afternoon / evening" maxlength="30" />
-        <div style="font-size:11px;color:var(--text-dim);margin-top:5px;letter-spacing:0.03em;">Even approximate is helpful — morning, afternoon, evening, or night</div>
-      </div>
+      ${birthdayField}
+      ${birthplaceField}
+      ${birthTimeField}
       <button class="context-submit" id="contextSubmit" onclick="submitContext()">Read My ${numberType === 'address' ? 'Address' : 'Number'} ✦</button>
     </div>
   `;
