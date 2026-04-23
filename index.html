@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>หมอดู · Mor Doo · Thai Fortune Telling</title>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-T19WQEB31W"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-T19WQEB31W');
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Sarabun:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F5EFE4; --cream-dark: #EDE4D4; --cream-darker: #E2D5C0;
+    --brown-deep: #3D2B1F; --brown-mid: #6B4C35;
+    --gold: #B8860B; --gold-light: #C9A84C; --gold-bright: #D4A843;
+    --text: #3D2B1F; --text-mid: #6B4C35; --text-dim: #9A7A5A;
+    --surface: #FBF7F0; --surface3: #EDE4D4;
+    --green: #2D6A4A; --red: #8B2A2A; --orange: #B8600B;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--cream); color: var(--text); font-family: 'Sarabun', sans-serif; font-weight: 300; min-height: 100vh; overflow-x: hidden; }
+  .bg-layer { position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(184,134,11,0.06) 0%, transparent 60%), radial-gradient(ellipse 60% 80% at 80% 90%, rgba(61,43,31,0.04) 0%, transparent 60%); pointer-events: none; }
+  .petals { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .petal { position: absolute; width: var(--size); height: var(--size); background: var(--gold-light); border-radius: 50% 0 50% 0; opacity: 0; animation: floatPetal var(--dur) ease-in-out infinite; animation-delay: var(--delay); transform: rotate(var(--rot)); }
+  @keyframes floatPetal { 0% { opacity: 0; transform: translateY(0) rotate(var(--rot)) scale(0.8); } 20% { opacity: var(--max-op); } 80% { opacity: var(--max-op); } 100% { opacity: 0; transform: translateY(-30px) rotate(calc(var(--rot) + 45deg)) scale(1.1); } }
+  .app { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 0 20px 100px; }
+  .header { text-align: center; padding: 60px 0 40px; animation: fadeDown 1s ease forwards; border-bottom: 1px solid rgba(184,134,11,0.2); margin-bottom: 32px; }
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  .thai-title { font-size: 12px; font-weight: 500; letter-spacing: 0.45em; color: var(--gold); text-transform: uppercase; margin-bottom: 12px; }
+  .main-title { font-family: 'Cinzel Decorative', serif; font-size: clamp(26px, 5vw, 44px); color: var(--brown-deep); line-height: 1.1; margin-bottom: 8px; }
+  .main-title span { color: var(--gold); }
+  .subtitle { font-family: 'Playfair Display', serif; font-style: italic; font-size: 15px; color: var(--text-mid); margin-bottom: 20px; }
+  .divider { display: flex; align-items: center; gap: 16px; justify-content: center; margin: 16px 0; }
+  .divider-line { width: 60px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-light), transparent); }
+  .divider-gem { width: 7px; height: 7px; background: var(--gold); transform: rotate(45deg); }
+  .counter { text-align: center; font-size: 12px; color: var(--text-dim); margin-bottom: 8px; letter-spacing: 0.05em; }
+  .counter-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 24px; }
+  .counter-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cream-darker); border: 1px solid rgba(184,134,11,0.2); transition: all 0.3s ease; }
+  .counter-dot.used { background: var(--gold); border-color: var(--gold); }
+  .counter-dot.current { background: var(--gold-bright); border-color: var(--gold-bright); box-shadow: 0 0 6px rgba(184,134,11,0.4); }
+  .chat-container { display: flex; flex-direction: column; gap: 20px; margin-bottom: 24px; min-height: 200px; }
+  .message { animation: fadeUp 0.5s ease forwards; opacity: 0; }
+  .message-mordoo { display: flex; gap: 14px; align-items: flex-start; }
+  .mordoo-avatar { width: 38px; height: 38px; min-width: 38px; background: linear-gradient(135deg, var(--gold), var(--gold-bright)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; box-shadow: 0 2px 12px rgba(184,134,11,0.25); margin-top: 4px; border: 2px solid rgba(184,134,11,0.2); }
+  .mordoo-bubble { background: var(--surface); border: 1px solid rgba(184,134,11,0.2); border-radius: 4px 20px 20px 20px; padding: 18px 22px; font-size: 15px; line-height: 1.85; color: var(--text); flex: 1; box-shadow: 0 2px 16px rgba(61,43,31,0.08); }
+  .mordoo-bubble em { font-family: 'Playfair Display', serif; font-style: italic; color: var(--gold); }
+  .mordoo-bubble strong { color: var(--brown-deep); font-weight: 600; }
+  .mordoo-bubble .section-header { font-family: 'Cinzel Decorative', serif; font-size: 10px; letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; margin: 16px 0 8px; }
+  .mordoo-bubble .reading-block { border-left: 2px solid var(--gold-light); padding-left: 14px; margin: 12px 0; font-family: 'Playfair Display', serif; font-style: italic; color: var(--brown-mid); font-size: 14px; line-height: 1.7; }
+  .message-user { display: flex; justify-content: flex-end; }
+  .user-bubble { background: var(--surface3); border: 1px solid rgba(184,134,11,0.15); border-radius: 20px 20px 4px 20px; padding: 12px 18px; font-size: 15px; color: var(--text-mid); max-width: 80%; }
+
+  /* Context Card */
+  .context-card { background: var(--surface); border: 1px solid rgba(184,134,11,0.25); border-radius: 16px; padding: 22px; animation: fadeUp 0.4s ease forwards; opacity: 0; box-shadow: 0 4px 20px rgba(61,43,31,0.08); }
+  .context-title { font-family: 'Playfair Display', serif; font-style: italic; font-size: 15px; color: var(--brown-mid); text-align: center; margin-bottom: 16px; line-height: 1.5; }
+  .context-group { margin-bottom: 14px; }
+  .context-group-label { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
+  .context-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .context-btn { background: var(--cream-dark); border: 1px solid rgba(184,134,11,0.2); border-radius: 10px; padding: 10px 14px; color: var(--text-mid); font-family: 'Sarabun', sans-serif; font-size: 13px; cursor: pointer; text-align: center; transition: all 0.2s ease; }
+  .context-btn:hover { border-color: var(--gold); color: var(--brown-deep); background: var(--cream-darker); }
+  .context-btn.selected { background: linear-gradient(135deg, var(--gold), var(--gold-bright)); color: #fff; border-color: var(--gold); }
+  .context-input { width: 100%; background: var(--cream-dark); border: 1px solid rgba(184,134,11,0.2); border-radius: 10px; padding: 10px 14px; color: var(--text); font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 300; outline: none; transition: border-color 0.2s; }
+  .context-input:focus { border-color: var(--gold); }
+  .context-input::placeholder { color: var(--text-dim); opacity: 0.7; }
+  .context-submit { width: 100%; margin-top: 12px; background: linear-gradient(135deg, var(--gold), var(--gold-bright)); border: none; border-radius: 10px; padding: 12px; color: #fff; font-family: 'Cinzel Decorative', serif; font-size: 11px; letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s; opacity: 0.4; pointer-events: none; }
+  .context-submit.ready { opacity: 1; pointer-events: all; }
+  .context-submit.ready:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(184,134,11,0.3); }
+
+  /* Scorecard */
+  .scorecard { background: var(--surface); border: 1px solid rgba(184,134,11,0.25); border-radius: 16px; padding: 24px; animation: fadeUp 0.6s ease forwards; opacity: 0; box-shadow: 0 4px 24px rgba(61,43,31,0.08); margin-top: 4px; }
+  .scorecard-header { text-align: center; margin-bottom: 20px; }
+  .scorecard-number { font-family: 'Cinzel Decorative', serif; font-size: 18px; color: var(--brown-deep); margin-bottom: 6px; }
+  .scorecard-context-tag { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; letter-spacing: 0.05em; }
+  .scorecard-rating { display: inline-block; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+  .rating-excellent { background: rgba(45,106,74,0.15); color: var(--green); border: 1px solid rgba(45,106,74,0.3); }
+  .rating-good { background: rgba(184,134,11,0.15); color: var(--gold); border: 1px solid rgba(184,134,11,0.3); }
+  .rating-average { background: rgba(184,96,11,0.15); color: var(--orange); border: 1px solid rgba(184,96,11,0.3); }
+  .rating-challenging { background: rgba(139,42,42,0.15); color: var(--red); border: 1px solid rgba(139,42,42,0.3); }
+  .donut-wrap { display: flex; align-items: center; justify-content: center; margin: 16px 0; }
+  .donut-container { position: relative; width: 120px; height: 120px; }
+  .donut-svg { transform: rotate(-90deg); }
+  .donut-bg { fill: none; stroke: var(--cream-darker); stroke-width: 12; }
+  .donut-fill { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset 1.2s ease; }
+  .donut-fill-excellent { stroke: #2D6A4A; }
+  .donut-fill-good { stroke: #B8860B; }
+  .donut-fill-average { stroke: #B8600B; }
+  .donut-fill-challenging { stroke: #8B2A2A; }
+  .donut-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .donut-score { font-family: 'Cinzel Decorative', serif; font-size: 22px; color: var(--brown-deep); line-height: 1; }
+  .donut-label { font-size: 10px; color: var(--text-dim); letter-spacing: 0.1em; margin-top: 2px; }
+  .digit-grid { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 16px 0; }
+  .digit-pill { display: flex; flex-direction: column; align-items: center; background: var(--cream-dark); border-radius: 10px; padding: 8px 12px; border: 1px solid rgba(184,134,11,0.15); min-width: 52px; }
+  .digit-num { font-family: 'Cinzel Decorative', serif; font-size: 20px; line-height: 1; }
+  .digit-num-positive { color: var(--green); }
+  .digit-num-neutral { color: var(--gold); }
+  .digit-num-negative { color: var(--red); }
+  .digit-planet { font-size: 9px; color: var(--text-dim); margin-top: 2px; text-align: center; line-height: 1.2; }
+  .digit-points { font-size: 10px; font-weight: 600; margin-top: 2px; }
+  .points-positive { color: var(--green); }
+  .points-neutral { color: var(--gold); }
+  .points-negative { color: var(--red); }
+
+  /* Pairs row */
+  .pairs-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 8px 0 16px; }
+  .pair-tag { font-size: 11px; padding: 3px 10px; border-radius: 12px; font-weight: 500; }
+  .pair-Power { background: rgba(45,106,74,0.12); color: var(--green); border: 1px solid rgba(45,106,74,0.25); }
+  .pair-Wealth { background: rgba(184,134,11,0.12); color: var(--gold); border: 1px solid rgba(184,134,11,0.25); }
+  .pair-Charm { background: rgba(139,42,139,0.1); color: #7A2A7A; border: 1px solid rgba(139,42,139,0.2); }
+  .pair-Wisdom { background: rgba(42,42,139,0.1); color: #2A2A8B; border: 1px solid rgba(42,42,139,0.2); }
+  .pair-Neutral { background: rgba(61,43,31,0.08); color: var(--text-dim); border: 1px solid rgba(61,43,31,0.15); }
+  .pair-Challenge { background: rgba(139,42,42,0.1); color: var(--red); border: 1px solid rgba(139,42,42,0.2); }
+
+  .categories { margin: 16px 0; }
+  .category-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .category-label { font-size: 12px; color: var(--text-mid); width: 70px; text-align: right; text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0; }
+  .category-bar-wrap { flex: 1; height: 8px; background: var(--cream-darker); border-radius: 4px; overflow: hidden; }
+  .category-bar { height: 100%; border-radius: 4px; transition: width 1.2s ease; width: 0%; }
+  .bar-excellent { background: linear-gradient(90deg, #2D6A4A, #4A9A6A); }
+  .bar-good { background: linear-gradient(90deg, #B8860B, #D4A843); }
+  .bar-average { background: linear-gradient(90deg, #B8600B, #D4843A); }
+  .bar-challenging { background: linear-gradient(90deg, #8B2A2A, #B84A4A); }
+  .category-score { font-size: 12px; color: var(--text-dim); width: 30px; flex-shrink: 0; }
+  .scorecard-reading { font-family: 'Playfair Display', serif; font-style: italic; font-size: 14px; color: var(--brown-mid); line-height: 1.75; text-align: center; padding: 12px 0; border-top: 1px solid rgba(184,134,11,0.15); margin-top: 12px; }
+
+  /* Welcome */
+  .welcome-card { background: var(--surface); border: 1px solid rgba(184,134,11,0.2); border-radius: 16px; padding: 32px; text-align: center; animation: fadeUp 0.8s ease 0.3s forwards; opacity: 0; box-shadow: 0 4px 24px rgba(61,43,31,0.06); }
+  .welcome-icon { font-size: 40px; margin-bottom: 16px; display: block; }
+  .welcome-title { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--brown-deep); margin-bottom: 10px; }
+  .welcome-text { font-size: 14px; color: var(--text-mid); line-height: 1.75; margin-bottom: 8px; }
+  .welcome-disclaimer { font-size: 11px; color: var(--text-dim); line-height: 1.6; padding: 10px 14px; background: var(--cream-darker); border-radius: 8px; margin: 14px 0 16px; border: 1px solid rgba(184,134,11,0.1); }
+  .quick-starts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  .quick-btn { background: var(--cream-dark); border: 1px solid rgba(184,134,11,0.2); border-radius: 10px; padding: 12px 14px; color: var(--text-mid); font-family: 'Sarabun', sans-serif; font-size: 13px; cursor: pointer; text-align: left; transition: all 0.2s ease; line-height: 1.4; }
+  .quick-btn:hover { border-color: var(--gold); color: var(--brown-deep); background: var(--cream-darker); transform: translateY(-1px); }
+  .quick-btn-icon { display: block; font-size: 18px; margin-bottom: 4px; }
+
+  /* Waitlist */
+  .waitlist-card { background: var(--surface); border: 1px solid rgba(184,134,11,0.3); border-radius: 16px; padding: 28px; text-align: center; animation: fadeUp 0.6s ease forwards; opacity: 0; box-shadow: 0 4px 24px rgba(61,43,31,0.08); margin-top: 8px; }
+  .waitlist-icon { font-size: 36px; margin-bottom: 12px; display: block; }
+  .waitlist-title { font-family: 'Cinzel Decorative', serif; font-size: 16px; color: var(--brown-deep); margin-bottom: 10px; }
+  .waitlist-text { font-size: 14px; color: var(--text-mid); line-height: 1.75; margin-bottom: 20px; font-family: 'Playfair Display', serif; font-style: italic; }
+  .waitlist-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+  .waitlist-input { background: var(--cream-dark); border: 1px solid rgba(184,134,11,0.25); border-radius: 10px; padding: 12px 16px; color: var(--text); font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 300; outline: none; transition: border-color 0.2s; }
+  .waitlist-input:focus { border-color: var(--gold); }
+  .waitlist-input::placeholder { color: var(--text-dim); opacity: 0.7; }
+  .waitlist-submit { background: linear-gradient(135deg, var(--gold), var(--gold-bright)); border: none; border-radius: 10px; padding: 14px; color: #fff; font-family: 'Cinzel Decorative', serif; font-size: 12px; letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s; margin-top: 4px; }
+  .waitlist-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(184,134,11,0.3); }
+  .waitlist-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+  .waitlist-error { color: #8B3A3A; font-size: 12px; padding: 8px; background: rgba(139,58,58,0.08); border-radius: 6px; border: 1px solid rgba(139,58,58,0.2); display: none; margin-bottom: 8px; }
+  .waitlist-success { text-align: center; padding: 12px 0; }
+  .waitlist-success-icon { font-size: 40px; display: block; margin-bottom: 12px; }
+  .waitlist-success-title { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--gold); margin-bottom: 10px; }
+  .waitlist-success-text { font-size: 13px; color: var(--text-mid); line-height: 1.75; }
+  .new-reading-btn { background: transparent; border: 1px solid rgba(184,134,11,0.25); border-radius: 10px; padding: 10px 20px; color: var(--text-dim); font-family: 'Sarabun', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.2s; margin-top: 18px; display: inline-block; }
+  .new-reading-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .reset-btn { position: fixed; top: 16px; right: 16px; z-index: 20; background: var(--surface); border: 1px solid rgba(184,134,11,0.2); border-radius: 20px; padding: 7px 14px; color: var(--text-dim); font-family: 'Sarabun', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.2s; display: none; box-shadow: 0 2px 8px rgba(61,43,31,0.08); }
+  .reset-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--cream-dark); }
+  .reset-btn.visible { display: block; animation: fadeDown 0.4s ease forwards; }
+
+  /* Input */
+  .input-area { position: fixed; bottom: 0; left: 0; right: 0; z-index: 10; background: linear-gradient(transparent, var(--cream) 35%); padding: 20px; }
+  .input-inner { max-width: 760px; margin: 0 auto; display: flex; gap: 10px; align-items: flex-end; background: var(--surface); border: 1px solid rgba(184,134,11,0.3); border-radius: 16px; padding: 10px 10px 10px 18px; box-shadow: 0 4px 24px rgba(61,43,31,0.1); transition: border-color 0.2s; }
+  .input-inner:focus-within { border-color: var(--gold); }
+  textarea { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-family: 'Sarabun', sans-serif; font-size: 15px; font-weight: 300; resize: none; min-height: 24px; max-height: 120px; line-height: 1.6; padding: 4px 0; }
+  textarea::placeholder { color: var(--text-dim); opacity: 0.7; }
+  .send-btn { width: 40px; height: 40px; min-width: 40px; background: linear-gradient(135deg, var(--gold), var(--gold-bright)); border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; color: #fff; font-size: 18px; }
+  .send-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 4px 16px rgba(184,134,11,0.4); }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .typing { display: flex; gap: 14px; align-items: center; animation: fadeUp 0.3s ease forwards; }
+  .typing-avatar { width: 38px; height: 38px; min-width: 38px; background: linear-gradient(135deg, var(--gold), var(--gold-bright)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; border: 2px solid rgba(184,134,11,0.2); }
+  .typing-dots { background: var(--surface); border: 1px solid rgba(184,134,11,0.2); border-radius: 4px 20px 20px 20px; padding: 16px 22px; display: flex; gap: 6px; align-items: center; }
+  .typing-dot { width: 6px; height: 6px; background: var(--gold); border-radius: 50%; opacity: 0.4; animation: dotPulse 1.4s ease-in-out infinite; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dotPulse { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.1); } }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--cream-dark); }
+  ::-webkit-scrollbar-thumb { background: var(--gold-light); border-radius: 2px; }
+  @media (max-width: 500px) { .quick-starts { grid-template-columns: 1fr; } .main-title { font-size: 24px; } .category-label { width: 55px; font-size: 10px; } .context-btns { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="bg-layer"></div>
+<div class="petals" id="petals"></div>
+<button class="reset-btn" id="resetBtn" onclick="gtag('event','new_reading_started',{event_category:'engagement',event_label:'reset_button'});location.reload();" title="Start a new reading">✦ New Reading</button>
+<div class="app">
+  <header class="header">
+    <div class="thai-title">หมอดู · The Seer Who Sees</div>
+    <img src="/mordoo-logo.png" alt="Mor Doo" style="max-width:420px;width:85%;margin:0 auto 8px;display:block;" />
+    <div class="subtitle">Thai Numerology & Fortune Telling with Bee</div>
+    <div class="divider"><div class="divider-line"></div><div class="divider-gem"></div><div class="divider-line"></div></div>
+  </header>
+  <div id="counterWrap" style="display:none;">
+    <div class="counter" id="counterText">5 questions remaining</div>
+    <div class="counter-dots" id="counterDots"></div>
+  </div>
+  <div class="chat-container" id="chat">
+    <div class="welcome-card">
+      <span class="welcome-icon">🔮</span>
+      <div class="welcome-title">The Mor Doo Awaits</div>
+      <p class="welcome-text">Share your name, birthday, birthplace, and birth time — and the Mor Doo will read your numbers through the lens of Thai numerology, astrology, zodiac, and the ancient art of <em>lek-sasat</em>. No signup. No cost. Just your numbers.</p>
+      <div class="welcome-disclaimer">✦ Readings are for entertainment and spiritual exploration only. Not legal, medical, financial, or psychological advice. Please consult a licensed professional for matters requiring expert guidance.</div>
+      <div class="divider" style="margin:12px 0;"><div class="divider-line"></div><div class="divider-gem"></div><div class="divider-line"></div></div>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">Each session includes <strong>5 questions</strong>. Begin with a question or try one of these:</p>
+      <div class="quick-starts">
+        <button class="quick-btn" onclick="quickStart(this)"><span class="quick-btn-icon">🌟</span>Read my full chart — name, birthday, birthplace</button>
+        <button class="quick-btn" onclick="quickStart(this)"><span class="quick-btn-icon">🔗</span>Read a compatibility between two people</button>
+        <button class="quick-btn" onclick="promptNumber('phone')"><span class="quick-btn-icon">📱</span>Score my phone number</button>
+        <button class="quick-btn" onclick="promptNumber('address')"><span class="quick-btn-icon">🏠</span>Score my home address</button>
+      </div>
+    </div>
+  </div>
+  <div class="input-area" id="inputArea">
+    <div class="input-inner">
+      <textarea id="userInput" placeholder="Tell the Mor Doo your name, birthday, birthplace..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">✦</button>
+    </div>
+    <div style="text-align:center;font-size:14px;color:var(--text-dim);opacity:0.9;margin-top:7px;letter-spacing:0.02em;">
+      🔒 Your information is not stored and is only used within this session. Nothing is saved after you leave.
+    </div>
+  </div>
+</div>
+
+<script>
+const MAX_MESSAGES = 5;
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwzwjo0NxyTwoprZ8h3sULI5rDpe7gKnjjfSV9J_NwoHWgybaLgHvcu7q3_sueWEa4sZA/exec';
+
+const petalsEl = document.getElementById('petals');
+for (let i = 0; i < 25; i++) {
+  const p = document.createElement('div');
+  p.className = 'petal';
+  const size = 4 + Math.random() * 8;
+  p.style.cssText = `left:${Math.random()*100}%;top:${20+Math.random()*70}%;--size:${size}px;--dur:${6+Math.random()*8}s;--delay:${Math.random()*8}s;--max-op:${0.08+Math.random()*0.12};--rot:${Math.random()*360}deg`;
+  petalsEl.appendChild(p);
+}
+
+let history = [], isLoading = false, messageCount = 0;
+let pendingScoreNumber = null, pendingScoreType = null;
+
+function isPhoneOrAddress(text) {
+  const t = text.trim();
+
+  // Check conversational patterns FIRST — these should never trigger scorecard
+  const hasMultipleDates = (t.match(/\d{1,2}\/\d{1,2}\/\d{4}/g) || []).length >= 2;
+  const hasCompatibilityWords = /\b(partner|spouse|husband|wife|boyfriend|girlfriend|compatible|compatibility|born|birth|my name|his name|her name|their name|and i|and me|we are|we were)\b/i.test(t);
+  if (hasMultipleDates || hasCompatibilityWords) return false;
+
+  // Address pattern — matches regardless of length
+  const address = /\d+\s+\w+.*(street|st|ave|avenue|blvd|boulevard|road|rd|lane|ln|drive|dr|court|ct|way|place|pl|circle|cir)/i;
+  if (address.test(t)) return true;
+
+  // Phone pattern
+  const phone = /(\+?1?\s?)?(\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4})/;
+  if (phone.test(t)) return true;
+
+  // Skip long conversational messages
+  const wordCount = t.split(/\s+/).filter(w => /[a-zA-Z]/.test(w)).length;
+  if (wordCount > 4) return false;
+
+  // Plain digit strings
+  const digitsOnly = /^[\d\s\-\(\)\+\.]{7,}$/.test(t);
+  const embeddedNumber = /\b\d{7,}\b/.test(t) && t.length < 30;
+  return digitsOnly || embeddedNumber;
+}
+
+function detectNumberType(text) {
+  const address = /\d+\s+\w+.*(street|st|ave|avenue|blvd|boulevard|road|rd|lane|ln|drive|dr|court|ct|way|place|pl|circle|cir)/i;
+  return address.test(text) ? 'address' : 'phone';
+}
+
+function getRatingClass(r) {
+  r = (r || '').toLowerCase();
+  if (r === 'excellent') return 'excellent';
+  if (r === 'good') return 'good';
+  if (r === 'average') return 'average';
+  return 'challenging';
+}
+
+function showContextCard(numberText, numberType) {
+  pendingScoreNumber = numberText;
+  pendingScoreType = numberType;
+  const chat = document.getElementById('chat');
+  const div = document.createElement('div');
+  div.className = 'message';
+  div.id = 'contextCard';
+  div.style.opacity = '1'; // Override animation — context card must always be visible
+  const label = numberType === 'address' ? 'address' : 'number';
+  div.innerHTML = `
+    <div class="context-card">
+      <div class="context-title">Before the Mor Doo reads this ${label}, help her understand its purpose.</div>
+      <div class="context-group">
+        <div class="context-group-label">This is my...</div>
+        <div class="context-btns">
+          <button class="context-btn" data-group="purpose" data-val="personal" onclick="selectContext(this)">🏠 Personal</button>
+          <button class="context-btn" data-group="purpose" data-val="work" onclick="selectContext(this)">💼 Work / Business</button>
+        </div>
+      </div>
+      <div class="context-group">
+        <div class="context-group-label">My primary goal is...</div>
+        <div class="context-btns">
+          <button class="context-btn" data-group="goal" data-val="harmony" onclick="selectContext(this)">☮️ Harmony & Peace</button>
+          <button class="context-btn" data-group="goal" data-val="wealth" onclick="selectContext(this)">💰 Wealth & Success</button>
+        </div>
+      </div>
+      <div class="context-group">
+        <div class="context-group-label">Your birthday (optional — makes the reading personal)</div>
+        <input type="text" class="context-input" id="contextBirthday" placeholder="MM/DD/YYYY" maxlength="10" oninput="formatBirthday(this)" />
+        <div style="font-size:11px;color:var(--text-dim);margin-top:5px;letter-spacing:0.03em;">Enter as month / day / year — example: 01/01/2001</div>
+      </div>
+      <div class="context-group">
+        <div class="context-group-label">Where were you born? (optional — city, region, or country)</div>
+        <input type="text" class="context-input" id="contextBirthplace" placeholder="e.g. Philadelphia, Thailand, or Vientiane" maxlength="60" />
+        <div style="font-size:11px;color:var(--text-dim);margin-top:5px;letter-spacing:0.03em;">Enter whatever you know — city is most precise, country still helps</div>
+      </div>
+      <div class="context-group">
+        <div class="context-group-label">Birth time (optional — hora-sasat deepens the reading)</div>
+        <input type="text" class="context-input" id="contextBirthTime" placeholder="e.g. 12:15 AM or morning / afternoon / evening" maxlength="30" />
+        <div style="font-size:11px;color:var(--text-dim);margin-top:5px;letter-spacing:0.03em;">Even approximate is helpful — morning, afternoon, evening, or night</div>
+      </div>
+      <button class="context-submit" id="contextSubmit" onclick="submitContext()">Read My ${numberType === 'address' ? 'Address' : 'Number'} ✦</button>
+    </div>
+  `;
+  chat.appendChild(div);
+  setTimeout(() => div.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
+}
+
+let contextSelections = {};
+function selectContext(btn) {
+  const group = btn.dataset.group;
+  const val = btn.dataset.val;
+  contextSelections[group] = val;
+  // Update visual selection
+  document.querySelectorAll(`[data-group="${group}"]`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  // Enable submit only when both are selected
+  const submit = document.getElementById('contextSubmit');
+  if (submit && contextSelections.purpose && contextSelections.goal) {
+    submit.classList.add('ready');
+  }
+}
+
+function formatBirthday(input) {
+  // Auto-format as MM/DD/YYYY
+  let val = input.value.replace(/\D/g, '');
+  if (val.length >= 3 && val.length <= 4) val = val.slice(0,2) + '/' + val.slice(2);
+  else if (val.length > 4) val = val.slice(0,2) + '/' + val.slice(2,4) + '/' + val.slice(4,8);
+  input.value = val;
+}
+
+async function submitContext() {
+  gtag('event', 'context_selected', {event_category: 'engagement', event_label: (contextSelections.purpose||'personal') + '_' + (contextSelections.goal||'harmony')});
+  const card = document.getElementById('contextCard');
+  const birthdayInput = document.getElementById('contextBirthday');
+  const birthplaceInput = document.getElementById('contextBirthplace');
+  const birthTimeInput = document.getElementById('contextBirthTime');
+  const birthday = birthdayInput ? birthdayInput.value.trim() : '';
+  const birthplace = birthplaceInput ? birthplaceInput.value.trim() : '';
+  const birthTime = birthTimeInput ? birthTimeInput.value.trim() : '';
+  if (card) card.remove();
+  const ctx = {
+    purpose: contextSelections.purpose || 'personal',
+    goal: contextSelections.goal || 'harmony',
+    birthday: birthday || '',
+    birthplace: birthplace || '',
+    birthTime: birthTime || ''
+  };
+  history.push({ role: 'user', content: pendingScoreNumber });
+  isLoading = true;
+  document.getElementById('sendBtn').disabled = true;
+  showTyping();
+  await generateScorecard(pendingScoreNumber, pendingScoreType, ctx);
+  contextSelections = {};
+}
+
+async function generateScorecard(numberText, numberType, ctx) {
+  const scorecardContext = {
+    purpose: ctx.purpose || 'personal',
+    goal: ctx.goal || 'harmony',
+    type: numberType,
+    birthday: ctx.birthday || '',
+    birthplace: ctx.birthplace || '',
+    birthTime: ctx.birthTime || ''
+  };
+
+  // Build a personal intro using the actual number
+  const typeLabel = numberType === 'address' ? 'address' : 'number';
+  const purposeLabel = scorecardContext.purpose === 'work' ? 'work' : 'personal';
+
+  // Extract digits and calculate root for the intro
+  const rawDigits = numberText.replace(/\D/g, '');
+  const digitSum = rawDigits.split('').reduce((a, b) => a + parseInt(b), 0);
+  let rootNum = digitSum;
+  while (rootNum > 9 && rootNum !== 11 && rootNum !== 22 && rootNum !== 33 && rootNum !== 44) {
+    rootNum = rootNum.toString().split('').reduce((a, b) => a + parseInt(b), 0);
+  }
+  const rootMeanings = {
+    1: 'leadership and the pioneer spirit', 2: 'partnership and deep intuition',
+    3: 'creativity and the gift of expression', 4: 'foundation and lasting structure',
+    5: 'freedom and constant movement', 6: 'harmony, beauty, and love',
+    7: 'spiritual depth and the seeking mind', 8: 'material authority and wealth',
+    9: 'wisdom and humanitarian purpose', 11: 'illumination — a Master Number',
+    22: 'the Master Builder — rare and powerful', 33: 'the Master Teacher — extraordinarily rare',
+    44: 'the Master Builder at its most elevated'
+  };
+  const rootMeaning = rootMeanings[rootNum] || 'deep numerological power';
+  const isMaster = [11,22,33,44].includes(rootNum);
+
+  // Count notable digits
+  const digitCounts = {};
+  rawDigits.split('').forEach(d => { digitCounts[d] = (digitCounts[d] || 0) + 1; });
+  const notable = Object.entries(digitCounts)
+    .filter(([d, c]) => c >= 2 && ['6','8','9','1'].includes(d))
+    .map(([d]) => ({ '6':'Venus', '8':'Saturn', '9':'Mars', '1':'Sun' }[d]));
+
+  const purposeContext = scorecardContext.purpose === 'work'
+    ? (scorecardContext.goal === 'wealth' ? 'built for commerce, sales, and wealth generation' : 'calibrated for professional steadiness and trust')
+    : (scorecardContext.goal === 'wealth' ? 'carrying the frequency of personal abundance' : 'meant to bring peace, family warmth, and balance');
+
+  const birthdayNote = scorecardContext.birthday
+    ? ` The Mor Doo will also weigh how this number aligns with your birth chart.`
+    : '';
+
+  const birthplaceNote = scorecardContext.birthplace
+    ? ` Born in ${scorecardContext.birthplace} — the energy of your origin will be felt in this reading.`
+    : '';
+
+  const birthTimeNote = scorecardContext.birthTime
+    ? ` The Mor Doo also reads the hora-sasat of your birth hour — ${scorecardContext.birthTime} carries its own planetary signature.`
+    : '';
+
+  const masterNote = isMaster ? ` The Mor Doo pauses — ${rootNum} is a Master Number. This is not common.` : '';
+  const notableNote = notable.length > 0 ? ` The repeated influence of ${notable.join(' and ')} is already visible.` : '';
+
+  const fullIntro = `The digits of ${numberText.replace(/\D/g,'').split('').join('-')} reduce to **${rootNum}** — the frequency of ${rootMeaning}.${masterNote}${notableNote} This ${typeLabel} is ${purposeContext}.${birthdayNote}${birthplaceNote}${birthTimeNote}
+
+*The ancient calculator stirs — the scorecard takes shape.*`;
+  history.push({ role: 'assistant', content: fullIntro });
+
+  removeTyping();
+  addMessage('mordoo', fullIntro);
+
+  // Show scorecard loading indicator
+  const chat = document.getElementById('chat');
+  const loadingDiv = document.createElement('div');
+  loadingDiv.id = 'scorecardLoading';
+  loadingDiv.style.cssText = 'text-align:center;padding:20px;animation:fadeUp 0.4s ease forwards;opacity:0;';
+  loadingDiv.innerHTML = `
+    <div style="display:inline-flex;align-items:center;gap:10px;background:var(--surface);border:1px solid rgba(184,134,11,0.2);border-radius:12px;padding:12px 20px;box-shadow:0 2px 12px rgba(61,43,31,0.06);">
+      <div style="display:flex;gap:5px;align-items:center;">
+        <div style="width:6px;height:6px;background:var(--gold);border-radius:50%;animation:dotPulse 1.4s ease-in-out infinite;"></div>
+        <div style="width:6px;height:6px;background:var(--gold);border-radius:50%;animation:dotPulse 1.4s ease-in-out infinite;animation-delay:0.2s;"></div>
+        <div style="width:6px;height:6px;background:var(--gold);border-radius:50%;animation:dotPulse 1.4s ease-in-out infinite;animation-delay:0.4s;"></div>
+      </div>
+      <span style="font-family:'Playfair Display',serif;font-style:italic;font-size:13px;color:var(--text-mid);">The scorecard is being prepared...</span>
+    </div>
+  `;
+  chat.appendChild(loadingDiv);
+  setTimeout(() => loadingDiv.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
+
+  // Now fetch only the scorecard
+  // Use a clean single-message history — just the number
+  // API requires last message to be from user
+  try {
+    const scorecardMessages = [{ role: 'user', content: numberText }];
+
+    const scoreRes = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: scorecardMessages, scorecard: true, scorecardContext })
+    });
+
+    let scoreData = null;
+    try { scoreData = await scoreRes.json(); } catch(e) { console.error('Score parse error:', e); }
+
+    // Remove loading indicator
+    const loadingEl = document.getElementById('scorecardLoading');
+    if (loadingEl) loadingEl.remove();
+
+    if (scoreData && scoreData.scoreData) {
+      gtag('event', 'scorecard_generated', {event_category: 'engagement', event_label: scorecardContext.purpose + '_' + scorecardContext.goal, value: scoreData.scoreData.total});
+      addScorecard(scoreData.scoreData, scorecardContext);
+    } else {
+      const chat = document.getElementById('chat');
+      const d = document.createElement('div');
+      d.style.cssText = 'color:#8B3A3A;font-size:12px;padding:8px 12px;background:rgba(139,58,58,0.06);border-radius:8px;margin-top:4px;';
+      d.textContent = 'Scorecard error: ' + (scoreData ? JSON.stringify(scoreData).substring(0,120) : 'no response');
+      chat.appendChild(d);
+    }
+
+  } catch(err) {
+    console.error('generateScorecard error:', err);
+    const loadingEl2 = document.getElementById('scorecardLoading');
+    if (loadingEl2) loadingEl2.remove();
+    const chat = document.getElementById('chat');
+    const d = document.createElement('div');
+    d.style.cssText = 'color:#8B3A3A;font-size:13px;padding:10px 14px;background:rgba(139,58,58,0.08);border-radius:8px;';
+    d.textContent = 'The Mor Doo encountered a disturbance. Please try again.';
+    chat.appendChild(d);
+  }
+
+  isLoading = false;
+  if (messageCount < MAX_MESSAGES) document.getElementById('sendBtn').disabled = false;
+  document.getElementById('userInput').focus();
+
+  if (messageCount >= MAX_MESSAGES) {
+    setTimeout(showWaitlistCard, 1000);
+  }
+}
+
+function buildScorecard(data, ctx) {
+  const rc = getRatingClass(data.rating);
+  const circumference = 2 * Math.PI * 45;
+  const offset = circumference - (data.total / 100) * circumference;
+  const cats = data.categories || {};
+  const catKeys = ['love','wealth','career','luck','family','harmony','success'];
+  const contextLabel = `${ctx?.purpose === 'work' ? '💼 Work' : '🏠 Personal'} · ${ctx?.goal === 'wealth' ? '💰 Wealth & Success' : '☮️ Harmony & Peace'}`;
+
+  function barClass(val) {
+    if (val >= 75) return 'bar-excellent';
+    if (val >= 50) return 'bar-good';
+    if (val >= 25) return 'bar-average';
+    return 'bar-challenging';
+  }
+
+  const digitHtml = (data.digits || []).map(d => `
+    <div class="digit-pill">
+      <span class="digit-num digit-num-${d.energy}">${d.digit}</span>
+      <span class="digit-planet">${d.planet}<br>${d.planetThai}</span>
+      <span class="digit-points ${d.points > 0 ? 'points-positive' : d.points < 0 ? 'points-negative' : 'points-neutral'}">${d.points > 0 ? '+' : ''}${d.points}</span>
+    </div>`).join('');
+
+  const pairsHtml = (data.pairs || []).map(p => `
+    <span class="pair-tag pair-${p.type}" title="${p.meaning}">${p.pair} · ${p.type}</span>`).join('');
+
+  const catHtml = catKeys.map(k => {
+    const val = cats[k] || 0;
+    return `<div class="category-row">
+      <span class="category-label">${k}</span>
+      <div class="category-bar-wrap"><div class="category-bar ${barClass(val)}" style="width:0%" data-target="${val}%"></div></div>
+      <span class="category-score">${val}</span>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="scorecard">
+      <div class="scorecard-header">
+        <div class="scorecard-number">✦ ${data.number || ''} ✦</div>
+        <div class="scorecard-context-tag">${contextLabel}</div>
+        <span class="scorecard-rating rating-${rc}">${data.rating || ''} · ${data.ratingThai || ''}</span>
+      </div>
+      <div class="donut-wrap">
+        <div class="donut-container">
+          <svg class="donut-svg" width="120" height="120" viewBox="0 0 120 120">
+            <circle class="donut-bg" cx="60" cy="60" r="45"/>
+            <circle class="donut-fill donut-fill-${rc}" cx="60" cy="60" r="45"
+              stroke-dasharray="${circumference}" stroke-dashoffset="${circumference}" data-offset="${offset}"/>
+          </svg>
+          <div class="donut-text">
+            <span class="donut-score">${data.total}</span>
+            <span class="donut-label">/ 100</span>
+          </div>
+        </div>
+      </div>
+      <div class="digit-grid">${digitHtml}</div>
+      ${pairsHtml ? `<div class="pairs-row">${pairsHtml}</div>` : ''}
+      <div class="categories">${catHtml}</div>
+      <div class="scorecard-reading">${data.reading || ''}</div>
+    </div>`;
+}
+
+function addScorecard(scoreData, ctx) {
+  const chat = document.getElementById('chat');
+  const div = document.createElement('div');
+  div.className = 'message';
+  div.innerHTML = buildScorecard(scoreData, ctx);
+  chat.appendChild(div);
+  setTimeout(() => {
+    div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    const circle = div.querySelector('.donut-fill');
+    if (circle) setTimeout(() => { circle.style.strokeDashoffset = circle.dataset.offset; }, 100);
+    div.querySelectorAll('.category-bar').forEach(bar => {
+      setTimeout(() => { bar.style.width = bar.dataset.target; }, 200);
+    });
+  }, 100);
+}
+
+function buildCounter() {
+  const wrap = document.getElementById('counterWrap');
+  const dotsEl = document.getElementById('counterDots');
+  const textEl = document.getElementById('counterText');
+  wrap.style.display = 'block';
+  dotsEl.innerHTML = '';
+  for (let i = 0; i < MAX_MESSAGES; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'counter-dot' + (i < messageCount ? ' used' : i === messageCount ? ' current' : '');
+    dotsEl.appendChild(dot);
+  }
+  const remaining = MAX_MESSAGES - messageCount;
+  textEl.textContent = remaining === 1 ? '1 question remaining' : `${remaining} questions remaining`;
+}
+
+function showWaitlistCard() {
+  document.getElementById('inputArea').style.display = 'none';
+  const chat = document.getElementById('chat');
+  const div = document.createElement('div');
+  div.className = 'waitlist-card';
+  div.innerHTML = `
+    <span class="waitlist-icon">🌸</span>
+    <div class="waitlist-title">Your Reading Is Complete</div>
+    <p class="waitlist-text">The Mor Doo has shared what the numbers reveal for this session.<br><br>Want to go deeper? Join the waitlist and be the first to know when full access opens.</p>
+    <div id="waitlistFormWrap">
+      <div class="waitlist-form">
+        <input type="text" class="waitlist-input" id="wlName" placeholder="Your name" />
+        <input type="email" class="waitlist-input" id="wlEmail" placeholder="Your email address" />
+        <input type="tel" class="waitlist-input" id="wlPhone" placeholder="Your phone number (optional)" />
+      </div>
+      <div class="waitlist-error" id="wlError">Please enter your name and a valid email.</div>
+      <button class="waitlist-submit" id="wlSubmit" onclick="submitWaitlist()">Join the Waitlist ✦</button>
+    </div>
+    <br>
+    <button class="new-reading-btn" onclick="location.reload()">Begin a New Reading</button>`;
+  chat.appendChild(div);
+  setTimeout(() => div.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
+}
+
+async function submitWaitlist() {
+  const name = document.getElementById('wlName').value.trim();
+  const email = document.getElementById('wlEmail').value.trim();
+  const phone = document.getElementById('wlPhone').value.trim();
+  const errEl = document.getElementById('wlError');
+  const btn = document.getElementById('wlSubmit');
+  if (!name || !email || !email.includes('@')) { errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none'; btn.disabled = true; btn.textContent = 'Joining...';
+  gtag('event', 'waitlist_signup', {event_category: 'conversion', event_label: 'joined_waitlist'});
+  try {
+    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, phone }) });
+    document.getElementById('waitlistFormWrap').innerHTML = `
+      <div class="waitlist-success">
+        <span class="waitlist-success-icon">✨</span>
+        <div class="waitlist-success-title">You are on the list, ${name}.</div>
+        <p class="waitlist-success-text">The Mor Doo will find you when the doors open.<br>Watch your inbox — the numbers are already working.</p>
+      </div>`;
+  } catch(err) {
+    btn.disabled = false; btn.textContent = 'Join the Waitlist ✦';
+    errEl.textContent = 'Something went wrong. Please try again.'; errEl.style.display = 'block';
+  }
+}
+
+function quickStart(btn) {
+  const label = btn.querySelector('.quick-btn-icon').nextSibling.textContent.trim();
+  gtag('event', 'quick_start_clicked', {event_category: 'engagement', event_label: label.substring(0,50)});
+  document.getElementById('userInput').value = label;
+  sendMessage();
+}
+
+function promptNumber(type) {
+  const input = document.getElementById('userInput');
+  if (type === 'phone') {
+    input.value = 'My phone number is ';
+  } else {
+    input.value = 'My address is ';
+  }
+  input.focus();
+  // Move cursor to end
+  input.setSelectionRange(input.value.length, input.value.length);
+  autoResize(input);
+}
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+
+function addMessage(role, content) {
+  const chat = document.getElementById('chat');
+  const div = document.createElement('div');
+  div.className = `message message-${role}`;
+  if (role === 'mordoo') {
+    div.innerHTML = `<div class="mordoo-avatar">🔮</div><div class="mordoo-bubble">${fmt(content)}</div>`;
+  } else {
+    div.innerHTML = `<div class="user-bubble">${esc(content)}</div>`;
+  }
+  chat.appendChild(div);
+  setTimeout(() => div.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
+  // Show reset button and update placeholder after first interaction
+  const resetBtn = document.getElementById('resetBtn');
+  if (resetBtn) resetBtn.classList.add('visible');
+  const input = document.getElementById('userInput');
+  if (input) input.placeholder = 'Type here...';
+}
+
+function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmt(t) {
+  return t
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*\n]+?)\*/g, '<em>$1</em>')
+    .replace(/^#{1,3} (.+)$/gm, '<div class="section-header">$1</div>')
+    .replace(/^> (.+)$/gm, '<div class="reading-block">$1</div>')
+    .replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+}
+
+function showTyping() {
+  const chat = document.getElementById('chat');
+  const div = document.createElement('div');
+  div.className = 'typing'; div.id = 'typing-indicator';
+  div.innerHTML = `<div class="typing-avatar">🔮</div><div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+  chat.appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+function removeTyping() { const el = document.getElementById('typing-indicator'); if (el) el.remove(); }
+
+async function sendMessage() {
+  if (isLoading || messageCount >= MAX_MESSAGES) return;
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const welcome = document.querySelector('.welcome-card');
+  if (welcome) welcome.remove();
+
+  addMessage('user', text);
+  input.value = ''; input.style.height = 'auto';
+
+  const needsScorecard = isPhoneOrAddress(text);
+
+  if (needsScorecard) {
+    const numType = detectNumberType(text);
+    messageCount++;
+    buildCounter();
+    pendingScoreNumber = text;
+    pendingScoreType = numType;
+    contextSelections = {};
+    // Remove welcome card only after user bubble is added
+    const welcomeEl = document.querySelector('.welcome-card');
+    if (welcomeEl) welcomeEl.remove();
+    showContextCard(text, numType);
+    input.focus();
+    return;
+  }
+
+  history.push({ role: 'user', content: text });
+  messageCount++;
+  buildCounter();
+  isLoading = true; document.getElementById('sendBtn').disabled = true;
+
+  // Normal chat
+  showTyping();
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: history })
+    });
+    removeTyping();
+    const data = await res.json();
+    if (data.reply) {
+      history.push({ role: 'assistant', content: data.reply });
+      addMessage('mordoo', data.reply);
+    }
+    if (messageCount >= MAX_MESSAGES) {
+      gtag('event', 'session_limit_reached', {event_category: 'engagement', event_label: '5_questions_used'});
+      setTimeout(showWaitlistCard, 1000);
+    }
+  } catch(err) {
+    removeTyping();
+    const chat = document.getElementById('chat');
+    const d = document.createElement('div');
+    d.style.cssText = 'color:#8B3A3A;font-size:13px;padding:10px 14px;background:rgba(139,58,58,0.08);border-radius:8px;border:1px solid rgba(139,58,58,0.2);margin-top:4px;';
+    d.textContent = 'The Mor Doo encountered a disturbance. Please try again.';
+    chat.appendChild(d);
+    messageCount--; buildCounter();
+  }
+
+  isLoading = false;
+  if (messageCount < MAX_MESSAGES) document.getElementById('sendBtn').disabled = false;
+  input.focus();
+}
+</script>
+</body>
+</html>
