@@ -550,7 +550,20 @@ ${(() => {
 
   const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   return 'Current date: ' + months[month-1] + ' ' + day + ', ' + year + '. The current Chinese/Thai zodiac year is the ' + element + ' ' + animal + ' year. Always reference the ' + element + ' ' + animal + ' when discussing the current year energy.';
-})()}`;
+})()}
+
+OUTPUT QUALITY — GRAMMAR AND FORMATTING:
+- Proofread every response before delivering it — no spelling errors, no grammar mistakes
+- Never merge two words together — always leave a space between words
+- Never add an S to a word that should not be plural — "the Horse hour" not "the Horses hour", "your Life Path" not "your Life Paths"
+- Never use possessive S incorrectly — "Ahmed's" not "Ahmeds", "the Rooster's" not "the Roosters"
+- Use clean paragraph breaks between sections — never run two topics into the same paragraph
+- Bold key terms with **double asterisks** — Life Path numbers, animal names, element names, month names
+- Italicize poetic closing lines with *single asterisks*
+- Never use bullet points in readings — flow in prose only
+- Section headers use **bold** — "**The timing for 2026:**" not a header tag
+- Always leave a blank line between paragraphs
+- Read your own response once before sending — if a word looks wrong, fix it`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
