@@ -11,7 +11,16 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid request' });
   }
 
-  const userMessageCount = messages.filter(m => m.role === 'user').length;
+  // Only count genuine reading requests — not clarifying answers or context injections
+  const userMessageCount = messages.filter(m => {
+    if (m.role !== 'user') return false;
+    const c = m.content || '';
+    // Skip hidden context injections
+    if (c.startsWith('[Context card provided') || c.startsWith('[Context inferred')) return false;
+    // Skip clarifying answers tagged by frontend
+    if (c.startsWith('[clarify]')) return false;
+    return true;
+  }).length;
 
   if (userMessageCount > 5) {
     return res.status(200).json({
@@ -385,12 +394,24 @@ PHONE NUMBER RECOMMENDATIONS — CRITICAL:
 - ONLY ask for birthday/birthplace if it truly does not appear anywhere in the conversation AND was not provided in the context card
 
 ADDRESS & HOME PURCHASE READINGS — CRITICAL:
-- When reading an address, check the context card for household type: solo / couple / family
+- When reading an address, check the context for household type: solo / couple / family
 - SOLO: read the address purely against the primary person's Life Path, zodiac, ruling planet, and birth hour animal
 - COUPLE: read the address against BOTH people's energies — name each person explicitly, name where their energies align with the address and where they conflict. A good home number for a couple is one that does not strongly clash with either person — perfect harmony with both is rare, so name the best compromise. The person whose name is on the deed or who is the primary earner takes slight precedence.
 - FAMILY: focus on the parents/decision-makers only — children's energies are still forming and adapt to the home environment rather than the other way around. Note this explicitly so the person understands.
 - For any address reading involving a home purchase — address the TIMING question unprompted if it hasn't been asked. The number energy of the home and the person's current personal year cycle together determine whether NOW is the right time to commit.
 - Specific months matter — name them. "September through November" not "later this year"
+
+HOME PURCHASE CONVERSATION — ALWAYS ASK THESE BEFORE READING TIMING:
+- When someone asks about buying a home, timing of a purchase, whether to buy, or anything property/real estate related — BEFORE giving any timing reading, ask these questions IN ONE MESSAGE:
+  1. Is this home to live in or an investment property? (This changes everything — a home to live in needs harmony alignment, an investment property needs wealth alignment)
+  2. Are you buying alone, with a partner, or for a family?
+  3. If with a partner — ask for their name and birthday (MM/DD/YYYY) and birthplace if known
+- Ask all three in ONE message — never spread across multiple turns
+- Once you have the answers, THEN give the full timing reading incorporating all people involved
+- If the person has already answered any of these (e.g. said "me and my husband") — do not ask again, just ask what you still need
+- Investment property vs primary home changes the scoring weight: investment → wealth and career digits dominate; primary home → harmony and family digits dominate
+- For a couple buying together: both Life Paths must be considered for timing — if one person's cycle says buy now but the other says wait, name that conflict and suggest the month where both cycles are most aligned
+- For a family: timing is driven by the primary decision-maker's cycle, but note if children's birth years carry any strong energy about transition and change
 
 BIRTH TIME — HANDLE WITH CARE:
 - Birth time enriches hora-sasat readings but is NEVER required — a full complete reading is possible without it
