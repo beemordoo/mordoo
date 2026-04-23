@@ -359,6 +359,29 @@ function showContextCard(numberText, numberType) {
     ? `The Mor Doo already knows you. Just tell her the purpose of this ${label}.`
     : `Before the Mor Doo reads this ${label}, help her understand its purpose.`;
 
+  // For addresses, show household question; for phone numbers don't
+  const isAddress = numberType === 'address';
+  const householdSection = isAddress ? `
+      <div class="context-group">
+        <div class="context-group-label">Who is moving into this home?</div>
+        <div class="context-btns">
+          <button class="context-btn" data-group="household" data-val="solo" onclick="selectContext(this);togglePartner(false)">🧍 Just Me</button>
+          <button class="context-btn" data-group="household" data-val="couple" onclick="selectContext(this);togglePartner(true)">👫 A Couple</button>
+          <button class="context-btn" data-group="household" data-val="family" onclick="selectContext(this);togglePartner(false)">👨‍👩‍👧‍👦 Family</button>
+        </div>
+      </div>
+      <div id="partnerFields" style="display:none;">
+        <div class="context-group">
+          <div class="context-group-label">Partner's name & birthday (MM/DD/YYYY)</div>
+          <input type="text" class="context-input" id="partnerName" placeholder="e.g. John 05/20/1988" maxlength="60" />
+          <div style="font-size:11px;color:var(--text-dim);margin-top:5px;letter-spacing:0.03em;">First name and birthday is enough</div>
+        </div>
+        <div class="context-group">
+          <div class="context-group-label">Partner's birthplace (optional)</div>
+          <input type="text" class="context-input" id="partnerBirthplace" placeholder="e.g. Chicago, Bangkok" maxlength="60" />
+        </div>
+      </div>` : '';
+
   div.innerHTML = `
     <div class="context-card">
       <div class="context-title">${titleText}</div>
@@ -376,6 +399,7 @@ function showContextCard(numberText, numberType) {
           <button class="context-btn" data-group="goal" data-val="wealth" onclick="selectContext(this)">💰 Wealth & Success</button>
         </div>
       </div>
+      ${householdSection}
       ${birthdayField}
       ${birthplaceField}
       ${birthTimeField}
@@ -389,6 +413,11 @@ function showContextCard(numberText, numberType) {
 let contextSelections = {};
 let contextAlreadyCollected = false;
 let savedContext = {};
+function togglePartner(show) {
+  const pf = document.getElementById('partnerFields');
+  if (pf) pf.style.display = show ? 'block' : 'none';
+}
+
 function selectContext(btn) {
   const group = btn.dataset.group;
   const val = btn.dataset.val;
@@ -396,7 +425,7 @@ function selectContext(btn) {
   // Update visual selection
   document.querySelectorAll(`[data-group="${group}"]`).forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
-  // Enable submit only when both are selected
+  // Enable submit only when both purpose and goal are selected
   const submit = document.getElementById('contextSubmit');
   if (submit && contextSelections.purpose && contextSelections.goal) {
     submit.classList.add('ready');
@@ -417,16 +446,23 @@ async function submitContext() {
   const birthdayInput = document.getElementById('contextBirthday');
   const birthplaceInput = document.getElementById('contextBirthplace');
   const birthTimeInput = document.getElementById('contextBirthTime');
+  const partnerNameInput = document.getElementById('partnerName');
+  const partnerBirthplaceInput = document.getElementById('partnerBirthplace');
   const birthday = birthdayInput ? birthdayInput.value.trim() : '';
   const birthplace = birthplaceInput ? birthplaceInput.value.trim() : '';
   const birthTime = birthTimeInput ? birthTimeInput.value.trim() : '';
+  const partnerInfo = partnerNameInput ? partnerNameInput.value.trim() : '';
+  const partnerBirthplace = partnerBirthplaceInput ? partnerBirthplaceInput.value.trim() : '';
   if (card) card.remove();
   const ctx = {
     purpose: contextSelections.purpose || 'personal',
     goal: contextSelections.goal || 'harmony',
     birthday: birthday || '',
     birthplace: birthplace || '',
-    birthTime: birthTime || ''
+    birthTime: birthTime || '',
+    household: contextSelections.household || 'solo',
+    partnerInfo: partnerInfo || '',
+    partnerBirthplace: partnerBirthplace || ''
   };
   // Inject context card data into chat history as a hidden system message
   // so the AI can use birthday/birthplace/birthtime in all follow-up responses
@@ -434,6 +470,9 @@ async function submitContext() {
   if (birthday) contextSummaryParts.push('birthday: ' + birthday);
   if (birthplace) contextSummaryParts.push('birthplace: ' + birthplace);
   if (birthTime) contextSummaryParts.push('birth time: ' + birthTime);
+  if (partnerInfo) contextSummaryParts.push('partner name and birthday: ' + partnerInfo);
+  if (partnerBirthplace) contextSummaryParts.push('partner birthplace: ' + partnerBirthplace);
+  if (contextSelections.household) contextSummaryParts.push('household: ' + contextSelections.household);
   contextSummaryParts.push('purpose: ' + (contextSelections.purpose || 'personal'));
   contextSummaryParts.push('goal: ' + (contextSelections.goal || 'harmony'));
   history.push({
@@ -809,8 +848,18 @@ async function sendMessage() {
     buildCounter();
     pendingScoreNumber = text;
     pendingScoreType = numType;
-    // If context was already collected earlier, skip the card and score immediately
+    // Build context from conversation history
+    const extracted = extractFromHistory();
+
+    // Check if we already have enough to bypass the card entirely
+    const hasPersonalInfo = !!(
+      extracted.birthday || extracted.birthplace ||
+      (savedContext && savedContext.birthday) ||
+      (savedContext && savedContext.birthplace)
+    );
+
     if (contextAlreadyCollected && savedContext.purpose) {
+      // Full card was previously submitted — bypass completely, use saved context
       const welcomeEl = document.querySelector('.welcome-card');
       if (welcomeEl) welcomeEl.remove();
       isLoading = true;
@@ -819,9 +868,44 @@ async function sendMessage() {
       await generateScorecard(text, numType, savedContext);
       input.focus();
       return;
+    } else if (hasPersonalInfo) {
+      // Personal info exists in conversation — build context silently and bypass
+      // Default purpose/goal to personal+harmony unless conversation suggests otherwise
+      const conversationText = history.map(m => m.content).join(' ').toLowerCase();
+      const inferredPurpose = /work|business|office|company|commercial/.test(conversationText) ? 'work' : 'personal';
+      const inferredGoal = /wealth|success|money|business|income|career/.test(conversationText) ? 'wealth' : 'harmony';
+      const builtCtx = {
+        purpose: inferredPurpose,
+        goal: inferredGoal,
+        birthday: (savedContext && savedContext.birthday) || extracted.birthday || '',
+        birthplace: (savedContext && savedContext.birthplace) || extracted.birthplace || '',
+        birthTime: (savedContext && savedContext.birthTime) || extracted.birthTime || '',
+        household: (savedContext && savedContext.household) || 'solo',
+        partnerInfo: (savedContext && savedContext.partnerInfo) || '',
+        partnerBirthplace: (savedContext && savedContext.partnerBirthplace) || ''
+      };
+      // Silently inject into history so AI has full context
+      let parts = [];
+      if (builtCtx.birthday) parts.push('birthday: ' + builtCtx.birthday);
+      if (builtCtx.birthplace) parts.push('birthplace: ' + builtCtx.birthplace);
+      if (builtCtx.birthTime) parts.push('birth time: ' + builtCtx.birthTime);
+      parts.push('purpose: ' + builtCtx.purpose, 'goal: ' + builtCtx.goal);
+      history.push({ role: 'user', content: '[Context inferred from conversation: ' + parts.join(', ') + ']' });
+      history.push({ role: 'assistant', content: 'Understood.' });
+      savedContext = builtCtx;
+      contextAlreadyCollected = true;
+      const welcomeEl = document.querySelector('.welcome-card');
+      if (welcomeEl) welcomeEl.remove();
+      isLoading = true;
+      document.getElementById('sendBtn').disabled = true;
+      showTyping();
+      await generateScorecard(text, numType, builtCtx);
+      input.focus();
+      return;
     }
+
+    // No context at all — show the full card
     contextSelections = {};
-    // Remove welcome card only after user bubble is added
     const welcomeEl = document.querySelector('.welcome-card');
     if (welcomeEl) welcomeEl.remove();
     showContextCard(text, numType);
