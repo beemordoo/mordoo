@@ -242,6 +242,37 @@ for (let i = 0; i < 25; i++) {
 let history = [], isLoading = false, messageCount = 0;
 let pendingScoreNumber = null, pendingScoreType = null;
 
+function isClarification(text) {
+  // Detect if the Mor Doo's last response was asking for clarification
+  // rather than delivering a reading — so the user's answer doesn't count as a question
+  if (!text) return false;
+  const t = text.toLowerCase();
+
+  // Explicit question patterns the Mor Doo asks
+  const clarifyPatterns = [
+    /share with me.*(name|birthday|birthplace|birth time)/i,
+    /what is your birth/i,
+    /tell me.*(name|birthday|birthplace|born|time)/i,
+    /i need.*(name|birthday|birthplace|birth|anchor)/i,
+    /before the mor doo/i,
+    /one more.*(?:piece|anchor|detail)/i,
+    /is this.*(?:live in|investment|primary|rental)/i,
+    /buying.*(?:alone|partner|family|together)/i,
+    /who is moving/i,
+    /partner['']?s? name/i,
+    /what is your.*(?:name|birthday|birth|place|time)/i,
+    /may i ask/i,
+    /\?\s*$/, // ends in a question mark (last sentence)
+  ];
+
+  // Check if the message ends with a question or contains a clarifying ask
+  const sentences = t.split(/[.!]/);
+  const lastSentence = sentences[sentences.length - 1] || '';
+  if (lastSentence.includes('?')) return true;
+
+  return clarifyPatterns.some(p => p.test(t));
+}
+
 function isPhoneOrAddress(text) {
   const t = text.trim();
 
@@ -913,9 +944,17 @@ async function sendMessage() {
     return;
   }
 
-  history.push({ role: 'user', content: text });
-  messageCount++;
-  buildCounter();
+  // Detect if the Mor Doo's last message was a clarifying question
+  // If so, tag this response so it doesn't count toward the session limit
+  const lastMordooMsg = [...history].reverse().find(m => m.role === 'assistant');
+  const isClarifyingQuestion = lastMordooMsg && isClarification(lastMordooMsg.content);
+  const messageContent = isClarifyingQuestion ? '[clarify] ' + text : text;
+
+  history.push({ role: 'user', content: messageContent });
+  if (!isClarifyingQuestion) {
+    messageCount++;
+    buildCounter();
+  }
   isLoading = true; document.getElementById('sendBtn').disabled = true;
 
   // Normal chat
