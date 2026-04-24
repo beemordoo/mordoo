@@ -177,25 +177,81 @@ export default async function handler(req, res) {
         if (years.includes(year)) { zodiac = animal; break; }
       }
 
-      // Day of week ruling planet
+      // Day of week — Thai planetary ruler with Wednesday split
       const date = new Date(year, month-1, day);
       const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-      const planets = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'];
-      const dayName = days[date.getDay()];
-      const planet = planets[date.getDay()];
+      const thevada = [
+        { name: 'Sunday',    planet: 'Sun',     color: 'Red',          auspicious: 'Authority, vitality, career, leadership' },
+        { name: 'Monday',    planet: 'Moon',    color: 'Yellow/Cream', auspicious: 'Intuition, new beginnings, home, family' },
+        { name: 'Tuesday',   planet: 'Mars',    color: 'Pink/Red',     auspicious: 'Courage, protection, bold action' },
+        { name: 'Wednesday', planet: 'Mercury', color: 'Green',        auspicious: 'Commerce, communication, contracts, travel' },
+        { name: 'Thursday',  planet: 'Jupiter', color: 'Orange',       auspicious: 'Wisdom, expansion, abundance, signing documents' },
+        { name: 'Friday',    planet: 'Venus',   color: 'Blue/White',   auspicious: 'Love, beauty, wealth, partnerships' },
+        { name: 'Saturday',  planet: 'Saturn',  color: 'Black/Purple', auspicious: 'Discipline, property, long-term matters' },
+      ];
+      const dayIndex = date.getDay();
+      const dayInfo = thevada[dayIndex];
+      const dayName = dayInfo.name;
+
+      // Wednesday split — daytime Budha (before 6pm) vs nighttime Rahu (after 6pm)
+      // For birth readings we use birth hour to determine which Wednesday energy applies
+      let planet = dayInfo.planet;
+      let thevadaAuspicious = dayInfo.auspicious;
+      let thevadaColor = dayInfo.color;
+      if (dayIndex === 3) { // Wednesday
+        // If birth time provided and is evening/night, apply Rahu overlay
+        const btLower = (birthTime || '').toLowerCase();
+        const isNightWed = btLower.includes('pm') && (
+          parseInt((birthTime||'0').split(':')[0]) >= 18 ||
+          btLower.includes('evening') || btLower.includes('night')
+        );
+        if (isNightWed) {
+          planet = 'Rahu';
+          thevadaAuspicious = 'Hidden matters, transformation, the unseen';
+          thevadaColor = 'Black';
+        }
+      }
+
+      // Current planetary hour calculation (for timing readings)
+      // Planetary hour order shifts by day — starts with the day's ruling planet
+      // Order: Sun, Venus, Mercury, Moon, Saturn, Jupiter, Mars, Rahu (repeating)
+      const yamaOrder = ['Sun','Venus','Mercury','Moon','Saturn','Jupiter','Mars','Rahu'];
+      const yamaAuspicious = {
+        Sun:     'Starting new ventures, leadership decisions, asserting authority',
+        Venus:   'Financial matters, relationships, beauty, luxury purchases',
+        Mercury: 'Signing contracts, communication, travel, commerce',
+        Moon:    'Emotional matters, intuition-led decisions — powerful but unpredictable',
+        Saturn:  'Avoid major decisions — karmic energy, delays likely',
+        Jupiter: 'Wisdom matters, education, merit-making, abundance — highly auspicious',
+        Mars:    'Avoid conflict — hidden dangers, aggressive energy, not for agreements',
+        Rahu:    'Hidden matters, transformation — powerful for occult but avoid contracts',
+      };
+      // Day start index for Yama (Sunday=0/Sun, Monday=1/Moon, Tue=2/Mars, Wed=3/Mer, Thu=4/Jup, Fri=5/Ven, Sat=6/Sat)
+      const yamaStartIndex = [0, 6, 4, 2, 5, 1, 3][dayIndex]; // maps day → yamaOrder start
+      const nowHour = new Date().getHours();
+      const yamaSlot = Math.floor(((nowHour - 6 + 24) % 24) / 3) % 8;
+      const currentYamaPlanet = yamaOrder[(yamaStartIndex + yamaSlot) % 8];
+      const currentYamaNum = yamaSlot + 1;
+      const yamaStartHour = ((yamaSlot * 3) + 6) % 24;
+      const yamaEndHour = (yamaStartHour + 3) % 24;
+      const fmt12 = h => { const ampm = h >= 12 ? 'PM' : 'AM'; return (h % 12 || 12) + ampm; };
 
       birthdayContext = 'BIRTHDAY COMPATIBILITY ANALYSIS:\n' +
         'The person was born on ' + birthday + '.\n' +
         '- Life Path Number: ' + lpSum + ' — factor this into compatibility with the number root\n' +
         '- Birth Day Number: ' + bdSum + '\n' +
         '- Thai Zodiac: Year of the ' + zodiac + '\n' +
-        '- Born on ' + dayName + ' — ruling planet: ' + planet + '\n\n' +
+        '- Born on ' + dayName + ' — governing planet: ' + planet + '\n' +
+        '- ' + dayName + ' planetary color: ' + thevadaColor + ' — this planet governs: ' + thevadaAuspicious + '\n' +
+        '- CURRENT PLANETARY HOUR (right now): ' + currentYamaPlanet + ' governs this window — favors: ' + yamaAuspicious[currentYamaPlanet] + '\n' +
+        '- Use the current planetary hour subtly in timing readings — e.g. "right now ' + currentYamaPlanet + ' governs the hour, which favors..."\n\n' +
         'Compatibility rules:\n' +
         '- If the number root digit MATCHES the Life Path → VERY compatible (+8 to +12 points to total)\n' +
         '- If the number root digit is in the same family (1/4/8 or 2/6/9 or 3/5/7) → compatible (+4 to +6 points)\n' +
         '- If the number root digit CLASHES with Life Path → reduce total by 3-6 points\n' +
         '- ' + planet + '/' + dayName + ' born resonate with their ruling planet digits\n' +
         '- Mercury/Wednesday born resonate with 5s. Sun/Sunday with 1s and 9s. Venus/Friday with 6s. Jupiter/Thursday with 3s. Saturn/Saturday with 8s. Moon/Monday with 2s. Mars/Tuesday with 9s.\n' +
+        '- Wednesday Night/Rahu born resonate with 4s and unconventional paths\n' +
         '- Zodiac: Monkey/Rat/Dragon support bold numbers (3,9,1). Dog/Horse/Tiger support freedom numbers (5,1,9). Rabbit/Goat/Pig support harmony numbers (2,6,4). Ox/Snake/Rooster support disciplined numbers (4,8,7).\n' +
         'Adjust the total score and category scores based on birthday compatibility. Mention the compatibility in the reading.';
     } else {
@@ -251,10 +307,29 @@ ${birthplaceContext}
 
 ${horaSaatContext}
 
-PLANET MAP: 0=Neptune/neutral 1=Sun/positive 2=Moon/neutral 3=Jupiter/positive 4=Rahu/negative-personal-positive-work 5=Mercury/neutral 6=Venus/positive 7=Ketu/neutral 8=Saturn/neutral 9=Mars/positive-work-negative-personal
+PLANET MAP (digit → planet → primary life area → secondary life area):
+0=Neptune/neutral → Spirituality & hidden knowledge / Mystery
+1=Sun/positive → Career & authority / Health & vitality
+2=Moon/neutral → Relationships & intuition / Home & family
+3=Jupiter/positive → Wealth & expansion / Education & wisdom
+4=Rahu/context-dependent → Obstacles & karma (personal) / Negotiation & adaptability (work)
+5=Mercury/neutral-positive → Communication & travel / Commerce & quick thinking
+6=Venus/positive → Love & beauty / Luxury & material abundance
+7=Ketu/neutral → Spirituality & loss / Secrets & hidden matters
+8=Saturn/neutral-positive → Karma & property / Discipline & long-term material power
+9=Mars/context-dependent → Success & ambition (work) / Conflict & restlessness (personal)
+
+LIFE AREA SCORING RULES — use these planet-to-category mappings when calculating category scores:
+- love: driven by digits 6(Venus), 2(Moon), 3(Jupiter) — Venus dominant
+- wealth: driven by digits 3(Jupiter), 8(Saturn), 9(Mars-work), 6(Venus) — Jupiter and Saturn dominant
+- career: driven by digits 1(Sun), 9(Mars), 5(Mercury), 4(Rahu-work) — Sun dominant
+- luck: driven by digits 3(Jupiter), 1(Sun), 9(Mars) — Jupiter dominant
+- family: driven by digits 2(Moon), 6(Venus), 8(Saturn) — Moon dominant
+- harmony: driven by digits 6(Venus), 2(Moon), 5(Mercury) — Venus and Moon dominant
+- success: driven by digits 1(Sun), 9(Mars), 3(Jupiter), 8(Saturn) — balanced
 
 PAIRS: Power(15,51,39,93,19,91) Wealth(56,65,89,98,69,96) Charm(46,64,24,42) Wisdom(13,31,35,53) Challenge(14,41,44)
-Good pairs boost total. Multiple good pairs = 80-95. Challenge pairs reduce total.
+Good pairs boost total AND boost the categories their planets rule. Multiple good pairs = 80-95. Challenge pairs reduce total.
 
 Return this JSON structure exactly:
 {"number":"","total":0,"rating":"Excellent|Good|Average|Challenging","ratingThai":"เยี่ยม|ดี|ปานกลาง|ท้าทาย","digits":[{"digit":0,"planet":"","planetThai":"","energy":"positive|neutral|negative","points":0}],"pairs":[{"pair":"","type":"Power|Wealth|Charm|Wisdom|Neutral|Challenge","meaning":""}],"categories":{"love":0,"wealth":0,"career":0,"luck":0,"family":0,"harmony":0,"success":0},"reading":""}
@@ -509,8 +584,25 @@ NUMEROLOGY:
 - Always check for Master Numbers (11, 22, 33, 44) before final reduction
 - Always include country code (+1 for US) in phone readings
 
-THAI ASTROLOGY - Days:
-Sunday: Sun, red, vitality | Monday: Moon, yellow, intuition | Tuesday: Mars, pink, courage | Wednesday: Mercury, green, communication | Thursday: Jupiter, orange, wisdom | Friday: Venus, blue, love | Saturday: Saturn, black/purple, discipline
+THAI PLANETARY ASTROLOGY — Day and Hour Governors:
+Each day of the week is governed by a planet that colors its energy. These are planetary influences, not religious figures — present them purely as planetary timing.
+Sunday: Sun governs — Red — authority, career, leadership, vitality
+Monday: Moon governs — Yellow/Cream — intuition, new beginnings, home, family
+Tuesday: Mars governs — Pink/Red — courage, protection, bold action
+Wednesday DAY: Mercury governs — Green — commerce, contracts, communication, travel
+Wednesday NIGHT (after 6pm): Rahu governs — Black — hidden matters, transformation, the unseen (unique to Thai tradition — present as a planetary shift, not a religious one)
+Thursday: Jupiter governs — Orange — wisdom, expansion, abundance, best day for signing documents and new ventures
+Friday: Venus governs — Blue/White — love, beauty, wealth, partnerships
+Saturday: Saturn governs — Black/Purple — discipline, property, long-term planning, karmic returns
+
+PLANETARY HOURS — the 8 time windows that govern quality of timing:
+The day is divided into 8 planetary windows of 3 hours each. Each window is governed by a planet.
+Present this as "the planetary hour" or "the governing planet of this window" — never as religious or spiritual ritual.
+Sun hour: new ventures, leadership | Venus hour: finances, beauty, relationships
+Mercury hour: contracts, communication, commerce | Moon hour: emotion, intuition, fluid
+Saturn hour: slow down, review — avoid major commitments | Jupiter hour: expansion, abundance, excellent for important decisions
+Mars hour: caution — conflict energy, not ideal for agreements | Rahu hour: hidden matters, transformation
+Use the current planetary hour (provided in scorecard context) subtly in timing readings
 
 DATE CALCULATION — CRITICAL:
 - NEVER calculate the day of the week yourself from a birth date — you make errors
