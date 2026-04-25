@@ -823,13 +823,52 @@ export default async function handler(req, res) {
         if (ampm === 'pm' && hour !== 12) hour += 12;
         if (ampm === 'am' && hour === 12) hour = 0;
       } else {
+        // Approximate time — map to midpoint of range and flag as approximate
         const approx = birthTime.toLowerCase();
-        if (approx.includes('morning') || approx.includes('dawn')) hour = 7;
-        else if (approx.includes('noon') || approx.includes('midday')) hour = 12;
-        else if (approx.includes('afternoon')) hour = 14;
-        else if (approx.includes('evening') || approx.includes('sunset')) hour = 18;
-        else if (approx.includes('night') || approx.includes('midnight')) hour = 0;
-        else if (approx.includes('late night')) hour = 2;
+        let hourRange = null;
+        if (approx.includes('late night') || approx.includes('early morning') || approx.includes('before dawn')) {
+          hourRange = { label: 'late night/early morning', hours: [1,4], midpoint: 2,
+            animals: ['Ox (1-3am)', 'Tiger (3-5am)'],
+            note: 'Born in these hours carries Saturn or Mars energy — endurance or bold fire' };
+        } else if (approx.includes('dawn') || approx.includes('sunrise') || approx.includes('early')) {
+          hourRange = { label: 'dawn/early morning', hours: [5,8], midpoint: 6,
+            animals: ['Rabbit (5-7am)', 'Dragon (7-9am)'],
+            note: 'Born at dawn carries Moon or Sun/Rahu energy — grace or commanding presence' };
+        } else if (approx.includes('morning')) {
+          hourRange = { label: 'morning', hours: [6,12], midpoint: 9,
+            animals: ['Dragon (7-9am)', 'Snake (9-11am)'],
+            note: 'Morning births carry Sun/Rahu or Venus energy — leadership or quiet wisdom' };
+        } else if (approx.includes('noon') || approx.includes('midday')) {
+          hour = 12; // Noon is precise enough
+        } else if (approx.includes('afternoon')) {
+          hourRange = { label: 'afternoon', hours: [12,18], midpoint: 14,
+            animals: ['Horse (11am-1pm)', 'Goat (1-3pm)', 'Monkey (3-5pm)'],
+            note: 'Afternoon births carry Mercury/Sun, Moon/Venus, or Mercury energy — movement, creativity, or cleverness' };
+        } else if (approx.includes('sunset') || approx.includes('dusk') || approx.includes('evening')) {
+          hourRange = { label: 'evening', hours: [17,21], midpoint: 18,
+            animals: ['Rooster (5-7pm)', 'Dog (7-9pm)'],
+            note: 'Evening births carry Venus/Sun or Saturn/Mars energy — confidence or protective loyalty' };
+        } else if (approx.includes('night') && !approx.includes('late') && !approx.includes('mid')) {
+          hourRange = { label: 'night', hours: [20,24], midpoint: 21,
+            animals: ['Dog (7-9pm)', 'Pig (9-11pm)'],
+            note: 'Night births carry Saturn/Mars or Jupiter energy — protection or warm generosity' };
+        } else if (approx.includes('midnight')) {
+          hourRange = { label: 'midnight', hours: [23,1], midpoint: 0,
+            animals: ['Rat (11pm-1am)'],
+            note: 'Midnight births carry Neptune/Water energy — perceptive and quietly ambitious' };
+        }
+        if (hourRange) {
+          hour = hourRange.midpoint;
+          // Attach range context for the AI to use
+          horaSaatContext = 'BIRTH HOUR (approximate — ' + hourRange.label + '):\n' +
+            'Possible animals: ' + hourRange.animals.join(' or ') + '\n' +
+            hourRange.note + '\n' +
+            'Since birth time is approximate, present the most likely animal but acknowledge the adjacent possibility. ' +
+            'Do not state one animal as definitive — say "likely born in the [Animal] hour, though if earlier/later it may be [other Animal]"\n' +
+            'Never show the hour ranges to the user — just describe the energy.';
+        } else if (hour === -1) {
+          hour = 12; // Unknown — use noon as neutral fallback
+        }
       }
 
       // Thai birth hour animals and their ruling planets
@@ -856,7 +895,8 @@ export default async function handler(req, res) {
       }
 
       if (birthHourAnimal) {
-        horaSaatContext = 'HORA-SASAT (โหราศาสตร์) BIRTH HOUR ANALYSIS:\n' +
+        // Only overwrite horaSaatContext if it wasn't already set by the approximate range block
+        const baseContext = 'HORA-SASAT (โหราศาสตร์) BIRTH HOUR ANALYSIS:\n' +
           'Born in the ' + birthHourAnimal.name + ' hour (' + birthTime + ') — ruling planet: ' + birthHourAnimal.planet + '\n' +
           'Hour energy: ' + birthHourAnimal.energy + '\n' +
           'Resonant digits for this birth hour: ' + birthHourAnimal.digits.join(' and ') + '\n\n' +
@@ -866,6 +906,11 @@ export default async function handler(req, res) {
           '- ' + birthHourAnimal.name + ' hour people carry ' + birthHourAnimal.energy + ' — a number that mirrors this energy scores 5-8 points higher\n' +
           '- Mention the hora-sasat birth hour finding in the reading — it is considered sacred knowledge in Thai tradition\n' +
           '- Combined lek-sasat + hora-sasat creates the most complete reading — acknowledge this integration';
+        // If birth time was approximate, append the range context
+        if (horaSaatContext && horaSaatContext.includes('approximate')) {
+          baseContext += '\n' + horaSaatContext;
+        }
+        horaSaatContext = baseContext;
       } else {
         horaSaatContext = 'Birth time provided but could not determine exact hour animal. Apply general hora-sasat principle: numbers whose root planet aligns with the time of day (morning=Sun/active, midday=peak energy, evening=Venus/social, night=Moon/intuitive) score 3-5 points higher.';
       }
@@ -1031,6 +1076,7 @@ export default async function handler(req, res) {
       const fmt12 = h => { const ampm = h >= 12 ? 'PM' : 'AM'; return (h % 12 || 12) + ampm; };
 
       // Fetch natal chart from JPL Horizons
+      // Uses locally scoped birthday/birthplace (which equal effectiveBirthday/Birthplace)
       let birthChart = {};
       let rahuKetu = {};
       let birthCoords = null;
@@ -1039,15 +1085,16 @@ export default async function handler(req, res) {
       try {
         [birthChart, birthCoords, transitChart] = await Promise.all([
           getBirthChart(jplDateStr),
-          geocodeBirthplace(birthplace || ''),
+          geocodeBirthplace(birthplace || ''),  // birthplace = effectiveBirthplace here (locally scoped above)
           getCurrentTransits(),
         ]);
         rahuKetu = getRahuKetu(jplDateStr);
       } catch(e) {
-        // JPL unavailable — reading continues without natal chart
+        // JPL unavailable or timeout — reading continues gracefully without natal chart
+        console.error('JPL/geocoding error:', e.message);
       }
-      const natalChartText = formatBirthChart(birthChart, rahuKetu);
-      const transitText = formatTransits(transitChart, birthChart);
+      const natalChartText = Object.keys(birthChart).length > 0 ? formatBirthChart(birthChart, rahuKetu) : '';
+      const transitText = Object.keys(transitChart).length > 0 ? formatTransits(transitChart, birthChart) : '';
       const coordsText = birthCoords
         ? 'Birthplace coordinates: lat ' + birthCoords.lat.toFixed(4) + ', lng ' + birthCoords.lng.toFixed(4)
         : '';
