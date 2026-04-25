@@ -100,27 +100,41 @@ async function fetchPlanetPosition(jplId, dateStr) {
     `&CSV_FORMAT='YES'`;
 
   const fetchP = fetch(url).then(r => r.text());
-  const timeoutP = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 15000));
+  // 7s timeout per planet — leaves headroom within Vercel's 10s function limit
+  const timeoutP = new Promise((_, rej) => setTimeout(() => rej(new Error('JPL timeout')), 7000));
   const text = await Promise.race([fetchP, timeoutP]);
-  // Log first 200 chars of JPL response for one planet only
-  if (jplId === '299') console.log('JPL raw (Venus):', text.slice(0, 300));
   return parseJPLLongitude(text);
 }
 
 async function getBirthChart(dateStr) {
   const planets = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn'];
   const results = {};
-  await Promise.allSettled(planets.map(async p => {
-    try {
-      const lon = await fetchPlanetPosition(JPL_PLANETS[p], dateStr);
-      if (lon !== null) {
-        const { sign, degree } = lonToSign(lon);
-        const dignity = getDignity(p, sign);
-        const meaning = (SIGN_MEANINGS[p] && SIGN_MEANINGS[p][sign]) || '';
-        results[p] = { sign, degree, dignity, meaning };
+
+  // Fetch in two batches to stay within Vercel's execution window
+  // Batch 1: Sun, Moon, Mercury, Venus (most important for Thai reading)
+  // Batch 2: Mars, Jupiter, Saturn
+  const batch1 = planets.slice(0, 4);
+  const batch2 = planets.slice(4);
+
+  const runBatch = async (batch) => {
+    await Promise.allSettled(batch.map(async p => {
+      try {
+        const lon = await fetchPlanetPosition(JPL_PLANETS[p], dateStr);
+        if (lon !== null) {
+          const { sign, degree } = lonToSign(lon);
+          const dignity = getDignity(p, sign);
+          const meaning = (SIGN_MEANINGS[p] && SIGN_MEANINGS[p][sign]) || '';
+          results[p] = { sign, degree, dignity, meaning };
+        }
+      } catch(e) {
+        console.error(`JPL error for ${p}:`, e.message);
       }
-    } catch(e) {}
-  }));
+    }));
+  };
+
+  await runBatch(batch1);
+  await runBatch(batch2);
+  console.log('Planets fetched:', Object.keys(results).join(', '));
   return results;
 }
 
@@ -175,6 +189,8 @@ async function geocode(birthplace) {
   return null;
 }
 
+export const config = { maxDuration: 30 }; // Request extended timeout from Vercel
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -212,7 +228,9 @@ export default async function handler(req, res) {
           if (ap === 'pm' && hr !== 12) hr += 12;
           if (ap === 'am' && hr === 12) hr = 0;
           // Estimate UTC offset from longitude (rough: 15° per hour)
-          const utcOffset = -Math.round(coords.lng / 15);
+          // lng is negative for west — utcOffset is negative for west
+          // utcHour = localHour - utcOffset → adds hours for west (behind UTC)
+          const utcOffset = coords.lng / 15;
           const utcHour = hr - utcOffset + mn/60;
           const [y, m, d] = jplDate.split('-').map(Number);
           const JD = 367*y - Math.floor(7*(y+Math.floor((m+9)/12))/4) +
