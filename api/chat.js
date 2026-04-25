@@ -1099,8 +1099,7 @@ export default async function handler(req, res) {
         );
         if (cachedMsg) {
           // Pass cached chart text directly — no new JPL call needed
-          natalChartText = cachedMsg.content.replace('[natal_chart_cached]
-', '');
+          natalChartText = cachedMsg.content.replace('[natal_chart_cached]\n', '');
         }
         // Still get current transits — these change daily so always fetch fresh
         try {
@@ -1145,15 +1144,14 @@ export default async function handler(req, res) {
         '- If the number root digit CLASHES with Life Path → reduce total by 3-6 points\n' +
         '- ' + planet + '/' + dayName + ' born resonate with their ruling planet digits\n' +
         '- Mercury/Wednesday born resonate with 5s. Sun/Sunday with 1s and 9s. Venus/Friday with 6s. Jupiter/Thursday with 3s. Saturn/Saturday with 8s. Moon/Monday with 2s. Mars/Tuesday with 9s.\n' +
-        '- Wednesday Night/Rahu born resonate with 4s and unconventional paths
-
-NATAL CHART USAGE — when JPL planetary positions are provided:
-- Always use the natal positions — they are more accurate than general day-of-week planet associations
-- Lead with the most significant placements: Sun sign, Moon sign, and any planets in own sign or exalted
-- Name debilitated planets honestly but constructively — "Mars in Cancer means your drive works through emotion and protection, not open confrontation — this is not weakness"
-- For timing readings: when a transiting planet is conjunct a natal planet, that is a significant window — name it specifically
-- Rahu shows the direction of growth this lifetime, Ketu shows what the person is releasing — use these for life purpose and karmic readings
-- Keep planet descriptions grounded and practical — what does this mean for their actual life, work, relationships, decisions\n' +
+        '- Wednesday Night/Rahu born resonate with 4s and unconventional paths\n\n' +
+        'NATAL CHART USAGE — when JPL planetary positions are provided:\n' +
+        '- Always use the natal positions — they are more accurate than general day-of-week planet associations\n' +
+        '- Lead with the most significant placements: Sun sign, Moon sign, and any planets in own sign or exalted\n' +
+        '- Name debilitated planets honestly but constructively\n' +
+        '- For timing readings: when a transiting planet is conjunct a natal planet, that is a significant window — name it specifically\n' +
+        '- Rahu shows the direction of growth this lifetime, Ketu shows what the person is releasing — use these for life purpose and karmic readings\n' +
+        '- Keep planet descriptions grounded and practical — what does this mean for their actual life, work, relationships, decisions\n' +
         '- Zodiac: Monkey/Rat/Dragon support bold numbers (3,9,1). Dog/Horse/Tiger support freedom numbers (5,1,9). Rabbit/Goat/Pig support harmony numbers (2,6,4). Ox/Snake/Rooster support disciplined numbers (4,8,7).\n' +
         'Adjust the total score and category scores based on birthday compatibility. Mention the compatibility in the reading.';
     } // end birthday if
@@ -1665,6 +1663,7 @@ OUTPUT QUALITY — GRAMMAR AND FORMATTING:
     return res.status(200).json(responsePayload);
 
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    console.error('Handler error:', err.message, err.stack);
+    return res.status(500).json({ error: err.message, stack: err.stack });
   }
 }
