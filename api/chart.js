@@ -101,7 +101,7 @@ async function fetchPlanetPosition(jplId, dateStr) {
 
   const fetchP = fetch(url).then(r => r.text());
   // 7s timeout per planet — leaves headroom within Vercel's 10s function limit
-  const timeoutP = new Promise((_, rej) => setTimeout(() => rej(new Error('JPL timeout')), 7000));
+  const timeoutP = new Promise((_, rej) => setTimeout(() => rej(new Error('JPL timeout')), 9000));
   const text = await Promise.race([fetchP, timeoutP]);
   return parseJPLLongitude(text);
 }
@@ -116,25 +116,36 @@ async function getBirthChart(dateStr) {
   const batch1 = planets.slice(0, 4);
   const batch2 = planets.slice(4);
 
-  const runBatch = async (batch) => {
-    await Promise.allSettled(batch.map(async p => {
-      try {
-        const lon = await fetchPlanetPosition(JPL_PLANETS[p], dateStr);
-        if (lon !== null) {
-          const { sign, degree } = lonToSign(lon);
-          const dignity = getDignity(p, sign);
-          const meaning = (SIGN_MEANINGS[p] && SIGN_MEANINGS[p][sign]) || '';
-          results[p] = { sign, degree, dignity, meaning };
-        }
-      } catch(e) {
-        console.error(`JPL error for ${p}:`, e.message);
+  const fetchPlanet = async (p, attempt = 1) => {
+    try {
+      const lon = await fetchPlanetPosition(JPL_PLANETS[p], dateStr);
+      if (lon !== null) {
+        const { sign, degree } = lonToSign(lon);
+        const dignity = getDignity(p, sign);
+        const meaning = (SIGN_MEANINGS[p] && SIGN_MEANINGS[p][sign]) || '';
+        results[p] = { sign, degree, dignity, meaning };
+      } else if (attempt < 2) {
+        // Retry once if null returned
+        await new Promise(r => setTimeout(r, 500));
+        await fetchPlanet(p, attempt + 1);
       }
-    }));
+    } catch(e) {
+      if (attempt < 2) {
+        await new Promise(r => setTimeout(r, 500));
+        await fetchPlanet(p, attempt + 1);
+      } else {
+        console.error(`JPL failed for ${p} after 2 attempts:`, e.message);
+      }
+    }
+  };
+
+  const runBatch = async (batch) => {
+    await Promise.allSettled(batch.map(p => fetchPlanet(p)));
   };
 
   await runBatch(batch1);
   await runBatch(batch2);
-  console.log('Planets fetched:', Object.keys(results).join(', '));
+  console.log('Planets fetched:', Object.keys(results).join(', ') || 'none');
   return results;
 }
 
