@@ -192,7 +192,7 @@ async function fetchPlanetPosition(jplId, dateStr) {
   });
 
   const url = `https://ssd.jpl.nasa.gov/api/horizons.api?${params.toString()}`;
-  const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  const resp = await fetch(url, { signal: AbortSignal.timeout(12000) });
   const text = await resp.text();
   return parseJPLLongitude(text);
 }
@@ -247,7 +247,7 @@ function getRahuKetu(dateStr) {
 
 // Format birth chart for system prompt injection
 function formatBirthChart(chart, rahuKetu) {
-  if (!chart || !Object.keys(chart).length) return '';
+  if ((!chart || !Object.keys(chart).length) && (!rahuKetu || !Object.keys(rahuKetu).length)) return '';
   let lines = ['NATAL PLANETARY POSITIONS (from NASA JPL Horizons):'];
   for (const [planet, data] of Object.entries(chart)) {
     let line = `${planet}: ${data.sign} ${data.degree}°`;
@@ -758,7 +758,7 @@ async function geocodeBirthplace(birthplace) {
     const url = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`;
     const resp = await fetch(url, {
       headers: { 'User-Agent': 'MorDoo/1.0 (mordoo-sepia.vercel.app)' },
-      signal: AbortSignal.timeout(5000)
+      signal: AbortSignal.timeout(8000)
     });
     const data = await resp.json();
     if (data && data.length > 0) {
@@ -883,7 +883,7 @@ export default async function handler(req, res) {
 
       // Thai birth hour animals and their ruling planets
       const hourAnimals = [
-        { name: 'Rat', planet: 'Neptune/Water', hours: [23,0], energy: 'perceptive, intuitive, ambitious in quiet', digits: [2,7] },
+        { name: 'Rat', planet: 'Neptune/Water', hours: [23,0,1], energy: 'perceptive, intuitive, ambitious in quiet', digits: [2,7] },
         { name: 'Ox', planet: 'Saturn', hours: [1,2], energy: 'enduring, determined, slow-burning strength', digits: [8,4] },
         { name: 'Tiger', planet: 'Mars', hours: [3,4], energy: 'bold, magnetic, restless fire', digits: [9,3] },
         { name: 'Rabbit', planet: 'Moon', hours: [5,6], energy: 'gentle, graceful, artistic intuition', digits: [2,6] },
@@ -900,8 +900,9 @@ export default async function handler(req, res) {
       let birthHourAnimal = null;
       if (hour >= 0) {
         const h = hour % 24;
-        birthHourAnimal = hourAnimals.find(a => a.hours.includes(h) || a.hours.includes(h-1));
-        if (!birthHourAnimal && h === 23) birthHourAnimal = hourAnimals[0]; // Rat
+        // Rat covers 11pm-1am (hours 23 and 0)
+        birthHourAnimal = hourAnimals.find(a => a.hours.includes(h));
+        if (!birthHourAnimal && h === 0) birthHourAnimal = hourAnimals[0]; // Midnight = Rat (23-1am)
       }
 
       if (birthHourAnimal) {
@@ -1119,11 +1120,16 @@ export default async function handler(req, res) {
         } catch(e) {
           console.error('JPL/geocoding error:', e.message);
         }
-        natalChartText = Object.keys(birthChart).length > 0 ? formatBirthChart(birthChart, rahuKetu) : '';
+        // Build chart text — include even if only partial planet data returned
+        // Rahu/Ketu are always available (calculated, not fetched)
+        const hasAnyData = Object.keys(birthChart).length > 0 || Object.keys(rahuKetu).length > 0;
+        natalChartText = hasAnyData ? formatBirthChart(birthChart, rahuKetu) : '';
         transitText = Object.keys(transitChart).length > 0 ? formatTransits(transitChart, birthChart) : '';
         coordsText = birthCoords
           ? 'Birthplace coordinates: lat ' + birthCoords.lat.toFixed(4) + ', lng ' + birthCoords.lng.toFixed(4)
           : '';
+        // Log what we got for debugging
+        console.log('JPL result — planets:', Object.keys(birthChart).length, 'nodes:', Object.keys(rahuKetu).length, 'transits:', Object.keys(transitChart).length);
       }
 
       birthdayContext = 'BIRTHDAY COMPATIBILITY ANALYSIS:\n' +
