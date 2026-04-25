@@ -655,16 +655,22 @@ function nToggle(uid) {
 
 // ── Fetch natal chart from dedicated /api/chart endpoint ──────────────────
 async function fetchNatalChart(birthday, birthplace) {
+  console.log('fetchNatalChart called with:', birthday, birthplace);
   try {
+    console.log('Calling /api/chart...');
     const res = await fetch('/api/chart', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ birthday, birthplace })
     });
+    console.log('Chart API response status:', res.status);
     const data = await res.json();
-    console.log('Chart API:', data.planetsFound, 'planets found');
+    console.log('Chart API full response:', JSON.stringify(data).slice(0, 300));
 
-    if (!data.chart && !data.rahuKetu) return;
+    if (!data.chart && !data.rahuKetu) {
+      console.log('No chart data returned');
+      return;
+    }
 
     // Build cache text from response
     const lines = ['NATAL PLANETARY POSITIONS (from NASA JPL Horizons):'];
@@ -1428,16 +1434,16 @@ async function sendMessage() {
   isLoading = true; document.getElementById('sendBtn').disabled = true;
 
   // ── Parallel natal chart fetch ─────────────────────────────────────────
-  // If birthday found and chart not yet cached, call /api/chart independently
-  // so it never blocks or competes with the reading
+  console.log('Chart check — alreadyCached:', alreadyCached);
   if (!alreadyCached) {
     const allText = history.map(m => m.content || '').join(' ');
     const bdM = allText.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b/);
+    console.log('Birthday found in history:', bdM ? bdM[1] : 'NONE');
     if (bdM) {
       const bpM = allText.match(/(?:born in|from|in\s+)([A-Z][a-zA-Z\s,]{2,30})(?=\s+at|\s+\d|[,\.\n]|$)/i);
       const csM = allText.match(/([A-Z][a-zA-Z\s]+),\s*([A-Z]{2})\b/);
       const bp = bpM ? bpM[1].trim() : csM ? (csM[1].trim() + ', ' + csM[2]) : '';
-      // Fire and forget — don't await, chart renders whenever it's ready
+      console.log('Birthplace extracted:', bp || 'NONE');
       fetchNatalChart(bdM[1], bp);
     }
   }
