@@ -61,13 +61,23 @@ function parseJPLLongitude(resultText) {
     const headerLine = headerLines[headerLines.length - 1];
     const headers = headerLine.split(',').map(s => s.trim().toLowerCase());
     let lonColIdx = headers.findIndex(h => h.includes('obseclon') || h.includes('eclon'));
-    if (lonColIdx === -1) lonColIdx = 1;
+    // Fallback: scan data row for first valid longitude (float between 0-360)
+    // JPL format has empty cols: "Date, , , ObsEcLon, ObsEcLat"
     const dataSection = resultText.slice(soeIdx + 5, eoeIdx).trim();
     const lines = dataSection.split('\n').filter(l => l.trim());
     if (!lines.length) return null;
     const cols = lines[0].split(',').map(s => s.trim());
-    const lon = parseFloat(cols[lonColIdx]);
-    return isNaN(lon) ? null : lon;
+    // Try header-detected column first
+    if (lonColIdx !== -1) {
+      const lon = parseFloat(cols[lonColIdx]);
+      if (!isNaN(lon)) return lon;
+    }
+    // Scan all columns for first value that looks like an ecliptic longitude (0-360)
+    for (let i = 1; i < cols.length; i++) {
+      const val = parseFloat(cols[i]);
+      if (!isNaN(val) && val >= 0 && val <= 360) return val;
+    }
+    return null;
   } catch(e) { return null; }
 }
 
