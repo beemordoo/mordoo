@@ -182,6 +182,142 @@
   ::-webkit-scrollbar-track { background: var(--cream-dark); }
   ::-webkit-scrollbar-thumb { background: var(--gold-light); border-radius: 2px; }
   @media (max-width: 500px) { .quick-starts { grid-template-columns: 1fr; } .main-title { font-size: 24px; } .category-label { width: 55px; font-size: 10px; } .context-btns { grid-template-columns: 1fr; } }
+  /* ── Natal Talisman ─────────────────────────────────────────────── */
+  .natal-outer {
+    max-width: 480px;
+    font-family: 'Playfair Display', serif;
+  }
+  .natal-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .natal-toggle-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.3s;
+    font-family: 'Sarabun', sans-serif;
+  }
+  .natal-toggle-track {
+    width: 38px;
+    height: 19px;
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.3s;
+    border: 1px solid rgba(184,134,11,0.4);
+    flex-shrink: 0;
+  }
+  .natal-toggle-thumb {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    transition: left 0.3s, background 0.3s;
+  }
+  .natal-talisman {
+    border-radius: 12px;
+    padding: 24px 20px 20px;
+    transition: background 0.4s, border-color 0.4s;
+  }
+  .natal-talisman.ndark {
+    background: #1A1008;
+    border: 1px solid rgba(184,134,11,0.28);
+  }
+  .natal-talisman.nlight {
+    background: #FBF7F0;
+    border: 1px solid rgba(184,134,11,0.2);
+  }
+  .natal-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 10px;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 3px;
+    transition: color 0.3s;
+  }
+  .ndark .natal-title { color: #D4A843; }
+  .nlight .natal-title { color: #B8860B; }
+  .natal-person {
+    font-size: 19px;
+    text-align: center;
+    letter-spacing: 0.05em;
+    font-weight: 400;
+    margin-bottom: 2px;
+    transition: color 0.3s;
+  }
+  .ndark .natal-person { color: #F0DFA0; }
+  .nlight .natal-person { color: #3D2B1F; }
+  .natal-birthdate {
+    font-size: 12px;
+    text-align: center;
+    letter-spacing: 0.1em;
+    font-style: italic;
+    margin-bottom: 18px;
+    transition: color 0.3s;
+  }
+  .ndark .natal-birthdate { color: rgba(184,134,11,0.5); }
+  .nlight .natal-birthdate { color: #9A7A5A; }
+  .natal-wheel { width: 100%; max-width: 380px; margin: 0 auto; display: block; }
+  .natal-planets {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 14px;
+    margin-top: 18px;
+  }
+  .natal-p-row { display: flex; align-items: baseline; gap: 6px; }
+  .natal-p-sym { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
+  .natal-p-name {
+    font-size: 10px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    min-width: 50px;
+    font-family: 'Sarabun', sans-serif;
+    transition: color 0.3s;
+  }
+  .ndark .natal-p-name { color: rgba(212,168,67,0.52); }
+  .nlight .natal-p-name { color: #9A7A5A; }
+  .natal-p-sign { font-size: 12px; transition: color 0.3s; }
+  .ndark .natal-p-sign { color: #E8D5A0; }
+  .nlight .natal-p-sign { color: #3D2B1F; }
+  .natal-p-dig { font-size: 10px; font-style: italic; transition: color 0.3s; margin-left: 2px; }
+  .ndark .natal-p-dig { color: rgba(184,134,11,0.48); }
+  .nlight .natal-p-dig { color: #B8860B; }
+  .natal-divider {
+    width: 100%;
+    height: 1px;
+    margin: 13px 0;
+    transition: background 0.3s;
+  }
+  .ndark .natal-divider { background: linear-gradient(90deg,transparent,rgba(184,134,11,0.28),transparent); }
+  .nlight .natal-divider { background: linear-gradient(90deg,transparent,rgba(184,134,11,0.22),transparent); }
+  .natal-nodes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .natal-node { font-size: 11px; font-family: 'Sarabun', sans-serif; }
+  .natal-node strong {
+    font-weight: 400; letter-spacing: 0.09em;
+    text-transform: uppercase; font-size: 10px;
+    display: block; margin-bottom: 2px; transition: color 0.3s;
+  }
+  .ndark .natal-node strong { color: rgba(184,134,11,0.52); }
+  .nlight .natal-node strong { color: #9A7A5A; }
+  .natal-node span { font-size: 12px; transition: color 0.3s; }
+  .ndark .natal-node span { color: #C9B8E8; }
+  .nlight .natal-node span { color: #7B6B8A; }
+  .natal-footer {
+    text-align: center; margin-top: 14px;
+    font-size: 10px; letter-spacing: 0.18em;
+    text-transform: uppercase; font-family: 'Sarabun', sans-serif;
+    transition: color 0.3s;
+  }
+  .ndark .natal-footer { color: rgba(184,134,11,0.22); }
+  .nlight .natal-footer { color: rgba(184,134,11,0.3); }
+
 </style>
 </head>
 <body>
@@ -241,6 +377,281 @@ for (let i = 0; i < 25; i++) {
 
 let history = [], isLoading = false, messageCount = 0;
 let pendingScoreNumber = null, pendingScoreType = null;
+
+
+
+// ── Natal Talisman ────────────────────────────────────────────────────────
+
+const ZODIAC_NAMES_N = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo',
+                        'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+
+const PLANET_SYM = {
+  Sun:'☉', Moon:'☽', Mercury:'☿', Venus:'♀',
+  Mars:'♂', Jupiter:'♃', Saturn:'♄', Rahu:'☊', Ketu:'☋'
+};
+const PLANET_COL = {
+  Sun:'#D4A843', Moon:'#C9B8E8', Mercury:'#C0A878', Venus:'#F0C040',
+  Mars:'#C05050', Jupiter:'#A07848', Saturn:'#907860', Rahu:'#A090C0', Ketu:'#9080B0'
+};
+
+function parseNatalCache(txt) {
+  const planets = {}, nodes = {};
+  for (const line of txt.split('\n')) {
+    const pm = line.match(/^(Sun|Moon|Mercury|Venus|Mars|Jupiter|Saturn):\s+(\w+)\s+(\d+)°(?:\s+\(([^)]+)\))?/);
+    if (pm) planets[pm[1]] = { sign: pm[2], degree: parseInt(pm[3]), dignity: pm[4] || '' };
+    const nm = line.match(/^(Rahu|Ketu):\s+(\w+)\s+(\d+)°/);
+    if (nm) nodes[nm[1]] = { sign: nm[2], degree: parseInt(nm[3]) };
+  }
+  return { planets, nodes };
+}
+
+function signAngle(sign, degree) {
+  const idx = ZODIAC_NAMES_N.indexOf(sign);
+  return idx === -1 ? 0 : ((idx * 30 + (degree || 0)) - 90) * Math.PI / 180;
+}
+
+function buildNatalSVG(planets, nodes) {
+  const cx = 200, cy = 200;
+  const rOuter = 194, rZod = 162, rPlanet = 138, rCore = 78;
+
+  let s = `<svg class="natal-wheel" id="nwheel" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <radialGradient id="nbgD" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#2A1E0A"/><stop offset="100%" stop-color="#0E0A04"/>
+  </radialGradient>
+  <radialGradient id="nbgL" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#FFFBF2"/><stop offset="100%" stop-color="#EDE4D0"/>
+  </radialGradient>
+  <radialGradient id="ncoreD" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#3D2B0F"/><stop offset="100%" stop-color="#1A1208"/>
+  </radialGradient>
+  <radialGradient id="ncoreL" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#FBF7F0"/><stop offset="100%" stop-color="#EDE0C4"/>
+  </radialGradient>
+  <filter id="nglow"><feGaussianBlur stdDeviation="2.5" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="nglows"><feGaussianBlur stdDeviation="1.2" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<circle id="nbg" cx="${cx}" cy="${cy}" r="${rOuter}" fill="url(#nbgD)"/>
+<circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="none" stroke="rgba(184,134,11,0.5)" stroke-width="1.2"/>
+<circle cx="${cx}" cy="${cy}" r="188" fill="none" stroke="rgba(184,134,11,0.1)" stroke-width="0.4"/>
+<circle cx="${cx}" cy="${cy}" r="${rZod}" fill="none" stroke="rgba(184,134,11,0.28)" stroke-width="0.7"/>
+<circle cx="${cx}" cy="${cy}" r="${rPlanet}" fill="none" stroke="rgba(184,134,11,0.16)" stroke-width="0.5"/>
+<circle cx="${cx}" cy="${cy}" r="112" fill="none" stroke="rgba(184,134,11,0.13)" stroke-width="0.5"/>
+<circle id="ncore" cx="${cx}" cy="${cy}" r="${rCore}" fill="url(#ncoreD)" stroke="rgba(184,134,11,0.38)" stroke-width="0.8"/>`;
+
+  // 12 segments
+  const segColors = [
+    'rgba(184,96,11,0.08)','rgba(107,76,53,0.07)','rgba(184,134,11,0.05)','rgba(100,80,140,0.09)',
+    'rgba(184,96,11,0.08)','rgba(107,76,53,0.07)','rgba(184,134,11,0.05)','rgba(100,80,140,0.11)',
+    'rgba(184,96,11,0.08)','rgba(107,76,53,0.07)','rgba(184,134,11,0.05)','rgba(100,80,140,0.09)'
+  ];
+  const zodSyms = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+  for (let i = 0; i < 12; i++) {
+    const a1 = (i * 30 - 90) * Math.PI / 180;
+    const a2 = ((i + 1) * 30 - 90) * Math.PI / 180;
+    const x1 = cx + rOuter * Math.cos(a1), y1 = cy + rOuter * Math.sin(a1);
+    const x2 = cx + rOuter * Math.cos(a2), y2 = cy + rOuter * Math.sin(a2);
+    s += `<path d="M${cx},${cy} L${x1},${y1} A${rOuter},${rOuter} 0 0,1 ${x2},${y2} Z"
+      fill="${segColors[i]}"/>`;
+    // divider spoke
+    s += `<line x1="${cx}" y1="${cy}" x2="${x1}" y2="${y1}"
+      stroke="rgba(184,134,11,0.2)" stroke-width="0.6"/>`;
+    // zodiac symbol in outer band
+    const mid = ((i + 0.5) * 30 - 90) * Math.PI / 180;
+    const lr = (rOuter + rZod) / 2;
+    s += `<text id="nzod${i}" x="${cx + lr * Math.cos(mid)}" y="${cy + lr * Math.sin(mid) + 5}"
+      text-anchor="middle" font-size="13" fill="rgba(212,168,67,0.62)" font-family="serif">${zodSyms[i]}</text>`;
+  }
+
+  // Paed Tidt yantra in core
+  s += `<polygon points="${cx},${cy-82} ${cx+55},${cy-63} ${cx+74},${cy} ${cx+55},${cy+63} ${cx},${cy+82} ${cx-55},${cy+63} ${cx-74},${cy} ${cx-55},${cy-63}"
+    fill="none" stroke="rgba(184,134,11,0.19)" stroke-width="0.8"/>
+  <polygon points="${cx},${cy-58} ${cx+41},${cy-41} ${cx+58},${cy} ${cx+41},${cy+41} ${cx},${cy+58} ${cx-41},${cy+41} ${cx-58},${cy} ${cx-41},${cy-41}"
+    fill="none" stroke="rgba(184,134,11,0.13)" stroke-width="0.6"/>
+  <polygon points="${cx},${cy-74} ${cx+64},${cy+38} ${cx-64},${cy+38}"
+    fill="none" stroke="rgba(184,134,11,0.15)" stroke-width="0.7"/>
+  <polygon points="${cx},${cy+74} ${cx-64},${cy-38} ${cx+64},${cy-38}"
+    fill="none" stroke="rgba(184,134,11,0.15)" stroke-width="0.7"/>
+  <line x1="${cx}" y1="${cy-82}" x2="${cx}" y2="${cy+82}" stroke="rgba(184,134,11,0.1)" stroke-width="0.5"/>
+  <line x1="${cx-82}" y1="${cy}" x2="${cx+82}" y2="${cy}" stroke="rgba(184,134,11,0.1)" stroke-width="0.5"/>
+  <line x1="${cx-58}" y1="${cy-58}" x2="${cx+58}" y2="${cy+58}" stroke="rgba(184,134,11,0.09)" stroke-width="0.5"/>
+  <line x1="${cx+58}" y1="${cy-58}" x2="${cx-58}" y2="${cy+58}" stroke="rgba(184,134,11,0.09)" stroke-width="0.5"/>`;
+
+  // Octagon dots
+  const octPts = [[cx,cy-82],[cx+55,cy-63],[cx+74,cy],[cx+55,cy+63],
+                  [cx,cy+82],[cx-55,cy+63],[cx-74,cy],[cx-55,cy-63]];
+  octPts.forEach(([px,py]) => {
+    s += `<circle cx="${px}" cy="${py}" r="2" fill="rgba(184,134,11,0.42)"/>`;
+  });
+
+  // Plot planets — track used angles to avoid overlap
+  const allBodies = [];
+  ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn'].forEach(p => {
+    if (planets[p]) allBodies.push({ name: p, ...planets[p] });
+  });
+  if (nodes.Rahu) allBodies.push({ name:'Rahu', ...nodes.Rahu });
+  if (nodes.Ketu) allBodies.push({ name:'Ketu', ...nodes.Ketu });
+
+  const usedAngles = [];
+  allBodies.forEach(body => {
+    let angle = signAngle(body.sign, body.degree);
+    // Nudge overlapping planets
+    for (let attempts = 0; attempts < 8; attempts++) {
+      let tooClose = false;
+      for (const used of usedAngles) {
+        let diff = Math.abs(angle - used);
+        if (diff > Math.PI) diff = 2 * Math.PI - diff;
+        if (diff < 0.2) { angle += 0.22; tooClose = true; break; }
+      }
+      if (!tooClose) break;
+    }
+    usedAngles.push(angle);
+
+    const pr = (rPlanet + rCore) / 2;
+    const px = cx + pr * Math.cos(angle);
+    const py = cy + pr * Math.sin(angle);
+    const col = PLANET_COL[body.name] || '#B8860B';
+    const sym = PLANET_SYM[body.name] || '●';
+    const isNode = body.name === 'Rahu' || body.name === 'Ketu';
+    const r = isNode ? 10 : (body.name === 'Sun' || body.name === 'Moon' || body.name === 'Venus') ? 14 : 12;
+    const filter = (body.name === 'Sun' || body.name === 'Moon' || body.name === 'Venus') ? 'url(#nglow)' : 'url(#nglows)';
+    const isRuling = body.dignity && body.dignity.includes('own sign');
+
+    // Ruling sign dashed halo
+    if (isRuling) {
+      s += `<circle cx="${px}" cy="${py}" r="${r + 5}" fill="none"
+        stroke="rgba(212,168,67,0.22)" stroke-width="0.8" stroke-dasharray="3,3"/>`;
+    }
+    // Planet circle
+    s += `<circle cx="${px}" cy="${py}" r="${r}" fill="${col}" fill-opacity="0.12"
+      stroke="${col}" stroke-width="${isRuling ? 1.6 : 1.3}" filter="${filter}"/>`;
+    // Symbol
+    s += `<text x="${px}" y="${py + 5}" text-anchor="middle" font-size="${isNode ? 12 : 14}"
+      fill="${col}" font-weight="bold" filter="${filter}" font-family="serif">${sym}</text>`;
+    // Thin spoke to core
+    const lineR = rCore + 2;
+    s += `<line x1="${cx + lineR * Math.cos(angle)}" y1="${cy + lineR * Math.sin(angle)}"
+      x2="${px}" y2="${py}" stroke="${col}" stroke-width="0.6" stroke-opacity="0.22"/>`;
+  });
+
+  // 16-petal lotus center
+  s += `<g opacity="0.65">`;
+  for (let i = 0; i < 16; i++) {
+    const op = i % 2 === 0 ? '0.42' : '0.34';
+    s += `<ellipse cx="${cx}" cy="${cy - 11}" rx="4" ry="9.5" fill="rgba(184,134,11,${op})"
+      transform="rotate(${i * 22.5},${cx},${cy})"/>`;
+  }
+  s += `</g><g opacity="0.85">`;
+  for (let i = 0; i < 8; i++) {
+    s += `<ellipse cx="${cx}" cy="${cy - 7}" rx="2.6" ry="6" fill="rgba(240,220,140,0.5)"
+      transform="rotate(${i * 45 + 11.25},${cx},${cy})"/>`;
+  }
+  s += `</g>
+  <circle cx="${cx}" cy="${cy}" r="6.5" fill="rgba(184,134,11,0.42)" stroke="rgba(212,168,67,0.68)" stroke-width="1.2"/>
+  <circle cx="${cx}" cy="${cy}" r="3" fill="#FFF8DC" opacity="0.9"/>
+</svg>`;
+  return s;
+}
+
+function showNatalChart(cacheText, personName, birthDateStr) {
+  const { planets, nodes } = parseNatalCache(cacheText);
+  if (!planets || Object.keys(planets).length === 0) return;
+
+  const chat = document.getElementById('chat');
+  const wrap = document.createElement('div');
+  wrap.className = 'message message-mordoo';
+
+  const wheelSVG = buildNatalSVG(planets, nodes);
+
+  // Planet rows
+  const pOrder = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn'];
+  let pHTML = pOrder.map(p => {
+    if (!planets[p]) return '';
+    const { sign, degree, dignity } = planets[p];
+    const col = PLANET_COL[p];
+    const isRuling = dignity && dignity.includes('own sign');
+    const isExalted = dignity && dignity.includes('exalted');
+    const isDebilitated = dignity && dignity.includes('debilitated');
+    const digLabel = isRuling ? 'ruling sign' : isExalted ? 'exalted' : isDebilitated ? 'debilitated' : '';
+    return `<div class="natal-p-row">
+      <span class="natal-p-sym" style="color:${col}">${PLANET_SYM[p]}</span>
+      <span class="natal-p-name">${p}</span>
+      <span class="natal-p-sign">${sign} ${degree}°${digLabel ? ` <span class="natal-p-dig">${digLabel}</span>` : ''}</span>
+    </div>`;
+  }).join('');
+
+  let nodesHTML = '';
+  if (nodes.Rahu) nodesHTML += `<div class="natal-node"><strong>☊ Rahu · North Node</strong><span>${nodes.Rahu.sign} ${nodes.Rahu.degree}°</span></div>`;
+  if (nodes.Ketu) nodesHTML += `<div class="natal-node"><strong>☋ Ketu · South Node</strong><span>${nodes.Ketu.sign} ${nodes.Ketu.degree}°</span></div>`;
+
+  const uid = 'n' + Date.now();
+
+  wrap.innerHTML = `
+    <div class="mordoo-avatar">🔮</div>
+    <div class="mordoo-bubble">
+      <div class="natal-outer">
+        <div class="natal-toggle">
+          <span class="natal-toggle-label" id="${uid}-lbl-l" style="color:rgba(184,134,11,0.4)" onclick="nToggle('${uid}')">Light</span>
+          <div class="natal-toggle-track" onclick="nToggle('${uid}')" style="background:rgba(26,16,8,0.8)">
+            <div class="natal-toggle-thumb" id="${uid}-thumb" style="left:21px;background:#D4A843"></div>
+          </div>
+          <span class="natal-toggle-label" id="${uid}-lbl-d" style="color:#D4A843" onclick="nToggle('${uid}')">Dark</span>
+        </div>
+        <div class="natal-talisman ndark" id="${uid}-tal">
+          <div class="natal-title">Natal Talisman</div>
+          <div class="natal-person">${personName || 'Your Birth Chart'}</div>
+          <div class="natal-birthdate">${birthDateStr || ''}</div>
+          ${wheelSVG}
+          <div class="natal-planets">${pHTML}</div>
+          ${nodesHTML ? `<div class="natal-divider"></div><div class="natal-nodes">${nodesHTML}</div>` : ''}
+          <div class="natal-footer">หมอดู · Mor Doo with Bee</div>
+        </div>
+      </div>
+    </div>`;
+
+  chat.appendChild(wrap);
+  setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
+
+  // Store dark state per chart
+  wrap._isDark = true;
+}
+
+function nToggle(uid) {
+  const tal = document.getElementById(uid + '-tal');
+  const thumb = document.getElementById(uid + '-thumb');
+  const lblL = document.getElementById(uid + '-lbl-l');
+  const lblD = document.getElementById(uid + '-lbl-d');
+  const nbg = tal.querySelector('#nbg');
+  const ncore = tal.querySelector('#ncore');
+  const nzods = tal.querySelectorAll('[id^="nzod"]');
+
+  const isDark = tal.classList.contains('ndark');
+
+  if (isDark) {
+    // Switch to light
+    tal.classList.replace('ndark', 'nlight');
+    thumb.style.left = '3px';
+    thumb.style.background = '#B8860B';
+    lblL.style.color = '#B8860B';
+    lblD.style.color = 'rgba(184,134,11,0.38)';
+    if (nbg) nbg.setAttribute('fill', 'url(#nbgL)');
+    if (ncore) ncore.setAttribute('fill', 'url(#ncoreL)');
+    nzods.forEach(z => z.setAttribute('fill', 'rgba(107,76,53,0.62)'));
+  } else {
+    // Switch to dark
+    tal.classList.replace('nlight', 'ndark');
+    thumb.style.left = '21px';
+    thumb.style.background = '#D4A843';
+    lblL.style.color = 'rgba(184,134,11,0.4)';
+    lblD.style.color = '#D4A843';
+    if (nbg) nbg.setAttribute('fill', 'url(#nbgD)');
+    if (ncore) ncore.setAttribute('fill', 'url(#ncoreD)');
+    nzods.forEach(z => z.setAttribute('fill', 'rgba(212,168,67,0.62)'));
+  }
+}
+
 
 function isClarification(text) {
   // Detect if the Mor Doo's last response was asking for clarification
@@ -973,6 +1384,21 @@ async function sendMessage() {
     if (data.natalChartCache) {
       history.push({ role: 'user', content: '[natal_chart_cached]\n' + data.natalChartCache });
       history.push({ role: 'assistant', content: 'Noted.' });
+      // Extract person name and birthday from recent conversation
+      const recentText = history.slice(-10).map(m => m.content || '').join(' ');
+      const nameMatch = recentText.match(/\b([A-Z][a-z]{2,18})(?=\s+\d{1,2}[\/\-])/);
+      const chartName = nameMatch ? nameMatch[1] : '';
+      const bdMatch = recentText.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b/);
+      let chartDate = '';
+      if (bdMatch) {
+        try {
+          const parts = bdMatch[1].replace(/-/g,'/').split('/');
+          const d = new Date(parseInt(parts[2]), parseInt(parts[0])-1, parseInt(parts[1]));
+          chartDate = d.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+        } catch(e) { chartDate = bdMatch[1]; }
+      }
+      // Show natal chart wheel after reply renders
+      setTimeout(() => showNatalChart(data.natalChartCache, chartName, chartDate), 900);
     }
     if (data.reply) {
       history.push({ role: 'assistant', content: data.reply });
