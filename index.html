@@ -139,6 +139,27 @@
   .quick-btn:hover { border-color: var(--gold); color: var(--brown-deep); background: var(--cream-darker); transform: translateY(-1px); }
   .quick-btn-icon { display: block; font-size: 18px; margin-bottom: 4px; }
 
+  /* Compatibility Form */
+  .compat-form { background: var(--surface); border: 1px solid rgba(184,134,11,0.25); border-radius: 16px; padding: 24px; animation: fadeUp 0.5s ease forwards; opacity: 0; box-shadow: 0 4px 20px rgba(61,43,31,0.08); }
+  .compat-title { font-family: 'Playfair Display', serif; font-style: italic; font-size: 15px; color: var(--brown-mid); text-align: center; margin-bottom: 6px; line-height: 1.5; }
+  .compat-subtitle { font-size: 12px; color: var(--text-dim); text-align: center; margin-bottom: 20px; letter-spacing: 0.03em; }
+  .compat-person { border: 1px solid rgba(184,134,11,0.15); border-radius: 12px; padding: 16px; margin-bottom: 14px; background: var(--cream-dark); }
+  .compat-person-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin-bottom: 12px; font-weight: 500; }
+  .compat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .compat-row.single { grid-template-columns: 1fr; }
+  .compat-field { display: flex; flex-direction: column; gap: 4px; }
+  .compat-field label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); }
+  .compat-input { background: var(--surface); border: 1px solid rgba(184,134,11,0.2); border-radius: 8px; padding: 9px 12px; color: var(--text); font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 300; outline: none; transition: border-color 0.2s; width: 100%; }
+  .compat-input:focus { border-color: var(--gold); }
+  .compat-input::placeholder { color: var(--text-dim); opacity: 0.6; }
+  .compat-divider { display: flex; align-items: center; gap: 12px; margin: 4px 0 14px; }
+  .compat-divider-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(184,134,11,0.2), transparent); }
+  .compat-divider-icon { font-size: 16px; color: var(--gold-light); }
+  .compat-submit { width: 100%; margin-top: 4px; background: linear-gradient(135deg, var(--gold), var(--gold-bright)); border: none; border-radius: 10px; padding: 13px; color: #fff; font-family: 'Cinzel Decorative', serif; font-size: 11px; letter-spacing: 0.12em; cursor: pointer; transition: all 0.2s; opacity: 0.4; pointer-events: none; }
+  .compat-submit.ready { opacity: 1; pointer-events: all; }
+  .compat-submit.ready:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(184,134,11,0.35); }
+  @media (max-width: 500px) { .compat-row { grid-template-columns: 1fr; } }
+
   /* Waitlist */
   .waitlist-card { background: var(--surface); border: 1px solid rgba(184,134,11,0.3); border-radius: 16px; padding: 28px; text-align: center; animation: fadeUp 0.6s ease forwards; opacity: 0; box-shadow: 0 4px 24px rgba(61,43,31,0.08); margin-top: 8px; }
   .waitlist-icon { font-size: 36px; margin-bottom: 12px; display: block; }
@@ -1306,7 +1327,127 @@ async function submitWaitlist() {
 function quickStart(btn) {
   const label = btn.querySelector('.quick-btn-icon').nextSibling.textContent.trim();
   gtag('event', 'quick_start_clicked', {event_category: 'engagement', event_label: label.substring(0,50)});
+  if (label.toLowerCase().includes('compatibility')) {
+    showCompatForm();
+    return;
+  }
   document.getElementById('userInput').value = label;
+  sendMessage();
+}
+
+function showCompatForm() {
+  const welcome = document.querySelector('.welcome-card');
+  if (welcome) welcome.remove();
+
+  const chat = document.getElementById('chat');
+
+  // Seer asks for both people's info — shown as a mordoo message, no counter tick
+  const promptDiv = document.createElement('div');
+  promptDiv.className = 'message message-mordoo';
+  promptDiv.innerHTML = `<div class="mordoo-avatar">🔮</div><div class="mordoo-bubble">To read the connection between two souls, share their details below. The Mor Doo will read both at once.<br><br><em>The threads that bind two souls leave traces in the numbers — and the Mor Doo sees them clearly.</em></div>`;
+  chat.appendChild(promptDiv);
+  setTimeout(() => promptDiv.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
+
+  // Build the form
+  const formDiv = document.createElement('div');
+  formDiv.className = 'compat-form';
+  formDiv.id = 'compatForm';
+  formDiv.innerHTML = `
+    <div class="compat-person">
+      <div class="compat-person-label">✦ You</div>
+      <div class="compat-row">
+        <div class="compat-field">
+          <label>Full Name</label>
+          <input class="compat-input" id="cf-name1" placeholder="Your full name" oninput="checkCompatReady()" autocomplete="name">
+        </div>
+        <div class="compat-field">
+          <label>Birthday (MM/DD/YYYY)</label>
+          <input class="compat-input" id="cf-bday1" placeholder="02/26/1992" oninput="checkCompatReady()" maxlength="10">
+        </div>
+      </div>
+      <div class="compat-row single">
+        <div class="compat-field">
+          <label>Birthplace</label>
+          <input class="compat-input" id="cf-place1" placeholder="City, State or Country" oninput="checkCompatReady()">
+        </div>
+      </div>
+    </div>
+
+    <div class="compat-divider">
+      <div class="compat-divider-line"></div>
+      <div class="compat-divider-icon">🔗</div>
+      <div class="compat-divider-line"></div>
+    </div>
+
+    <div class="compat-person">
+      <div class="compat-person-label">✦ Them</div>
+      <div class="compat-row">
+        <div class="compat-field">
+          <label>Full Name</label>
+          <input class="compat-input" id="cf-name2" placeholder="Their full name" oninput="checkCompatReady()">
+        </div>
+        <div class="compat-field">
+          <label>Birthday (MM/DD/YYYY)</label>
+          <input class="compat-input" id="cf-bday2" placeholder="12/22/1991" oninput="checkCompatReady()" maxlength="10">
+        </div>
+      </div>
+      <div class="compat-row single">
+        <div class="compat-field">
+          <label>Birthplace</label>
+          <input class="compat-input" id="cf-place2" placeholder="City, State or Country" oninput="checkCompatReady()">
+        </div>
+      </div>
+    </div>
+
+    <button class="compat-submit" id="compatSubmitBtn" onclick="submitCompatForm()">Open the Reading ✦</button>
+  `;
+  chat.appendChild(formDiv);
+  setTimeout(() => {
+    formDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    document.getElementById('cf-name1').focus();
+  }, 200);
+
+  // Show reset button
+  const resetBtn = document.getElementById('resetBtn');
+  if (resetBtn) resetBtn.classList.add('visible');
+}
+
+function isValidDate(str) {
+  const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return false;
+  const mo = parseInt(m[1]), dy = parseInt(m[2]), yr = parseInt(m[3]);
+  return mo >= 1 && mo <= 12 && dy >= 1 && dy <= 31 && yr >= 1900 && yr <= new Date().getFullYear();
+}
+
+function checkCompatReady() {
+  const n1 = (document.getElementById('cf-name1')?.value || '').trim();
+  const b1 = (document.getElementById('cf-bday1')?.value || '').trim();
+  const p1 = (document.getElementById('cf-place1')?.value || '').trim();
+  const n2 = (document.getElementById('cf-name2')?.value || '').trim();
+  const b2 = (document.getElementById('cf-bday2')?.value || '').trim();
+  const p2 = (document.getElementById('cf-place2')?.value || '').trim();
+  const btn = document.getElementById('compatSubmitBtn');
+  if (btn) {
+    const ready = n1 && isValidDate(b1) && p1 && n2 && isValidDate(b2) && p2;
+    btn.classList.toggle('ready', !!ready);
+  }
+}
+
+function submitCompatForm() {
+  const n1 = document.getElementById('cf-name1').value.trim();
+  const b1 = document.getElementById('cf-bday1').value.trim();
+  const p1 = document.getElementById('cf-place1').value.trim();
+  const n2 = document.getElementById('cf-name2').value.trim();
+  const b2 = document.getElementById('cf-bday2').value.trim();
+  const p2 = document.getElementById('cf-place2').value.trim();
+
+  // Remove the form
+  const form = document.getElementById('compatForm');
+  if (form) form.remove();
+
+  // Build the combined message exactly as if the user typed it — one message, one question tick
+  const combined = `${n1} ${b1} ${p1} and ${n2} ${b2} ${p2}`;
+  document.getElementById('userInput').value = combined;
   sendMessage();
 }
 
