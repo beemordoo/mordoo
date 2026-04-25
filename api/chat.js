@@ -1,3 +1,419 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// PLANETARY POSITION ENGINE — JPL Horizons + Geocoding
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Planet IDs for JPL Horizons
+const JPL_PLANETS = {
+  Sun:     '10',
+  Moon:    '301',
+  Mercury: '199',
+  Venus:   '299',
+  Mars:    '499',
+  Jupiter: '599',
+  Saturn:  '699',
+  Uranus:  '799',
+  Neptune: '899',
+};
+
+// Zodiac signs — 30° each starting at Aries 0°
+const ZODIAC_SIGNS = [
+  'Aries','Taurus','Gemini','Cancer','Leo','Virgo',
+  'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'
+];
+
+// Planet dignity — own sign = full strength, exalted = amplified, debilitated = constrained
+const PLANET_DIGNITY = {
+  Sun:     { own: ['Leo'],                    exalted: ['Aries'],       debilitated: ['Libra'] },
+  Moon:    { own: ['Cancer'],                 exalted: ['Taurus'],      debilitated: ['Scorpio'] },
+  Mercury: { own: ['Gemini','Virgo'],         exalted: ['Virgo'],       debilitated: ['Pisces'] },
+  Venus:   { own: ['Taurus','Libra'],         exalted: ['Pisces'],      debilitated: ['Virgo'] },
+  Mars:    { own: ['Aries','Scorpio'],        exalted: ['Capricorn'],   debilitated: ['Cancer'] },
+  Jupiter: { own: ['Sagittarius','Pisces'],   exalted: ['Cancer'],      debilitated: ['Capricorn'] },
+  Saturn:  { own: ['Capricorn','Aquarius'],   exalted: ['Libra'],       debilitated: ['Aries'] },
+};
+
+// Thai significance of each planet in each sign — what the Mor Doo communicates
+const SIGN_PLANET_MEANING = {
+  Sun: {
+    Aries:'Sun is exalted here — unusually strong leadership and vitality, a pioneer spirit that rarely backs down',
+    Taurus:'Sun in Taurus — determined, wealth-oriented, slow to act but powerful once committed',
+    Gemini:'Sun in Gemini — communicative, quick, dual nature, strength comes from adaptability',
+    Cancer:'Sun in Cancer — protective, intuitive, family-driven, strength is emotional intelligence',
+    Leo:'Sun in Leo — at home, full brightness, natural authority, warmth that draws others naturally',
+    Virgo:'Sun in Virgo — analytical, precise, service-oriented, strength is in details others miss',
+    Libra:'Sun is debilitated here — authority is softened, balance matters more than winning, partnership is the vehicle',
+    Scorpio:'Sun in Scorpio — intense, private, transformative power, strength is hidden until needed',
+    Sagittarius:'Sun in Sagittarius — expansive, philosophical, freedom-seeking, strength is in vision',
+    Capricorn:'Sun in Capricorn — disciplined, ambitious, karmic responsibility, strength builds slowly but lastingly',
+    Aquarius:'Sun in Aquarius — independent, unconventional, community-minded, strength is collective',
+    Pisces:'Sun in Pisces — intuitive, compassionate, spiritual, strength is subtle and deeply feeling',
+  },
+  Moon: {
+    Aries:'Moon in Aries — emotional reactions are quick and direct, instincts favor action over reflection',
+    Taurus:'Moon is exalted here — emotional nature is stable, grounded, deeply sensory, finds peace in the physical world',
+    Gemini:'Moon in Gemini — emotionally curious and changeable, needs mental stimulation to feel secure',
+    Cancer:'Moon is at home — deeply nurturing, intuitive, emotions run deep and protective instincts are strong',
+    Leo:'Moon in Leo — warm and generous emotionally, needs recognition, gives loyalty and expects it in return',
+    Virgo:'Moon in Virgo — emotional security comes through order, service, and usefulness',
+    Libra:'Moon in Libra — needs harmony and balance emotionally, partnership is essential for inner peace',
+    Scorpio:'Moon is debilitated here — emotional intensity is difficult to contain, transformation through feeling is the path',
+    Sagittarius:'Moon in Sagittarius — emotional freedom is essential, philosophy and travel feed the inner life',
+    Capricorn:'Moon in Capricorn — emotional restraint, security comes through achievement and structure',
+    Aquarius:'Moon in Aquarius — emotionally detached but humanitarian, needs intellectual connection to feel close',
+    Pisces:'Moon in Pisces — deeply empathic, boundaries dissolve easily, intuition is the primary emotional language',
+  },
+  Venus: {
+    Aries:'Venus in Aries — love is direct and fast-moving, wealth comes through bold action',
+    Taurus:'Venus is at home — deep capacity for beauty, loyalty, and material abundance',
+    Gemini:'Venus in Gemini — charm through words and wit, love needs variety and mental connection',
+    Cancer:'Venus in Cancer — love is nurturing and protective, home and family are the heart of wealth',
+    Leo:'Venus in Leo — generous and dramatic in love, wealth and beauty are displayed openly',
+    Virgo:'Venus is debilitated here — love is expressed through service and detail, often understated',
+    Libra:'Venus is at home — refined, partnership-oriented, natural eye for beauty and fairness',
+    Scorpio:'Venus in Scorpio — intense and loyal in love, wealth comes through depth and transformation',
+    Sagittarius:'Venus in Sagittarius — freedom in love, wealth through adventure and expansion',
+    Capricorn:'Venus in Capricorn — love is expressed through commitment and reliability, wealth is built carefully',
+    Aquarius:'Venus in Aquarius — unconventional in love, wealth through innovation and community',
+    Pisces:'Venus is exalted here — the most compassionate and spiritually rich placement for love and beauty',
+  },
+  Mars: {
+    Aries:'Mars is at home — direct, competitive, high energy, acts first and considers later',
+    Taurus:'Mars in Taurus — slow to anger but formidable once committed, persistence is the weapon',
+    Gemini:'Mars in Gemini — quick, verbal, fights with words and wit, energy scattered across many fronts',
+    Cancer:'Mars is debilitated here — action is filtered through emotion, indirect but deeply protective',
+    Leo:'Mars in Leo — bold, proud, leads with heart, energy goes to creative and leadership pursuits',
+    Virgo:'Mars in Virgo — precise and methodical, energy goes into craft and perfection',
+    Libra:'Mars in Libra — acts through negotiation, conflict-averse, energy toward partnership',
+    Scorpio:'Mars is at home — strategic, intense, hidden strength that strikes when ready',
+    Sagittarius:'Mars in Sagittarius — philosophical warrior, fights for beliefs, energy is expansive',
+    Capricorn:'Mars is exalted — disciplined ambition, systematic drive toward long-term goals',
+    Aquarius:'Mars in Aquarius — unconventional energy, fights for collective causes',
+    Pisces:'Mars in Pisces — intuitive action, energy flows best when guided by feeling',
+  },
+  Jupiter: {
+    Aries:'Jupiter in Aries — expansion through initiative, luck favors those who act first',
+    Taurus:'Jupiter in Taurus — wealth through patience and material mastery',
+    Gemini:'Jupiter in Gemini — expansion through communication and knowledge',
+    Cancer:'Jupiter is exalted — deep abundance, nurturing wisdom, luck flows through family and home',
+    Leo:'Jupiter in Leo — generous and visible expansion, abundance through leadership',
+    Virgo:'Jupiter in Virgo — expansion through service and precision, careful stewardship',
+    Libra:'Jupiter in Libra — abundance through partnership and fairness',
+    Scorpio:'Jupiter in Scorpio — expansion through depth, transformation, hidden resources',
+    Sagittarius:'Jupiter is at home — full philosophical wisdom, natural abundance, teaching and vision at their best',
+    Capricorn:'Jupiter is debilitated — expansion is slow and requires structure, abundance through discipline only',
+    Aquarius:'Jupiter in Aquarius — collective wisdom, expansion through innovation and community',
+    Pisces:'Jupiter is at home — compassionate wisdom, spiritual abundance, healing gifts',
+  },
+  Saturn: {
+    Aries:'Saturn is debilitated — discipline resists impulsiveness, karmic work is learning patience',
+    Taurus:'Saturn in Taurus — slow and deliberate material building, wealth through persistence',
+    Gemini:'Saturn in Gemini — structured communication, karmic lessons through words and information',
+    Cancer:'Saturn in Cancer — emotional discipline, karmic work is learning to receive as well as give',
+    Leo:'Saturn in Leo — lessons in ego and recognition, leadership earned not assumed',
+    Virgo:'Saturn in Virgo — disciplined service, karmic returns through precision and health',
+    Libra:'Saturn is exalted — fairness and justice are fully expressed, karmic balance is achievable',
+    Scorpio:'Saturn in Scorpio — deep karmic transformation, discipline through loss and regeneration',
+    Sagittarius:'Saturn in Sagittarius — structured philosophy, wisdom earned through long journeys',
+    Capricorn:'Saturn is at home — full expression of discipline, authority built over decades',
+    Aquarius:'Saturn is at home — structured innovation, karmic duty to the collective',
+    Pisces:'Saturn in Pisces — karmic lessons in boundaries and reality, discipline through compassion',
+  },
+  Mercury: {
+    Aries:'Mercury in Aries — quick direct thinking, says what it means immediately',
+    Taurus:'Mercury in Taurus — slow deliberate communication, thinks before speaking, reliable word',
+    Gemini:'Mercury is at home — fast versatile mind, comfortable with many ideas at once',
+    Cancer:'Mercury in Cancer — emotional intelligence, thinks through feeling, excellent memory',
+    Leo:'Mercury in Leo — speaks with authority and drama, communication is performance',
+    Virgo:'Mercury is exalted and at home — analytical precision at its peak, detail-oriented mind',
+    Libra:'Mercury in Libra — balanced fair communication, natural diplomat',
+    Scorpio:'Mercury in Scorpio — investigative deep thinking, reads between every line',
+    Sagittarius:'Mercury in Sagittarius — big picture thinking, philosophical communication',
+    Capricorn:'Mercury in Capricorn — structured practical thinking, says what it means to accomplish',
+    Aquarius:'Mercury in Aquarius — innovative unconventional thinking, ahead of the conversation',
+    Pisces:'Mercury is debilitated — thinking is intuitive not logical, communication flows better through art than argument',
+  },
+};
+
+// Convert ecliptic longitude to sign and degree
+function lonToSign(lon) {
+  const normalized = ((lon % 360) + 360) % 360;
+  const idx = Math.floor(normalized / 30);
+  const degree = Math.floor(normalized % 30);
+  return { sign: ZODIAC_SIGNS[idx], degree, longitude: normalized };
+}
+
+// Get planet dignity status
+function getDignity(planet, sign) {
+  const d = PLANET_DIGNITY[planet];
+  if (!d) return '';
+  if (d.own && d.own.includes(sign)) return 'own sign';
+  if (d.exalted && d.exalted.includes(sign)) return 'exalted';
+  if (d.debilitated && d.debilitated.includes(sign)) return 'debilitated';
+  return '';
+}
+
+// Parse JPL Horizons response — extract first ecliptic longitude value
+function parseJPLLongitude(resultText) {
+  try {
+    const soeIdx = resultText.indexOf('$$SOE');
+    const eoeIdx = resultText.indexOf('$$EOE');
+    if (soeIdx === -1 || eoeIdx === -1) return null;
+    const dataSection = resultText.slice(soeIdx + 5, eoeIdx).trim();
+    const lines = dataSection.split('\n').filter(l => l.trim() && !l.startsWith('$$'));
+    if (!lines.length) return null;
+    const cols = lines[0].split(',').map(s => s.trim());
+    // Column index 1 = ObsEcLon (observer ecliptic longitude)
+    const lon = parseFloat(cols[1]);
+    return isNaN(lon) ? null : lon;
+  } catch(e) {
+    return null;
+  }
+}
+
+// Fetch one planet position from JPL Horizons
+async function fetchPlanetPosition(jplId, dateStr) {
+  // dateStr format: 'YYYY-MM-DD'
+  const [y, m, d] = dateStr.split('-');
+  const stopDate = new Date(parseInt(y), parseInt(m)-1, parseInt(d)+1);
+  const stopStr = stopDate.getFullYear() + '-' +
+    String(stopDate.getMonth()+1).padStart(2,'0') + '-' +
+    String(stopDate.getDate()).padStart(2,'0');
+
+  const params = new URLSearchParams({
+    format: 'text',
+    COMMAND: `'${jplId}'`,
+    EPHEM_TYPE: "'OBSERVER'",
+    CENTER: "'500@399'",
+    START_TIME: `'${dateStr}'`,
+    STOP_TIME: `'${stopStr}'`,
+    STEP_SIZE: "'1d'",
+    QUANTITIES: "'31'",  // Observer ecliptic longitude and latitude
+    CSV_FORMAT: "'YES'"
+  });
+
+  const url = `https://ssd.jpl.nasa.gov/api/horizons.api?${params.toString()}`;
+  const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  const text = await resp.text();
+  return parseJPLLongitude(text);
+}
+
+// Fetch all 7 planets for a given birth date
+async function getBirthChart(dateStr) {
+  const planets = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn'];
+  const results = {};
+
+  // Fetch all in parallel
+  const fetches = planets.map(async (planet) => {
+    try {
+      const lon = await fetchPlanetPosition(JPL_PLANETS[planet], dateStr);
+      if (lon !== null) {
+        const { sign, degree } = lonToSign(lon);
+        const dignity = getDignity(planet, sign);
+        const meaning = (SIGN_PLANET_MEANING[planet] && SIGN_PLANET_MEANING[planet][sign]) || '';
+        results[planet] = { sign, degree, dignity, meaning };
+      }
+    } catch(e) {
+      // Silently skip failed planet — reading continues with what we have
+    }
+  });
+
+  await Promise.allSettled(fetches);
+  return results;
+}
+
+// Calculate Rahu and Ketu from Moon's node (mathematical derivation)
+// Rahu = mean ascending node of Moon's orbit
+// We approximate using the known cycle: Rahu moves backward ~19.35° per year
+// Reference: Rahu was at 0° Aries on Jan 1, 2000 (J2000 epoch approximation)
+function getRahuKetu(dateStr) {
+  try {
+    const date = new Date(dateStr);
+    const j2000 = new Date('2000-01-01');
+    const daysSinceJ2000 = (date - j2000) / (1000 * 60 * 60 * 24);
+    const yearsElapsed = daysSinceJ2000 / 365.25;
+    // Rahu moves retrograde ~19.3568° per year, starting at ~125.04° on J2000
+    const rahuLon = ((125.04 - (19.3568 * yearsElapsed)) % 360 + 360) % 360;
+    const ketuLon = (rahuLon + 180) % 360;
+    const rahu = lonToSign(rahuLon);
+    const ketu = lonToSign(ketuLon);
+    return {
+      Rahu: { sign: rahu.sign, degree: rahu.degree, meaning: 'Karmic direction — where growth and challenge intersect' },
+      Ketu: { sign: ketu.sign, degree: ketu.degree, meaning: 'Karmic release — what the soul is moving away from' },
+    };
+  } catch(e) {
+    return {};
+  }
+}
+
+// Format birth chart for system prompt injection
+function formatBirthChart(chart, rahuKetu) {
+  if (!chart || !Object.keys(chart).length) return '';
+  let lines = ['NATAL PLANETARY POSITIONS (from NASA JPL Horizons):'];
+  for (const [planet, data] of Object.entries(chart)) {
+    let line = `${planet}: ${data.sign} ${data.degree}°`;
+    if (data.dignity) line += ` (${data.dignity})`;
+    if (data.meaning) line += ` — ${data.meaning}`;
+    lines.push(line);
+  }
+  if (rahuKetu) {
+    for (const [node, data] of Object.entries(rahuKetu)) {
+      lines.push(`${node}: ${data.sign} ${data.degree}° — ${data.meaning}`);
+    }
+  }
+  lines.push('');
+  lines.push('USE THESE POSITIONS IN READINGS:');
+  lines.push('- State the planet and sign directly: "Venus in Taurus" not the longitude');
+  lines.push('- Name dignity when present — own sign and exalted amplify the reading significantly');
+  lines.push('- Debilitated planets are not bad — they require more effort to express, name this honestly');
+  lines.push('- Rahu shows the direction of karmic growth this lifetime, Ketu shows what is being released');
+  lines.push('- Do not show degrees to the user unless they ask — sign is enough');
+  lines.push('- Never show longitude numbers — only sign names');
+  return lines.join('\n');
+}
+
+// Get today's transiting planets for timing readings
+async function getCurrentTransits() {
+  const today = new Date();
+  const dateStr = today.getFullYear() + '-' +
+    String(today.getMonth()+1).padStart(2,'0') + '-' +
+    String(today.getDate()).padStart(2,'0');
+  return getBirthChart(dateStr);
+}
+
+// Format transit context for timing readings
+function formatTransits(transits, natalChart) {
+  if (!transits || !Object.keys(transits).length) return '';
+  let lines = ['CURRENT PLANETARY TRANSITS (today):'];
+  for (const [planet, data] of Object.entries(transits)) {
+    let line = `${planet} transiting ${data.sign} ${data.degree}°`;
+    // Flag if transiting planet is conjunct (within 5°) a natal planet
+    if (natalChart && natalChart[planet]) {
+      const natalDeg = natalChart[planet].degree + (ZODIAC_SIGNS.indexOf(natalChart[planet].sign) * 30);
+      const transitDeg = data.degree + (ZODIAC_SIGNS.indexOf(data.sign) * 30);
+      const orb = Math.abs(natalDeg - transitDeg);
+      if (orb <= 5 || orb >= 355) line += ' [CONJUNCT natal position — significant transit]';
+    }
+    lines.push(line);
+  }
+  lines.push('Use transits for timing guidance — when a transiting planet enters the same sign as a natal planet, that energy is amplified for the person');
+  return lines.join('\n');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GEOCODING — Convert city name to coordinates for future Swiss Ephemeris use
+// Uses free OpenCage API (no key required for low volume) with city cache
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Hardcoded cache for common cities — avoids API calls for known birthplaces
+const CITY_COORDS = {
+  'philadelphia': { lat: 39.9526, lng: -75.1652, country: 'USA' },
+  'bangkok': { lat: 13.7563, lng: 100.5018, country: 'Thailand' },
+  'vientiane': { lat: 17.9757, lng: 102.6331, country: 'Laos' },
+  'new york': { lat: 40.7128, lng: -74.0060, country: 'USA' },
+  'los angeles': { lat: 34.0522, lng: -118.2437, country: 'USA' },
+  'chicago': { lat: 41.8781, lng: -87.6298, country: 'USA' },
+  'houston': { lat: 29.7604, lng: -95.3698, country: 'USA' },
+  'phoenix': { lat: 33.4484, lng: -112.0740, country: 'USA' },
+  'san francisco': { lat: 37.7749, lng: -122.4194, country: 'USA' },
+  'miami': { lat: 25.7617, lng: -80.1918, country: 'USA' },
+  'atlanta': { lat: 33.7490, lng: -84.3880, country: 'USA' },
+  'boston': { lat: 42.3601, lng: -71.0589, country: 'USA' },
+  'seattle': { lat: 47.6062, lng: -122.3321, country: 'USA' },
+  'dallas': { lat: 32.7767, lng: -96.7970, country: 'USA' },
+  'denver': { lat: 39.7392, lng: -104.9903, country: 'USA' },
+  'minneapolis': { lat: 44.9778, lng: -93.2650, country: 'USA' },
+  'detroit': { lat: 42.3314, lng: -83.0458, country: 'USA' },
+  'las vegas': { lat: 36.1699, lng: -115.1398, country: 'USA' },
+  'munster': { lat: 41.5642, lng: -87.5125, country: 'USA' },
+  'cairo': { lat: 30.0444, lng: 31.2357, country: 'Egypt' },
+  'london': { lat: 51.5074, lng: -0.1278, country: 'UK' },
+  'paris': { lat: 48.8566, lng: 2.3522, country: 'France' },
+  'tokyo': { lat: 35.6762, lng: 139.6503, country: 'Japan' },
+  'singapore': { lat: 1.3521, lng: 103.8198, country: 'Singapore' },
+  'dubai': { lat: 25.2048, lng: 55.2708, country: 'UAE' },
+  'sydney': { lat: -33.8688, lng: 151.2093, country: 'Australia' },
+  'toronto': { lat: 43.6532, lng: -79.3832, country: 'Canada' },
+  'mexico city': { lat: 19.4326, lng: -99.1332, country: 'Mexico' },
+  'sao paulo': { lat: -23.5505, lng: -46.6333, country: 'Brazil' },
+  'mumbai': { lat: 19.0760, lng: 72.8777, country: 'India' },
+  'delhi': { lat: 28.7041, lng: 77.1025, country: 'India' },
+  'beijing': { lat: 39.9042, lng: 116.4074, country: 'China' },
+  'shanghai': { lat: 31.2304, lng: 121.4737, country: 'China' },
+  'seoul': { lat: 37.5665, lng: 126.9780, country: 'South Korea' },
+  'jakarta': { lat: -6.2088, lng: 106.8456, country: 'Indonesia' },
+  'chiang mai': { lat: 18.7883, lng: 98.9853, country: 'Thailand' },
+  'phuket': { lat: 7.8804, lng: 98.3923, country: 'Thailand' },
+  'ho chi minh': { lat: 10.8231, lng: 106.6297, country: 'Vietnam' },
+  'hanoi': { lat: 21.0285, lng: 105.8542, country: 'Vietnam' },
+  'phnom penh': { lat: 11.5564, lng: 104.9282, country: 'Cambodia' },
+  'kuala lumpur': { lat: 3.1390, lng: 101.6869, country: 'Malaysia' },
+};
+
+// Country centroids as fallback
+const COUNTRY_COORDS = {
+  'usa': { lat: 38.0, lng: -97.0 },
+  'united states': { lat: 38.0, lng: -97.0 },
+  'thailand': { lat: 15.87, lng: 100.99 },
+  'laos': { lat: 19.86, lng: 102.50 },
+  'vietnam': { lat: 14.06, lng: 108.28 },
+  'cambodia': { lat: 12.57, lng: 104.99 },
+  'myanmar': { lat: 19.15, lng: 95.96 },
+  'indonesia': { lat: -0.79, lng: 113.92 },
+  'malaysia': { lat: 4.21, lng: 108.96 },
+  'philippines': { lat: 12.88, lng: 121.77 },
+  'india': { lat: 20.59, lng: 78.96 },
+  'china': { lat: 35.86, lng: 104.20 },
+  'japan': { lat: 36.20, lng: 138.25 },
+  'south korea': { lat: 35.91, lng: 127.77 },
+  'uk': { lat: 55.38, lng: -3.44 },
+  'france': { lat: 46.23, lng: 2.21 },
+  'germany': { lat: 51.17, lng: 10.45 },
+  'egypt': { lat: 26.82, lng: 30.80 },
+  'australia': { lat: -25.27, lng: 133.78 },
+  'canada': { lat: 56.13, lng: -106.35 },
+  'mexico': { lat: 23.63, lng: -102.55 },
+  'brazil': { lat: -14.24, lng: -51.93 },
+  'nigeria': { lat: 9.08, lng: 8.68 },
+  'south africa': { lat: -30.56, lng: 22.94 },
+};
+
+// Geocode a birthplace string to coordinates
+async function geocodeBirthplace(birthplace) {
+  if (!birthplace) return null;
+  const normalized = birthplace.toLowerCase().trim()
+    .replace(/[,\.]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Check city cache first
+  for (const [city, coords] of Object.entries(CITY_COORDS)) {
+    if (normalized.includes(city)) return coords;
+  }
+
+  // Check country fallback
+  for (const [country, coords] of Object.entries(COUNTRY_COORDS)) {
+    if (normalized.includes(country)) return { ...coords, country };
+  }
+
+  // Try Nominatim (OpenStreetMap) — free, no key required
+  try {
+    const query = encodeURIComponent(birthplace);
+    const url = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`;
+    const resp = await fetch(url, {
+      headers: { 'User-Agent': 'MorDoo-App/1.0' },
+      signal: AbortSignal.timeout(5000)
+    });
+    const data = await resp.json();
+    if (data && data.length > 0) {
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    }
+  } catch(e) {
+    // Nominatim failed — fall back to null
+  }
+
+  return null;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -236,6 +652,28 @@ export default async function handler(req, res) {
       const yamaEndHour = (yamaStartHour + 3) % 24;
       const fmt12 = h => { const ampm = h >= 12 ? 'PM' : 'AM'; return (h % 12 || 12) + ampm; };
 
+      // Fetch natal chart from JPL Horizons
+      let birthChart = {};
+      let rahuKetu = {};
+      let birthCoords = null;
+      let transitChart = {};
+      const jplDateStr = year + '-' + String(month).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+      try {
+        [birthChart, birthCoords, transitChart] = await Promise.all([
+          getBirthChart(jplDateStr),
+          geocodeBirthplace(birthplace || ''),
+          getCurrentTransits(),
+        ]);
+        rahuKetu = getRahuKetu(jplDateStr);
+      } catch(e) {
+        // JPL unavailable — reading continues without natal chart
+      }
+      const natalChartText = formatBirthChart(birthChart, rahuKetu);
+      const transitText = formatTransits(transitChart, birthChart);
+      const coordsText = birthCoords
+        ? 'Birthplace coordinates: lat ' + birthCoords.lat.toFixed(4) + ', lng ' + birthCoords.lng.toFixed(4)
+        : '';
+
       birthdayContext = 'BIRTHDAY COMPATIBILITY ANALYSIS:\n' +
         'The person was born on ' + birthday + '.\n' +
         '- Life Path Number: ' + lpSum + ' — factor this into compatibility with the number root\n' +
@@ -245,13 +683,24 @@ export default async function handler(req, res) {
         '- ' + dayName + ' planetary color: ' + thevadaColor + ' — this planet governs: ' + thevadaAuspicious + '\n' +
         '- CURRENT PLANETARY HOUR (right now): ' + currentYamaPlanet + ' governs this window — favors: ' + yamaAuspicious[currentYamaPlanet] + '\n' +
         '- Use the current planetary hour subtly in timing readings — e.g. "right now ' + currentYamaPlanet + ' governs the hour, which favors..."\n\n' +
+        (natalChartText ? natalChartText + '\n\n' : '') +
+        (transitText ? transitText + '\n\n' : '') +
+        (coordsText ? coordsText + '\n' : '') +
         'Compatibility rules:\n' +
         '- If the number root digit MATCHES the Life Path → VERY compatible (+8 to +12 points to total)\n' +
         '- If the number root digit is in the same family (1/4/8 or 2/6/9 or 3/5/7) → compatible (+4 to +6 points)\n' +
         '- If the number root digit CLASHES with Life Path → reduce total by 3-6 points\n' +
         '- ' + planet + '/' + dayName + ' born resonate with their ruling planet digits\n' +
         '- Mercury/Wednesday born resonate with 5s. Sun/Sunday with 1s and 9s. Venus/Friday with 6s. Jupiter/Thursday with 3s. Saturn/Saturday with 8s. Moon/Monday with 2s. Mars/Tuesday with 9s.\n' +
-        '- Wednesday Night/Rahu born resonate with 4s and unconventional paths\n' +
+        '- Wednesday Night/Rahu born resonate with 4s and unconventional paths
+
+NATAL CHART USAGE — when JPL planetary positions are provided:
+- Always use the natal positions — they are more accurate than general day-of-week planet associations
+- Lead with the most significant placements: Sun sign, Moon sign, and any planets in own sign or exalted
+- Name debilitated planets honestly but constructively — "Mars in Cancer means your drive works through emotion and protection, not open confrontation — this is not weakness"
+- For timing readings: when a transiting planet is conjunct a natal planet, that is a significant window — name it specifically
+- Rahu shows the direction of growth this lifetime, Ketu shows what the person is releasing — use these for life purpose and karmic readings
+- Keep planet descriptions grounded and practical — what does this mean for their actual life, work, relationships, decisions\n' +
         '- Zodiac: Monkey/Rat/Dragon support bold numbers (3,9,1). Dog/Horse/Tiger support freedom numbers (5,1,9). Rabbit/Goat/Pig support harmony numbers (2,6,4). Ox/Snake/Rooster support disciplined numbers (4,8,7).\n' +
         'Adjust the total score and category scores based on birthday compatibility. Mention the compatibility in the reading.';
     } else {
