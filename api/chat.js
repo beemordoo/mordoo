@@ -152,18 +152,29 @@ function getDignity(planet, sign) {
   return '';
 }
 
-// Parse JPL Horizons response — extract first ecliptic longitude value
+// Parse JPL Horizons response — extract ecliptic longitude by column header
 function parseJPLLongitude(resultText) {
   try {
     const soeIdx = resultText.indexOf('$$SOE');
     const eoeIdx = resultText.indexOf('$$EOE');
     if (soeIdx === -1 || eoeIdx === -1) return null;
+
+    // Find the header line just before $$SOE to determine column positions
+    const beforeSOE = resultText.slice(0, soeIdx);
+    const headerLines = beforeSOE.trim().split('\n');
+    const headerLine = headerLines[headerLines.length - 1];
+    const headers = headerLine.split(',').map(s => s.trim().toLowerCase());
+
+    // Find ObsEcLon column index
+    let lonColIdx = headers.findIndex(h => h.includes('obseclon') || h.includes('eclon') || h.includes('obs_eclon'));
+    // Fallback: try column 1 (standard single-quantity response)
+    if (lonColIdx === -1) lonColIdx = 1;
+
     const dataSection = resultText.slice(soeIdx + 5, eoeIdx).trim();
     const lines = dataSection.split('\n').filter(l => l.trim() && !l.startsWith('$$'));
     if (!lines.length) return null;
     const cols = lines[0].split(',').map(s => s.trim());
-    // Column index 1 = ObsEcLon (observer ecliptic longitude)
-    const lon = parseFloat(cols[1]);
+    const lon = parseFloat(cols[lonColIdx]);
     return isNaN(lon) ? null : lon;
   } catch(e) {
     return null;
@@ -192,8 +203,12 @@ async function fetchPlanetPosition(jplId, dateStr) {
   });
 
   const url = `https://ssd.jpl.nasa.gov/api/horizons.api?${params.toString()}`;
-  const resp = await fetch(url, { signal: AbortSignal.timeout(12000) });
-  const text = await resp.text();
+  // Use Promise.race for timeout — more compatible than AbortSignal.timeout
+  const fetchPromise = fetch(url).then(r => r.text());
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('JPL timeout')), 12000)
+  );
+  const text = await Promise.race([fetchPromise, timeoutPromise]);
   return parseJPLLongitude(text);
 }
 
@@ -756,11 +771,13 @@ async function geocodeBirthplace(birthplace) {
   try {
     const query = encodeURIComponent(birthplace);
     const url = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`;
-    const resp = await fetch(url, {
-      headers: { 'User-Agent': 'MorDoo/1.0 (mordoo-sepia.vercel.app)' },
-      signal: AbortSignal.timeout(8000)
-    });
-    const data = await resp.json();
+    const nominatimFetch = fetch(url, {
+      headers: { 'User-Agent': 'MorDoo/1.0 (mordoo-sepia.vercel.app)' }
+    }).then(r => r.json());
+    const nominatimTimeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Nominatim timeout')), 8000)
+    );
+    const data = await Promise.race([nominatimFetch, nominatimTimeout]);
     if (data && data.length > 0) {
       return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
     }
@@ -1666,6 +1683,12 @@ OUTPUT QUALITY — GRAMMAR AND FORMATTING:
     if (natalChartText && !alreadyCached) {
       responsePayload.natalChartCache = natalChartText;
     }
+    // Debug: always include JPL status so frontend can diagnose
+    responsePayload.jplStatus = {
+      hadBirthday: !!natalChartText || alreadyCached,
+      chartReturned: !!natalChartText,
+      alreadyCached
+    };
     return res.status(200).json(responsePayload);
 
   } catch (err) {
