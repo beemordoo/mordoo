@@ -792,6 +792,8 @@ export default async function handler(req, res) {
     if (c.startsWith('[Context card provided') || c.startsWith('[Context inferred')) return false;
     // Skip clarifying answers tagged by frontend
     if (c.startsWith('[clarify]')) return false;
+    // Skip natal chart cache — internal session data not a user question
+    if (c.startsWith('[natal_chart_cached]')) return false;
     return true;
   }).length;
 
@@ -1075,29 +1077,55 @@ export default async function handler(req, res) {
       const yamaEndHour = (yamaStartHour + 3) % 24;
       const fmt12 = h => { const ampm = h >= 12 ? 'PM' : 'AM'; return (h % 12 || 12) + ampm; };
 
-      // Fetch natal chart from JPL Horizons
-      // Uses locally scoped birthday/birthplace (which equal effectiveBirthday/Birthplace)
+      // Fetch natal chart from JPL Horizons — only on first call per birthday
+      // Check if natal chart was already fetched this session by scanning message history
+      // The frontend injects a [natal_chart_cached] marker after the first fetch
+      const alreadyCached = messages.some(m =>
+        m.role === 'user' && (m.content || '').startsWith('[natal_chart_cached]')
+      );
+
       let birthChart = {};
       let rahuKetu = {};
       let birthCoords = null;
       let transitChart = {};
-      const jplDateStr = year + '-' + String(month).padStart(2,'0') + '-' + String(day).padStart(2,'0');
-      try {
-        [birthChart, birthCoords, transitChart] = await Promise.all([
-          getBirthChart(jplDateStr),
-          geocodeBirthplace(birthplace || ''),  // birthplace = effectiveBirthplace here (locally scoped above)
-          getCurrentTransits(),
-        ]);
-        rahuKetu = getRahuKetu(jplDateStr);
-      } catch(e) {
-        // JPL unavailable or timeout — reading continues gracefully without natal chart
-        console.error('JPL/geocoding error:', e.message);
+      let natalChartText = '';
+      let transitText = '';
+      let coordsText = '';
+
+      if (alreadyCached) {
+        // Extract cached chart from history — it was stored as a hidden user message
+        const cachedMsg = messages.find(m =>
+          m.role === 'user' && (m.content || '').startsWith('[natal_chart_cached]')
+        );
+        if (cachedMsg) {
+          // Pass cached chart text directly — no new JPL call needed
+          natalChartText = cachedMsg.content.replace('[natal_chart_cached]
+', '');
+        }
+        // Still get current transits — these change daily so always fetch fresh
+        try {
+          transitChart = await getCurrentTransits();
+          transitText = Object.keys(transitChart).length > 0 ? formatTransits(transitChart, {}) : '';
+        } catch(e) { /* transits unavailable — continue */ }
+      } else {
+        // First time — fetch full natal chart from JPL
+        const jplDateStr = year + '-' + String(month).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+        try {
+          [birthChart, birthCoords, transitChart] = await Promise.all([
+            getBirthChart(jplDateStr),
+            geocodeBirthplace(birthplace || ''),
+            getCurrentTransits(),
+          ]);
+          rahuKetu = getRahuKetu(jplDateStr);
+        } catch(e) {
+          console.error('JPL/geocoding error:', e.message);
+        }
+        natalChartText = Object.keys(birthChart).length > 0 ? formatBirthChart(birthChart, rahuKetu) : '';
+        transitText = Object.keys(transitChart).length > 0 ? formatTransits(transitChart, birthChart) : '';
+        coordsText = birthCoords
+          ? 'Birthplace coordinates: lat ' + birthCoords.lat.toFixed(4) + ', lng ' + birthCoords.lng.toFixed(4)
+          : '';
       }
-      const natalChartText = Object.keys(birthChart).length > 0 ? formatBirthChart(birthChart, rahuKetu) : '';
-      const transitText = Object.keys(transitChart).length > 0 ? formatTransits(transitChart, birthChart) : '';
-      const coordsText = birthCoords
-        ? 'Birthplace coordinates: lat ' + birthCoords.lat.toFixed(4) + ', lng ' + birthCoords.lng.toFixed(4)
-        : '';
 
       birthdayContext = 'BIRTHDAY COMPATIBILITY ANALYSIS:\n' +
         'The person was born on ' + birthday + '.\n' +
@@ -1560,7 +1588,12 @@ OUTPUT QUALITY — GRAMMAR AND FORMATTING:
 
     const data = await response.json();
     const reply = data.content?.[0]?.text || 'The Mor Doo is silent. Please try again.';
-    return res.status(200).json({ reply });
+    // Send natal chart back to client for caching — only when freshly fetched
+    const responsePayload = { reply };
+    if (natalChartText && typeof natalChartText !== 'undefined' && !alreadyCached) {
+      responsePayload.natalChartCache = natalChartText;
+    }
+    return res.status(200).json(responsePayload);
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
