@@ -917,9 +917,30 @@ export default async function handler(req, res) {
         '- Mention the birthplace resonance in the reading so the person understands why this number feels right or challenging';
     }
 
+    // Extract birthday/birthplace/birthTime from conversation history for chat path
+    // (In scorecard path these come from scorecardContext — in chat path we scan history)
+    let chatBirthday = '';
+    let chatBirthplace = '';
+    let chatBirthTime = '';
+    if (typeof birthday === 'undefined' || !birthday) {
+      const historyText = messages.map(m => m.content || '').join(' ');
+      const bdMatch = historyText.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b/);
+      if (bdMatch) chatBirthday = bdMatch[1].replace(/-/g, '/');
+      const bpMatch = historyText.match(/(?:born in|birthplace[:\s]+|from\s+|in\s+)([A-Z][a-zA-Z\s,]+?)(?:\s+at|\s+on|\s+\d|[,\.\n]|$)/i);
+      if (bpMatch) chatBirthplace = bpMatch[1].trim();
+      const btMatch = historyText.match(/\b(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)|morning|afternoon|evening|night)\b/i);
+      if (btMatch) chatBirthTime = btMatch[1];
+    }
+    const effectiveBirthday = (typeof birthday !== 'undefined' ? birthday : null) || chatBirthday || '';
+    const effectiveBirthplace = (typeof birthplace !== 'undefined' ? birthplace : null) || chatBirthplace || '';
+    const effectiveBirthTime = (typeof birthTime !== 'undefined' ? birthTime : null) || chatBirthTime || '';
+
     // Calculate birthday numerology if provided
     let birthdayContext = '';
-    if (birthday && birthday.match(/\d{1,2}\/\d{1,2}\/\d{4}/)) {
+    if (effectiveBirthday && effectiveBirthday.match(/\d{1,2}\/\d{1,2}\/\d{4}/)) {
+      const birthday = effectiveBirthday;
+      const birthplace = effectiveBirthplace;
+      const birthTime = effectiveBirthTime;
       const parts = birthday.split('/');
       const month = parseInt(parts[0]);
       const day = parseInt(parts[1]);
@@ -1060,7 +1081,8 @@ NATAL CHART USAGE — when JPL planetary positions are provided:
 - Keep planet descriptions grounded and practical — what does this mean for their actual life, work, relationships, decisions\n' +
         '- Zodiac: Monkey/Rat/Dragon support bold numbers (3,9,1). Dog/Horse/Tiger support freedom numbers (5,1,9). Rabbit/Goat/Pig support harmony numbers (2,6,4). Ox/Snake/Rooster support disciplined numbers (4,8,7).\n' +
         'Adjust the total score and category scores based on birthday compatibility. Mention the compatibility in the reading.';
-    } else {
+    } // end birthday if
+    if (!birthdayContext) {
       birthdayContext = 'No birthday provided — score based on number and context only.';
     }
 
