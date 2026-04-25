@@ -317,6 +317,17 @@
   }
   .ndark .natal-footer { color: rgba(184,134,11,0.22); }
   .nlight .natal-footer { color: rgba(184,134,11,0.3); }
+  .natal-nasa {
+    text-align: center;
+    margin-top: 6px;
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-family: 'Sarabun', sans-serif;
+    transition: color 0.3s;
+  }
+  .ndark .natal-nasa { color: rgba(184,134,11,0.16); }
+  .nlight .natal-nasa { color: rgba(184,134,11,0.22); }
 
 </style>
 </head>
@@ -618,6 +629,7 @@ function showNatalChart(cacheText, personName, birthDateStr) {
           <div class="natal-planets">${pHTML}</div>
           ${nodesHTML ? `<div class="natal-divider"></div><div class="natal-nodes">${nodesHTML}</div>` : ''}
           <div class="natal-footer">หมอดู · Mor Doo with Bee</div>
+          <div class="natal-nasa">NASA ephemeris · JPL Horizons</div>
         </div>
       </div>
     </div>`;
