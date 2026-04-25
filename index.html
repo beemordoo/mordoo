@@ -326,8 +326,8 @@
     font-family: 'Sarabun', sans-serif;
     transition: color 0.3s;
   }
-  .ndark .natal-nasa { color: rgba(184,134,11,0.45); }
-  .nlight .natal-nasa { color: rgba(184,134,11,0.6); }
+  .ndark .natal-nasa { color: rgba(184,134,11,0.16); }
+  .nlight .natal-nasa { color: rgba(184,134,11,0.22); }
 
 </style>
 </head>
@@ -1463,19 +1463,23 @@ async function sendMessage() {
   isLoading = true; document.getElementById('sendBtn').disabled = true;
 
   // ── Parallel natal chart fetch ─────────────────────────────────────────
+  // Skip for compatibility readings (two dates = two people, no chart shown)
   console.log('Chart check — alreadyCached:', alreadyCached);
   if (!alreadyCached) {
     const allText = history.map(m => m.content || '').join(' ');
-    const bdM = allText.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b/);
-    console.log('Birthday found in history:', bdM ? bdM[1] : 'NONE');
-    if (bdM) {
+    const allDates = [...allText.matchAll(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b/g)];
+    const uniqueDates = [...new Set(allDates.map(m => m[1]))];
+    const isCompatibility = uniqueDates.length >= 2;
+    console.log('Dates found:', uniqueDates.length, '— compatibility mode:', isCompatibility);
+    if (!isCompatibility && uniqueDates.length === 1) {
+      const bdM = uniqueDates[0];
       const bpM = allText.match(/(?:born in|from|in\s+)([A-Z][a-zA-Z\s,]{2,30})(?=\s+at|\s+\d|[,\.\n]|$)/i);
       const csM = allText.match(/([A-Z][a-zA-Z\s]+),\s*([A-Z]{2})\b/);
       const bp = bpM ? bpM[1].trim() : csM ? (csM[1].trim() + ', ' + csM[2]) : '';
       console.log('Birthplace extracted:', bp || 'NONE');
       const btM = allText.match(/\b(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))\b/i);
       const bt = btM ? btM[1] : '';
-      fetchNatalChart(bdM[1], bp, bt);
+      fetchNatalChart(bdM, bp, bt);
     }
   }
 
