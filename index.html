@@ -653,6 +653,62 @@ function nToggle(uid) {
 }
 
 
+// ── Fetch natal chart from dedicated /api/chart endpoint ──────────────────
+async function fetchNatalChart(birthday, birthplace) {
+  try {
+    const res = await fetch('/api/chart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ birthday, birthplace })
+    });
+    const data = await res.json();
+    console.log('Chart API:', data.planetsFound, 'planets found');
+
+    if (!data.chart && !data.rahuKetu) return;
+
+    // Build cache text from response
+    const lines = ['NATAL PLANETARY POSITIONS (from NASA JPL Horizons):'];
+    const planetOrder = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn'];
+    for (const p of planetOrder) {
+      if (!data.chart[p]) continue;
+      const { sign, degree, dignity, meaning } = data.chart[p];
+      let line = `${p}: ${sign} ${degree}°`;
+      if (dignity) line += ` (${dignity})`;
+      if (meaning) line += ` — ${meaning}`;
+      lines.push(line);
+    }
+    if (data.rahuKetu) {
+      for (const [node, d] of Object.entries(data.rahuKetu)) {
+        lines.push(`${node}: ${d.sign} ${d.degree}° — ${d.meaning || ''}`);
+      }
+    }
+    const cacheText = lines.join('\n');
+
+    // Store in history
+    history.push({ role: 'user', content: '[natal_chart_cached]\n' + cacheText });
+    history.push({ role: 'assistant', content: 'Noted.' });
+    alreadyCached = true;
+    savedContext = { ...savedContext, birthday, birthplace };
+
+    // Extract name and date for display
+    const allText = history.map(m => m.content || '').join(' ');
+    const nameMatch = allText.match(/\b([A-Z][a-z]{2,18})(?=\s+\d{1,2}[\/\-])/);
+    const chartName = nameMatch ? nameMatch[1] : '';
+    const parts = birthday.replace(/-/g,'/').split('/');
+    let chartDate = '';
+    try {
+      const d = new Date(parseInt(parts[2]), parseInt(parts[0])-1, parseInt(parts[1]));
+      chartDate = d.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+    } catch(e) { chartDate = birthday; }
+
+    // Show the talisman
+    showNatalChart(cacheText, chartName, chartDate);
+
+  } catch(err) {
+    console.error('fetchNatalChart error:', err.message);
+  }
+}
+
 function isClarification(text) {
   // Detect if the Mor Doo's last response was asking for clarification
   // rather than delivering a reading — so the user's answer doesn't count as a question
@@ -1370,6 +1426,20 @@ async function sendMessage() {
   }
   isLoading = true; document.getElementById('sendBtn').disabled = true;
 
+  // ── Parallel natal chart fetch ─────────────────────────────────────────
+  // If birthday found and chart not yet cached, call /api/chart independently
+  // so it never blocks or competes with the reading
+  if (!alreadyCached) {
+    const allText = history.map(m => m.content || '').join(' ');
+    const bdM = allText.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b/);
+    if (bdM) {
+      const bpM = allText.match(/(?:born in|from|in\s+)([A-Z][a-zA-Z\s,]{2,30})(?=\s+at|\s+\d|[,\.\n]|$)/i);
+      const bp = bpM ? bpM[1].trim() : text.match(/([A-Z][a-z]+(?:,\s*[A-Z]{2})?)/)?.[0] || '';
+      // Fire and forget — don't await, chart renders whenever it's ready
+      fetchNatalChart(bdM[1], bp);
+    }
+  }
+
   // Normal chat
   showTyping();
   try {
@@ -1380,26 +1450,6 @@ async function sendMessage() {
     });
     removeTyping();
     const data = await res.json();
-    // Cache natal chart in history if freshly fetched — prevents repeat JPL calls
-    if (data.natalChartCache) {
-      history.push({ role: 'user', content: '[natal_chart_cached]\n' + data.natalChartCache });
-      history.push({ role: 'assistant', content: 'Noted.' });
-      // Extract person name and birthday from recent conversation
-      const recentText = history.slice(-10).map(m => m.content || '').join(' ');
-      const nameMatch = recentText.match(/\b([A-Z][a-z]{2,18})(?=\s+\d{1,2}[\/\-])/);
-      const chartName = nameMatch ? nameMatch[1] : '';
-      const bdMatch = recentText.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b/);
-      let chartDate = '';
-      if (bdMatch) {
-        try {
-          const parts = bdMatch[1].replace(/-/g,'/').split('/');
-          const d = new Date(parseInt(parts[2]), parseInt(parts[0])-1, parseInt(parts[1]));
-          chartDate = d.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
-        } catch(e) { chartDate = bdMatch[1]; }
-      }
-      // Show natal chart wheel after reply renders
-      setTimeout(() => showNatalChart(data.natalChartCache, chartName, chartDate), 900);
-    }
     if (data.reply) {
       history.push({ role: 'assistant', content: data.reply });
       addMessage('mordoo', data.reply);
