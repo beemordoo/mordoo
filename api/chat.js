@@ -1688,17 +1688,7 @@ OUTPUT QUALITY — GRAMMAR AND FORMATTING:
 
     const data = await response.json();
     const reply = data.content?.[0]?.text || 'The Mor Doo is silent. Please try again.';
-    const responsePayload = { reply };
-    if (natalChartText && !alreadyCached) {
-      responsePayload.natalChartCache = natalChartText;
-    }
-    // Debug: always include JPL status so frontend can diagnose
-    responsePayload.jplStatus = {
-      hadBirthday: !!natalChartText || alreadyCached,
-      chartReturned: !!natalChartText,
-      alreadyCached
-    };
-    return res.status(200).json(responsePayload);
+    return res.status(200).json({ reply });
 
   } catch (err) {
     console.error('Handler error:', err.message, err.stack);
