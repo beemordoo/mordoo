@@ -784,6 +784,14 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid request' });
   }
 
+  // Session-level variables — natal chart cache shared across scorecard and chat paths
+  let alreadyCached = messages.some(m =>
+    m.role === 'user' && (m.content || '').startsWith('[natal_chart_cached]')
+  );
+  let natalChartText = '';
+  let transitText = '';
+  let coordsText = '';
+
   // Only count genuine reading requests — not clarifying answers or context injections
   const userMessageCount = messages.filter(m => {
     if (m.role !== 'user') return false;
@@ -1078,19 +1086,11 @@ export default async function handler(req, res) {
       const fmt12 = h => { const ampm = h >= 12 ? 'PM' : 'AM'; return (h % 12 || 12) + ampm; };
 
       // Fetch natal chart from JPL Horizons — only on first call per birthday
-      // Check if natal chart was already fetched this session by scanning message history
-      // The frontend injects a [natal_chart_cached] marker after the first fetch
-      const alreadyCached = messages.some(m =>
-        m.role === 'user' && (m.content || '').startsWith('[natal_chart_cached]')
-      );
-
+      // alreadyCached, natalChartText, transitText, coordsText declared at handler scope above
       let birthChart = {};
       let rahuKetu = {};
       let birthCoords = null;
       let transitChart = {};
-      let natalChartText = '';
-      let transitText = '';
-      let coordsText = '';
 
       if (alreadyCached) {
         // Extract cached chart from history — it was stored as a hidden user message
@@ -1590,7 +1590,7 @@ OUTPUT QUALITY — GRAMMAR AND FORMATTING:
     const reply = data.content?.[0]?.text || 'The Mor Doo is silent. Please try again.';
     // Send natal chart back to client for caching — only when freshly fetched
     const responsePayload = { reply };
-    if (natalChartText && typeof natalChartText !== 'undefined' && !alreadyCached) {
+    if (natalChartText && !alreadyCached) {
       responsePayload.natalChartCache = natalChartText;
     }
     return res.status(200).json(responsePayload);
