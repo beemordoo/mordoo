@@ -1596,49 +1596,87 @@ OUTPUT QUALITY — GRAMMAR AND FORMATTING:
 - Read your own response once before sending — if a word looks wrong, fix it`;
 
   // ── Build birthday context for chat mode ───────────────────────────────
-  // Extract birthday/birthplace from conversation history
   let chatBirthdayCtx = '';
   try {
     const historyText = messages.map(m => m.content || '').join(' ');
     const bdMatch = historyText.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b/);
-    if (bdMatch && !alreadyCached) {
+
+    if (bdMatch) {
       const bdStr = bdMatch[1].replace(/-/g, '/');
-      const parts = bdStr.split('/');
-      const mo = parseInt(parts[0]), dy = parseInt(parts[1]), yr = parseInt(parts[2]);
-      if (!isNaN(mo) && !isNaN(dy) && !isNaN(yr)) {
-        const jplDate = yr + '-' + String(mo).padStart(2,'0') + '-' + String(dy).padStart(2,'0');
-        // Extract birthplace
-        const bpMatch = historyText.match(/(?:born in|from|in\s+)([A-Z][a-zA-Z\s,]{2,30})(?=\s+at|\s+\d|[,\.\n]|$)/i);
-        const bp = bpMatch ? bpMatch[1].trim() : '';
-        // Fetch chart
-        try {
-          const [chart, coords, transits] = await Promise.all([
-            getBirthChart(jplDate),
-            geocodeBirthplace(bp),
-            getCurrentTransits()
-          ]);
-          const rk = getRahuKetu(jplDate);
-          natalChartText = Object.keys(chart).length > 0 ? formatBirthChart(chart, rk) : '';
-          transitText = Object.keys(transits).length > 0 ? formatTransits(transits, chart) : '';
-          coordsText = coords ? 'Birthplace coordinates: lat ' + coords.lat.toFixed(4) + ', lng ' + coords.lng.toFixed(4) : '';
-          if (natalChartText) chatBirthdayCtx = natalChartText + '\n\n' + transitText;
-        } catch(e) {
-          console.error('Chat JPL error:', e.message);
-        }
-      }
-    } else if (alreadyCached) {
-      // Use cached chart from history
-      const cachedMsg = messages.find(m => (m.content||'').startsWith('[natal_chart_cached]'));
-      if (cachedMsg) {
-        chatBirthdayCtx = cachedMsg.content.replace('[natal_chart_cached]\n', '');
-        // Still refresh transits
-        try {
-          const transits = await getCurrentTransits();
-          if (Object.keys(transits).length > 0) {
-            transitText = formatTransits(transits, {});
-            chatBirthdayCtx += '\n\n' + transitText;
+      const bdParts = bdStr.split('/');
+      const bdMo = parseInt(bdParts[0]), bdDy = parseInt(bdParts[1]), bdYr = parseInt(bdParts[2]);
+
+      if (!isNaN(bdMo) && !isNaN(bdDy) && !isNaN(bdYr)) {
+        // ── Life Path ──
+        const allDigits = bdStr.replace(/\//g,'').split('').map(Number);
+        let lpSum = allDigits.reduce((a,b)=>a+b,0);
+        while (lpSum > 9 && ![11,22,33,44].includes(lpSum)) { lpSum = String(lpSum).split('').map(Number).reduce((a,b)=>a+b,0); }
+
+        // ── Zodiac with CNY boundary ──
+        const cnyByYearChat = {
+          1990:[1,27],1991:[2,15],1992:[2,4],1993:[1,23],1994:[2,10],
+          1995:[1,31],1996:[2,19],1997:[2,7],1998:[1,28],1999:[2,16],
+          2000:[2,5],2001:[1,24],2002:[2,12],2003:[2,1],2004:[1,22],
+          2005:[2,9],2006:[1,29],2007:[2,18],2008:[2,7],2009:[1,26],
+          2010:[2,14],2011:[2,3],2012:[1,23],2013:[2,10],2014:[1,31],
+          2015:[2,19],2016:[2,8],2017:[1,28],2018:[2,16],2019:[2,5],
+          2020:[1,25],2021:[2,12],2022:[2,1],2023:[1,22],2024:[2,10],
+          2025:[1,29],2026:[2,17],2027:[2,6],2028:[1,26],2029:[2,13]
+        };
+        const chatAnimals = ['Rat','Ox','Tiger','Rabbit','Dragon','Snake','Horse','Goat','Monkey','Rooster','Dog','Pig'];
+        const chatElements = ['Metal','Metal','Water','Water','Wood','Wood','Fire','Fire','Earth','Earth'];
+        const birthCNY = cnyByYearChat[bdYr] || [2,1];
+        const beforeCNY = bdMo < birthCNY[0] || (bdMo === birthCNY[0] && bdDy < birthCNY[1]);
+        const zodiacBirthYr = beforeCNY ? bdYr - 1 : bdYr;
+        const zIdx = ((zodiacBirthYr - 2020) % 12 + 12) % 12;
+        const eIdx = ((zodiacBirthYr - 2020) % 10 + 10) % 10;
+        const chatZodiac = chatElements[eIdx] + ' ' + chatAnimals[zIdx];
+
+        // ── Birth hour animal ──
+        let birthHourNote = '';
+        const btMatch = historyText.match(/\b(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))\b/i);
+        if (btMatch) {
+          const tMatch = btMatch[1].match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i);
+          if (tMatch) {
+            let hr = parseInt(tMatch[1]);
+            const ap = (tMatch[3]||'').toLowerCase();
+            if (ap === 'pm' && hr !== 12) hr += 12;
+            if (ap === 'am' && hr === 12) hr = 0;
+            const hourAnimalsChat = [
+              {name:'Rat',hours:[23,0,1]},{name:'Ox',hours:[1,2]},{name:'Tiger',hours:[3,4]},
+              {name:'Rabbit',hours:[5,6]},{name:'Dragon',hours:[7,8]},{name:'Snake',hours:[9,10]},
+              {name:'Horse',hours:[11,12]},{name:'Goat',hours:[13,14]},{name:'Monkey',hours:[15,16]},
+              {name:'Rooster',hours:[17,18]},{name:'Dog',hours:[19,20]},{name:'Pig',hours:[21,22]}
+            ];
+            const h = hr % 24;
+            let animal = hourAnimalsChat.find(a => a.hours.includes(h));
+            if (!animal && h === 0) animal = hourAnimalsChat[0];
+            if (animal) birthHourNote = 'Birth hour animal: ' + animal.name + '\n';
           }
-        } catch(e) {}
+        }
+
+        // ── Birthplace ──
+        const bpMatch = historyText.match(/(?:born in|from|in\s+)([A-Z][a-zA-Z\s,]{2,30})(?=\s+at|\s+\d|[,\.\n]|$)/i);
+        const cityStateMatch = historyText.match(/([A-Z][a-zA-Z\s]+),\s*([A-Z]{2})\b/);
+        const cityAfterDate = historyText.match(/\d{4}\s+([A-Z][a-zA-Z\s]+?)(?:,|\s+\d|\s+at|\s*$)/);
+        const bp = bpMatch ? bpMatch[1].trim()
+          : cityStateMatch ? (cityStateMatch[1].trim() + ', ' + cityStateMatch[2])
+          : cityAfterDate ? cityAfterDate[1].trim()
+          : '';
+
+        chatBirthdayCtx = 'BIRTHDAY CONTEXT (calculated from provided data):\n' +
+          'Birthday: ' + bdStr + '\n' +
+          'Life Path: ' + lpSum + '\n' +
+          'Thai Zodiac: ' + chatZodiac + ' (birth year ' + zodiacBirthYr + ')\n' +
+          birthHourNote +
+          (bp ? 'Birthplace: ' + bp + '\n' : '') +
+          'IMPORTANT: Use these exact values. Do NOT recalculate or guess the zodiac — it is ' + chatZodiac + '. The Life Path is ' + lpSum + '.';
+
+        // Use cached natal chart if available
+        if (alreadyCached) {
+          const cachedMsg = messages.find(m => (m.content||'').startsWith('[natal_chart_cached]'));
+          if (cachedMsg) chatBirthdayCtx += '\n\n' + cachedMsg.content.replace('[natal_chart_cached]\n', '');
+        }
       }
     }
   } catch(e) {
