@@ -190,19 +190,17 @@ async function fetchPlanetPosition(jplId, dateStr) {
     String(stopDate.getMonth()+1).padStart(2,'0') + '-' +
     String(stopDate.getDate()).padStart(2,'0');
 
-  const params = new URLSearchParams({
-    format: 'text',
-    COMMAND: `'${jplId}'`,
-    EPHEM_TYPE: "'OBSERVER'",
-    CENTER: "'500@399'",
-    START_TIME: `'${dateStr}'`,
-    STOP_TIME: `'${stopStr}'`,
-    STEP_SIZE: "'1d'",
-    QUANTITIES: "'31'",  // Observer ecliptic longitude and latitude
-    CSV_FORMAT: "'YES'"
-  });
-
-  const url = `https://ssd.jpl.nasa.gov/api/horizons.api?${params.toString()}`;
+  // Build URL manually — URLSearchParams encodes ' to %27 which JPL rejects
+  const url = 'https://ssd.jpl.nasa.gov/api/horizons.api' +
+    '?format=text' +
+    `&COMMAND='${jplId}'` +
+    `&EPHEM_TYPE='OBSERVER'` +
+    `&CENTER='500@399'` +
+    `&START_TIME='${dateStr}'` +
+    `&STOP_TIME='${stopStr}'` +
+    `&STEP_SIZE='1d'` +
+    `&QUANTITIES='31'` +
+    `&CSV_FORMAT='YES'`;
   // Use Promise.race for timeout — more compatible than AbortSignal.timeout
   const fetchPromise = fetch(url).then(r => r.text());
   const timeoutPromise = new Promise((_, reject) =>
