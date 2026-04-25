@@ -712,9 +712,11 @@ async function fetchNatalChart(birthday, birthplace, birthtime) {
 
     // Extract name and date for display
     const allText = history.map(m => m.content || '').join(' ');
-    const beforeDate = allText.split(/\d{1,2}\/\d{1,2}\/\d{4}/)[0].trim();
-    const nameMatch = beforeDate.match(/^([A-Z][a-z]{2,18})/);
-    const chartName = nameMatch ? nameMatch[1] : '';
+    // Extract first name from the sequence of capitalized words right before the date
+    const dateIdx = allText.search(/\d{1,2}\/\d{1,2}\/\d{4}/);
+    const nearDate = dateIdx > 0 ? allText.slice(Math.max(0, dateIdx-60), dateIdx).trim() : '';
+    const nameSeq = nearDate.match(/([A-Z][a-z]{2,18}(?:\s+[A-Z][a-z]{2,18})*)\s*$/);
+    const chartName = nameSeq ? nameSeq[1].split(' ')[0] : '';
     const parts = birthday.replace(/-/g,'/').split('/');
     let chartDate = '';
     try {
