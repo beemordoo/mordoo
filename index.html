@@ -969,6 +969,11 @@ async function sendMessage() {
     });
     removeTyping();
     const data = await res.json();
+    // Cache natal chart in history if freshly fetched — prevents repeat JPL calls
+    if (data.natalChartCache) {
+      history.push({ role: 'user', content: '[natal_chart_cached]\n' + data.natalChartCache });
+      history.push({ role: 'assistant', content: 'Noted.' });
+    }
     if (data.reply) {
       history.push({ role: 'assistant', content: data.reply });
       addMessage('mordoo', data.reply);
