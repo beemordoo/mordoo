@@ -396,13 +396,16 @@ const PLANET_COL = {
 
 function parseNatalCache(txt) {
   const planets = {}, nodes = {};
+  let ascendant = null;
   for (const line of txt.split('\n')) {
     const pm = line.match(/^(Sun|Moon|Mercury|Venus|Mars|Jupiter|Saturn):\s+(\w+)\s+(\d+)°(?:\s+\(([^)]+)\))?/);
     if (pm) planets[pm[1]] = { sign: pm[2], degree: parseInt(pm[3]), dignity: pm[4] || '' };
     const nm = line.match(/^(Rahu|Ketu):\s+(\w+)\s+(\d+)°/);
     if (nm) nodes[nm[1]] = { sign: nm[2], degree: parseInt(nm[3]) };
+    const am = line.match(/^Ascendant:\s+(\w+)\s+(\d+)°/);
+    if (am) ascendant = { sign: am[1], degree: parseInt(am[2]) };
   }
-  return { planets, nodes };
+  return { planets, nodes, ascendant };
 }
 
 function signAngle(sign, degree) {
@@ -556,7 +559,7 @@ function buildNatalSVG(planets, nodes) {
 }
 
 function showNatalChart(cacheText, personName, birthDateStr) {
-  const { planets, nodes } = parseNatalCache(cacheText);
+  const { planets, nodes, ascendant } = parseNatalCache(cacheText);
   if (!planets || Object.keys(planets).length === 0) return;
 
   const chat = document.getElementById('chat');
@@ -581,6 +584,14 @@ function showNatalChart(cacheText, personName, birthDateStr) {
       <span class="natal-p-sign">${sign} ${degree}°${digLabel ? ` <span class="natal-p-dig">${digLabel}</span>` : ''}</span>
     </div>`;
   }).join('');
+  // Add Ascendant if available
+  if (ascendant) {
+    pHTML += `<div class="natal-p-row">
+      <span class="natal-p-sym" style="color:var(--gold)">AC</span>
+      <span class="natal-p-name">Rising</span>
+      <span class="natal-p-sign">${ascendant.sign} ${ascendant.degree}°</span>
+    </div>`;
+  }
 
   let nodesHTML = '';
   if (nodes.Rahu) nodesHTML += `<div class="natal-node"><strong>☊ Rahu · North Node</strong><span>${nodes.Rahu.sign} ${nodes.Rahu.degree}°</span></div>`;
@@ -654,14 +665,14 @@ function nToggle(uid) {
 
 
 // ── Fetch natal chart from dedicated /api/chart endpoint ──────────────────
-async function fetchNatalChart(birthday, birthplace) {
+async function fetchNatalChart(birthday, birthplace, birthtime) {
   console.log('fetchNatalChart called with:', birthday, birthplace);
   try {
     console.log('Calling /api/chart...');
     const res = await fetch('/api/chart', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ birthday, birthplace })
+      body: JSON.stringify({ birthday, birthplace, birthtime: birthtime || '' })
     });
     console.log('Chart API response status:', res.status);
     const data = await res.json();
@@ -688,6 +699,9 @@ async function fetchNatalChart(birthday, birthplace) {
         lines.push(`${node}: ${d.sign} ${d.degree}° — ${d.meaning || ''}`);
       }
     }
+    if (data.ascendant) {
+      lines.push(`Ascendant: ${data.ascendant.sign} ${data.ascendant.degree}°`);
+    }
     const cacheText = lines.join('\n');
 
     // Store in history
@@ -698,7 +712,8 @@ async function fetchNatalChart(birthday, birthplace) {
 
     // Extract name and date for display
     const allText = history.map(m => m.content || '').join(' ');
-    const nameMatch = allText.match(/\b([A-Z][a-z]{2,18})(?=\s+\d{1,2}[\/\-])/);
+    const beforeDate = allText.split(/\d{1,2}\/\d{1,2}\/\d{4}/)[0].trim();
+    const nameMatch = beforeDate.match(/^([A-Z][a-z]{2,18})/);
     const chartName = nameMatch ? nameMatch[1] : '';
     const parts = birthday.replace(/-/g,'/').split('/');
     let chartDate = '';
@@ -1444,7 +1459,9 @@ async function sendMessage() {
       const csM = allText.match(/([A-Z][a-zA-Z\s]+),\s*([A-Z]{2})\b/);
       const bp = bpM ? bpM[1].trim() : csM ? (csM[1].trim() + ', ' + csM[2]) : '';
       console.log('Birthplace extracted:', bp || 'NONE');
-      fetchNatalChart(bdM[1], bp);
+      const btM = allText.match(/\b(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))\b/i);
+      const bt = btM ? btM[1] : '';
+      fetchNatalChart(bdM[1], bp, bt);
     }
   }
 
