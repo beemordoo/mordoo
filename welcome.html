@@ -665,6 +665,100 @@ body {
   .orb-wrap { width: 160px; height: 160px; }
   .candle-row { gap: 24px; }
 }
+/* ── NASA SECTION ── */
+.nasa-section {
+  padding: 80px 24px;
+  background: linear-gradient(180deg, var(--cream) 0%, var(--cream-dark) 100%);
+  position: relative;
+  overflow: hidden;
+}
+.nasa-section::before {
+  content: '☉';
+  position: absolute;
+  font-size: 320px;
+  color: rgba(184,134,11,0.04);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  font-family: serif;
+}
+.nasa-inner {
+  max-width: 780px;
+  margin: 0 auto;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+.nasa-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.4em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.nasa-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(26px, 4vw, 38px);
+  color: var(--brown-deep);
+  font-weight: 400;
+  margin-bottom: 28px;
+  letter-spacing: -0.01em;
+}
+.nasa-body {
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--text-mid);
+  max-width: 640px;
+  margin: 0 auto 52px;
+  font-family: 'Sarabun', sans-serif;
+  font-weight: 300;
+}
+.nasa-pillars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 40px;
+}
+@media (max-width: 600px) {
+  .nasa-pillars { grid-template-columns: 1fr; gap: 16px; }
+}
+.nasa-pillar {
+  background: rgba(255,253,248,0.7);
+  border: 1px solid rgba(184,134,11,0.18);
+  border-radius: 12px;
+  padding: 28px 20px;
+  text-align: center;
+}
+.nasa-pillar-symbol {
+  font-size: 28px;
+  color: var(--gold);
+  margin-bottom: 12px;
+  font-family: 'Playfair Display', serif;
+  letter-spacing: 0.05em;
+}
+.nasa-pillar-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 15px;
+  color: var(--brown-deep);
+  font-weight: 600;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+.nasa-pillar-desc {
+  font-size: 12px;
+  color: var(--text-mid);
+  line-height: 1.7;
+  font-family: 'Sarabun', sans-serif;
+  font-weight: 300;
+}
+.nasa-attribution {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  font-family: 'Sarabun', sans-serif;
+  opacity: 0.7;
+}
 </style>
 </head>
 <body>
@@ -863,6 +957,34 @@ body {
         <div class="feature-title">Monthly Forecasts</div>
         <p class="feature-desc">What does 2026 hold for you month by month? The Fire Horse year amplifies everything — the Mor Doo reads your personal cycle against the year's energy to reveal what's coming.</p>
       </div>
+    </div>
+  </section>
+
+
+  <!-- ── NASA SECTION ── -->
+  <section class="nasa-section" id="nasaSection">
+    <div class="nasa-inner">
+      <div class="nasa-eyebrow">✦ The Astronomy Behind the Reading ✦</div>
+      <h2 class="nasa-title">Planetary precision. Ancient wisdom.</h2>
+      <p class="nasa-body">Thai tradition has always understood that the planets present at your birth shape the direction of your soul. Hora-sasat reads the planetary hour. Lek-sasat reads the numbers. The Mor Doo adds a third layer of precision — the actual position of every planet in the sky on the day you were born, drawn from NASA's Jet Propulsion Laboratory ephemeris system. The same data used to navigate spacecraft. Your birth chart is not estimated from tables. It is calculated from real coordinates, real astronomy, real sky.</p>
+      <div class="nasa-pillars">
+        <div class="nasa-pillar">
+          <div class="nasa-pillar-symbol">เลข</div>
+          <div class="nasa-pillar-title">Lek-sasat</div>
+          <div class="nasa-pillar-desc">The numbers in your name, date, address, and phone — the ancient Thai numerological reading</div>
+        </div>
+        <div class="nasa-pillar">
+          <div class="nasa-pillar-symbol">โหร</div>
+          <div class="nasa-pillar-title">Hora-sasat</div>
+          <div class="nasa-pillar-desc">The planetary hour of your birth, the governing energy of the day, and the Thevada that watched over your arrival</div>
+        </div>
+        <div class="nasa-pillar">
+          <div class="nasa-pillar-symbol">☉</div>
+          <div class="nasa-pillar-title">NASA Ephemeris</div>
+          <div class="nasa-pillar-desc">Real planetary positions calculated from NASA's JPL Horizons system — where every planet actually sat in the sky the moment you were born</div>
+        </div>
+      </div>
+      <div class="nasa-attribution">Planetary data sourced from NASA's Jet Propulsion Laboratory · JPL Horizons On-Line Ephemeris System · ssd.jpl.nasa.gov</div>
     </div>
   </section>
 
