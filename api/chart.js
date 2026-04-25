@@ -92,6 +92,8 @@ async function fetchPlanetPosition(jplId, dateStr) {
   const fetchP = fetch(url).then(r => r.text());
   const timeoutP = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 15000));
   const text = await Promise.race([fetchP, timeoutP]);
+  // Log first 200 chars of JPL response for one planet only
+  if (jplId === '299') console.log('JPL raw (Venus):', text.slice(0, 300));
   return parseJPLLongitude(text);
 }
 
@@ -192,7 +194,8 @@ export default async function handler(req, res) {
       rahuKetu,
       coords,
       jplDate,
-      planetsFound: Object.keys(chart).length
+      planetsFound: Object.keys(chart).length,
+      debug: { jplDate, planetsAttempted: 7, note: 'Check Vercel function logs for JPL raw response' }
     });
 
   } catch(err) {
