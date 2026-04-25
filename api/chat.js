@@ -925,7 +925,7 @@ export default async function handler(req, res) {
       if (birthHourAnimal) {
         // Only overwrite horaSaatContext if it wasn't already set by the approximate range block
         const baseContext = 'HORA-SASAT (โหราศาสตร์) BIRTH HOUR ANALYSIS:\n' +
-          'Born in the ' + birthHourAnimal.name + ' hour (' + birthTime + ') — ruling planet: ' + birthHourAnimal.planet + '\n' +
+          'Born in the ' + birthHourAnimal.name + ' hour — ruling planet: ' + birthHourAnimal.planet + '\n' +
           'Hour energy: ' + birthHourAnimal.energy + '\n' +
           'Resonant digits for this birth hour: ' + birthHourAnimal.digits.join(' and ') + '\n\n' +
           'Apply hora-sasat weighting:\n' +
@@ -1032,17 +1032,26 @@ export default async function handler(req, res) {
         bdSum = bdSum.toString().split('').map(Number).reduce((a,b) => a+b, 0);
       }
 
-      // Zodiac year
-      const zodiacYears = {
-        Rat: [1996,2008,2020], Ox: [1997,2009,2021], Tiger: [1998,2010,2022],
-        Rabbit: [1999,2011,2023], Dragon: [2000,2012,2024], Snake: [2001,2013,2025],
-        Horse: [2002,2014,2026], Goat: [2003,2015,2027], Monkey: [1992,2004,2016],
-        Rooster: [1993,2005,2017], Dog: [1994,2006,2018], Pig: [1995,2007,2019]
+      // Zodiac year — calculated mathematically, handles any birth year + CNY boundary
+      const cnyByYear = {
+        1990:[1,27],1991:[2,15],1992:[2,4],1993:[1,23],1994:[2,10],
+        1995:[1,31],1996:[2,19],1997:[2,7],1998:[1,28],1999:[2,16],
+        2000:[2,5],2001:[1,24],2002:[2,12],2003:[2,1],2004:[1,22],
+        2005:[2,9],2006:[1,29],2007:[2,18],2008:[2,7],2009:[1,26],
+        2010:[2,14],2011:[2,3],2012:[1,23],2013:[2,10],2014:[1,31],
+        2015:[2,19],2016:[2,8],2017:[1,28],2018:[2,16],2019:[2,5],
+        2020:[1,25],2021:[2,12],2022:[2,1],2023:[1,22],2024:[2,10],
+        2025:[1,29],2026:[2,17],2027:[2,6],2028:[1,26],2029:[2,13]
       };
-      let zodiac = 'unknown';
-      for (const [animal, years] of Object.entries(zodiacYears)) {
-        if (years.includes(year)) { zodiac = animal; break; }
-      }
+      const zodiacAnimals = ['Rat','Ox','Tiger','Rabbit','Dragon','Snake','Horse','Goat','Monkey','Rooster','Dog','Pig'];
+      const zodiacElements = ['Metal','Metal','Water','Water','Wood','Wood','Fire','Fire','Earth','Earth'];
+      const birthCNY = cnyByYear[year] || [2,1];
+      const isBeforeBirthCNY = month < birthCNY[0] || (month === birthCNY[0] && day < birthCNY[1]);
+      const zodiacBirthYear = isBeforeBirthCNY ? year - 1 : year;
+      const zodiacIdx = ((zodiacBirthYear - 2020) % 12 + 12) % 12;
+      const elemIdx = ((zodiacBirthYear - 2020) % 10 + 10) % 10;
+      const zodiac = zodiacAnimals[zodiacIdx];
+      const zodiacElement = zodiacElements[elemIdx];
 
       // Day of week — Thai planetary ruler with Wednesday split
       const date = new Date(year, month-1, day);
@@ -1153,7 +1162,7 @@ export default async function handler(req, res) {
         'The person was born on ' + birthday + '.\n' +
         '- Life Path Number: ' + lpSum + ' — factor this into compatibility with the number root\n' +
         '- Birth Day Number: ' + bdSum + '\n' +
-        '- Thai Zodiac: Year of the ' + zodiac + '\n' +
+        '- Thai Zodiac: ' + zodiacElement + ' ' + zodiac + ' (birth year ' + zodiacBirthYear + ')\n' +
         '- Born on ' + dayName + ' — governing planet: ' + planet + '\n' +
         '- ' + dayName + ' planetary color: ' + thevadaColor + ' — this planet governs: ' + thevadaAuspicious + '\n' +
         '- CURRENT PLANETARY HOUR (right now): ' + currentYamaPlanet + ' governs this window — favors: ' + yamaAuspicious[currentYamaPlanet] + '\n' +
@@ -1474,8 +1483,8 @@ GUIDING THE READING — CRITICAL:
 
 FULL CHART READING — CRITICAL:
 - When someone asks for a "full chart", "full reading", or shares their name and birthday — always ask for birth time as well if not already provided
-- Request all four anchors together in one ask: full name, birthday (MM/DD/YYYY), birthplace (city/country), and birth time (exact or approximate)
-- Frame it warmly: "To open your full chart I need four anchors — **your full name, birthday (MM/DD/YYYY), birthplace, and birth time** (even approximate — morning, afternoon, evening, or night helps). Share what you have and the reading will unfold."
+- Request all four anchors together in one ask: full name, birthday (MM/DD/YYYY), birthplace (city and state/province or country), and birth time (exact or approximate)
+- Frame it warmly: "To open your full chart I need four anchors — **your full name, birthday (MM/DD/YYYY), birthplace (city and state/province or country), and birth time** (even approximate — morning, afternoon, evening, or night helps). Share what you have and the reading will unfold."
 - Birth time is needed for hora-sasat — it deepens the reading significantly
 - If they don't know their birth time — proceed without it, never refuse or keep asking
 
