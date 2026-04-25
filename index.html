@@ -629,7 +629,7 @@ function showNatalChart(cacheText, personName, birthDateStr) {
           <div class="natal-planets">${pHTML}</div>
           ${nodesHTML ? `<div class="natal-divider"></div><div class="natal-nodes">${nodesHTML}</div>` : ''}
           <div class="natal-footer">หมอดู · Mor Doo with Bee</div>
-          <div class="natal-nasa">NASA ephemeris · JPL Horizons</div>
+          <div class="natal-nasa">Planetary positions sourced from NASA astronomical data</div>
         </div>
       </div>
     </div>`;
@@ -696,7 +696,7 @@ async function fetchNatalChart(birthday, birthplace, birthtime) {
     }
 
     // Build cache text from response
-    const lines = ['NATAL PLANETARY POSITIONS (from NASA JPL Horizons):'];
+    const lines = ['NATAL PLANETARY POSITIONS (from NASA astronomical data):'];
     const planetOrder = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn'];
     for (const p of planetOrder) {
       if (!data.chart[p]) continue;
