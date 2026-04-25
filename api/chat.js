@@ -1565,6 +1565,76 @@ OUTPUT QUALITY — GRAMMAR AND FORMATTING:
 - Always leave a blank line between paragraphs
 - Read your own response once before sending — if a word looks wrong, fix it`;
 
+  // ── Build birthday context for chat mode ───────────────────────────────
+  // Extract birthday/birthplace from conversation history
+  let chatBirthdayCtx = '';
+  try {
+    const historyText = messages.map(m => m.content || '').join(' ');
+    const bdMatch = historyText.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b/);
+    if (bdMatch && !alreadyCached) {
+      const bdStr = bdMatch[1].replace(/-/g, '/');
+      const parts = bdStr.split('/');
+      const mo = parseInt(parts[0]), dy = parseInt(parts[1]), yr = parseInt(parts[2]);
+      if (!isNaN(mo) && !isNaN(dy) && !isNaN(yr)) {
+        const jplDate = yr + '-' + String(mo).padStart(2,'0') + '-' + String(dy).padStart(2,'0');
+        // Extract birthplace
+        const bpMatch = historyText.match(/(?:born in|from|in\s+)([A-Z][a-zA-Z\s,]{2,30})(?=\s+at|\s+\d|[,\.\n]|$)/i);
+        const bp = bpMatch ? bpMatch[1].trim() : '';
+        // Fetch chart
+        try {
+          const [chart, coords, transits] = await Promise.all([
+            getBirthChart(jplDate),
+            geocodeBirthplace(bp),
+            getCurrentTransits()
+          ]);
+          const rk = getRahuKetu(jplDate);
+          natalChartText = Object.keys(chart).length > 0 ? formatBirthChart(chart, rk) : '';
+          transitText = Object.keys(transits).length > 0 ? formatTransits(transits, chart) : '';
+          coordsText = coords ? 'Birthplace coordinates: lat ' + coords.lat.toFixed(4) + ', lng ' + coords.lng.toFixed(4) : '';
+          if (natalChartText) chatBirthdayCtx = natalChartText + '\n\n' + transitText;
+        } catch(e) {
+          console.error('Chat JPL error:', e.message);
+        }
+      }
+    } else if (alreadyCached) {
+      // Use cached chart from history
+      const cachedMsg = messages.find(m => (m.content||'').startsWith('[natal_chart_cached]'));
+      if (cachedMsg) {
+        chatBirthdayCtx = cachedMsg.content.replace('[natal_chart_cached]\n', '');
+        // Still refresh transits
+        try {
+          const transits = await getCurrentTransits();
+          if (Object.keys(transits).length > 0) {
+            transitText = formatTransits(transits, {});
+            chatBirthdayCtx += '\n\n' + transitText;
+          }
+        } catch(e) {}
+      }
+    }
+  } catch(e) {
+    console.error('Chat birthday context error:', e.message);
+  }
+
+  // Clean messages — strip internal tags before sending to AI
+  const cleanMessages = messages
+    .filter(m => {
+      const c = m.content || '';
+      return !c.startsWith('[natal_chart_cached]') &&
+             !c.startsWith('[Context card provided') &&
+             !c.startsWith('[Context inferred');
+    })
+    .map(m => ({
+      role: m.role,
+      content: m.content.startsWith('[clarify] ') ? m.content.slice(10) : m.content
+    }));
+
+  // Inject birthday context as a system-style user message if we have it
+  const finalMessages = chatBirthdayCtx
+    ? [{ role: 'user', content: '[Background context for this reading — do not mention receiving this]:\n' + chatBirthdayCtx },
+       { role: 'assistant', content: 'Understood.' },
+       ...cleanMessages]
+    : cleanMessages;
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -1577,7 +1647,7 @@ OUTPUT QUALITY — GRAMMAR AND FORMATTING:
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 800,
         system: SYSTEM,
-        messages
+        messages: finalMessages
       })
     });
 
@@ -1588,7 +1658,6 @@ OUTPUT QUALITY — GRAMMAR AND FORMATTING:
 
     const data = await response.json();
     const reply = data.content?.[0]?.text || 'The Mor Doo is silent. Please try again.';
-    // Send natal chart back to client for caching — only when freshly fetched
     const responsePayload = { reply };
     if (natalChartText && !alreadyCached) {
       responsePayload.natalChartCache = natalChartText;
