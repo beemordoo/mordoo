@@ -925,7 +925,7 @@ function showContextCard(numberText, numberType) {
   const isAddress = numberType === 'address';
   const householdSection = isAddress ? `
       <div class="context-group">
-        <div class="context-group-label">Who is moving into this home?</div>
+        <div class="context-group-label">Who lives in this home?</div>
         <div class="context-btns">
           <button class="context-btn" data-group="household" data-val="solo" onclick="selectContext(this);togglePartner(false)">🧍 Just Me</button>
           <button class="context-btn" data-group="household" data-val="couple" onclick="selectContext(this);togglePartner(true)">👫 A Couple</button>
