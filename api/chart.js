@@ -199,13 +199,47 @@ export default async function handler(req, res) {
     ]);
     const rahuKetu = getRahuKetu(jplDate);
 
+    // Calculate Ascendant if birth time and coordinates are available
+    let ascendant = null;
+    const { birthtime } = req.body;
+    if (birthtime && coords) {
+      try {
+        const tMatch = birthtime.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i);
+        if (tMatch) {
+          let hr = parseInt(tMatch[1]);
+          const mn = parseInt(tMatch[2]);
+          const ap = (tMatch[3]||'').toLowerCase();
+          if (ap === 'pm' && hr !== 12) hr += 12;
+          if (ap === 'am' && hr === 12) hr = 0;
+          // Estimate UTC offset from longitude (rough: 15° per hour)
+          const utcOffset = -Math.round(coords.lng / 15);
+          const utcHour = hr - utcOffset + mn/60;
+          const [y, m, d] = jplDate.split('-').map(Number);
+          const JD = 367*y - Math.floor(7*(y+Math.floor((m+9)/12))/4) +
+            Math.floor(275*m/9) + d + 1721013.5 + utcHour/24;
+          const T = (JD - 2451545.0) / 36525;
+          let GST = 280.46061837 + 360.98564736629*(JD-2451545) + 0.000387933*T*T;
+          GST = ((GST % 360) + 360) % 360;
+          const lng = coords.lng;
+          const LST = ((GST + lng) % 360 + 360) % 360;
+          const latRad = coords.lat * Math.PI / 180;
+          const lstRad = LST * Math.PI / 180;
+          const e = 23.4397 * Math.PI / 180;
+          let asc = Math.atan2(Math.cos(lstRad), -(Math.sin(lstRad)*Math.cos(e) + Math.tan(latRad)*Math.sin(e)));
+          asc = ((asc * 180 / Math.PI) % 360 + 360) % 360;
+          const signs = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+          ascendant = { sign: signs[Math.floor(asc/30)], degree: Math.floor(asc%30) };
+        }
+      } catch(e) { console.error('Ascendant error:', e.message); }
+    }
+
     return res.status(200).json({
       chart,
       rahuKetu,
+      ascendant,
       coords,
       jplDate,
-      planetsFound: Object.keys(chart).length,
-      debug: { jplDate, planetsAttempted: 7, note: 'Check Vercel function logs for JPL raw response' }
+      planetsFound: Object.keys(chart).length
     });
 
   } catch(err) {
