@@ -76,19 +76,19 @@ async function fetchPlanetPosition(jplId, dateStr) {
   const stop = new Date(parseInt(y), parseInt(m)-1, parseInt(d)+1);
   const stopStr = stop.getFullYear() + '-' + String(stop.getMonth()+1).padStart(2,'0') + '-' + String(stop.getDate()).padStart(2,'0');
 
-  const params = new URLSearchParams({
-    format: 'text',
-    COMMAND: `'${jplId}'`,
-    EPHEM_TYPE: "'OBSERVER'",
-    CENTER: "'500@399'",
-    START_TIME: `'${dateStr}'`,
-    STOP_TIME: `'${stopStr}'`,
-    STEP_SIZE: "'1d'",
-    QUANTITIES: "'31'",
-    CSV_FORMAT: "'YES'"
-  });
+  // Build URL manually — do NOT use URLSearchParams as it encodes single quotes to %27
+  // JPL requires literal single quotes around parameter values
+  const url = 'https://ssd.jpl.nasa.gov/api/horizons.api' +
+    '?format=text' +
+    `&COMMAND='${jplId}'` +
+    `&EPHEM_TYPE='OBSERVER'` +
+    `&CENTER='500@399'` +
+    `&START_TIME='${dateStr}'` +
+    `&STOP_TIME='${stopStr}'` +
+    `&STEP_SIZE='1d'` +
+    `&QUANTITIES='31'` +
+    `&CSV_FORMAT='YES'`;
 
-  const url = `https://ssd.jpl.nasa.gov/api/horizons.api?${params.toString()}`;
   const fetchP = fetch(url).then(r => r.text());
   const timeoutP = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 15000));
   const text = await Promise.race([fetchP, timeoutP]);
