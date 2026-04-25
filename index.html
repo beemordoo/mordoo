@@ -1435,7 +1435,8 @@ async function sendMessage() {
     const bdM = allText.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b/);
     if (bdM) {
       const bpM = allText.match(/(?:born in|from|in\s+)([A-Z][a-zA-Z\s,]{2,30})(?=\s+at|\s+\d|[,\.\n]|$)/i);
-      const bp = bpM ? bpM[1].trim() : text.match(/([A-Z][a-z]+(?:,\s*[A-Z]{2})?)/)?.[0] || '';
+      const csM = allText.match(/([A-Z][a-zA-Z\s]+),\s*([A-Z]{2})\b/);
+      const bp = bpM ? bpM[1].trim() : csM ? (csM[1].trim() + ', ' + csM[2]) : '';
       // Fire and forget — don't await, chart renders whenever it's ready
       fetchNatalChart(bdM[1], bp);
     }
