@@ -799,6 +799,14 @@ function isClarification(text) {
 function isPhoneOrAddress(text) {
   const t = text.trim();
 
+  // Never trigger scorecard for year references or date ranges
+  // e.g. "2026", "April 2026", "June 2023 to August 2023", "what is coming in 2026"
+  const standaloneYear = /\b(19|20)\d{2}\b/;
+  const hasWords = /[a-zA-Z]/.test(t);
+  if (standaloneYear.test(t) && hasWords) return false;
+  // Pure year with no other content (e.g. just "2026" typed alone) — still not a phone
+  if (/^(19|20)\d{2}$/.test(t.trim())) return false;
+
   // Address check first — before any other filtering
   const address = /\d+\s+\w+.*(street|st\b|ave|avenue|blvd|boulevard|road|rd\b|lane|ln\b|drive|dr\b|court|ct\b|way|place|pl\b|circle|cir)/i;
   if (address.test(t)) return true;
