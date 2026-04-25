@@ -911,6 +911,7 @@ function showContextCard(numberText, numberType) {
 let contextSelections = {};
 let contextAlreadyCollected = false;
 let savedContext = {};
+let alreadyCached = false; // tracks whether natal chart has been fetched this session
 function togglePartner(show) {
   const pf = document.getElementById('partnerFields');
   if (pf) pf.style.display = show ? 'block' : 'none';
