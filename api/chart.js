@@ -1,0 +1,202 @@
+// /api/chart.js — standalone natal chart endpoint
+// Called independently from the frontend so it never blocks the reading
+
+// ── Planet engine (shared logic from chat.js) ──────────────────────────────
+
+const JPL_PLANETS = {
+  Sun:'10', Moon:'301', Mercury:'199', Venus:'299',
+  Mars:'499', Jupiter:'599', Saturn:'699'
+};
+
+const ZODIAC_SIGNS = [
+  'Aries','Taurus','Gemini','Cancer','Leo','Virgo',
+  'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'
+];
+
+const PLANET_DIGNITY = {
+  Sun:     { own:['Leo'],                  exalted:['Aries'],      debilitated:['Libra'] },
+  Moon:    { own:['Cancer'],               exalted:['Taurus'],     debilitated:['Scorpio'] },
+  Mercury: { own:['Gemini','Virgo'],       exalted:['Virgo'],      debilitated:['Pisces'] },
+  Venus:   { own:['Taurus','Libra'],       exalted:['Pisces'],     debilitated:['Virgo'] },
+  Mars:    { own:['Aries','Scorpio'],      exalted:['Capricorn'],  debilitated:['Cancer'] },
+  Jupiter: { own:['Sagittarius','Pisces'], exalted:['Cancer'],     debilitated:['Capricorn'] },
+  Saturn:  { own:['Capricorn','Aquarius'], exalted:['Libra'],      debilitated:['Aries'] },
+};
+
+const SIGN_MEANINGS = {
+  Sun:     { Aries:'pioneering vitality',Taurus:'determined and material',Gemini:'communicative and dual',Cancer:'protective and intuitive',Leo:'at full brightness — natural authority',Virgo:'analytical and precise',Libra:'softened — balance over dominance',Scorpio:'intense and private',Sagittarius:'expansive and visionary',Capricorn:'disciplined and ambitious',Aquarius:'independent and collective',Pisces:'compassionate and spiritually rich' },
+  Moon:    { Aries:'reactive and direct emotions',Taurus:'stable and grounded — exalted',Gemini:'curious and changeable',Cancer:'deeply nurturing — at home',Leo:'warm and generous',Virgo:'orderly emotional security',Libra:'needs harmony to feel settled',Scorpio:'intense and transformative',Sagittarius:'needs freedom to feel safe',Capricorn:'restrained and achievement-driven',Aquarius:'detached but humanitarian',Pisces:'deeply empathic — boundaries dissolve easily' },
+  Mercury: { Aries:'quick and direct',Taurus:'deliberate and reliable',Gemini:'fast and versatile — at home',Cancer:'emotional intelligence',Leo:'speaks with authority',Virgo:'analytical precision — exalted',Libra:'balanced diplomat',Scorpio:'investigative depth',Sagittarius:'big picture thinking',Capricorn:'structured and practical',Aquarius:'innovative and ahead of the conversation',Pisces:'intuitive not logical' },
+  Venus:   { Aries:'direct in love',Taurus:'loyal and abundant — at home',Gemini:'charm through wit',Cancer:'nurturing in love',Leo:'generous and dramatic',Virgo:'expressed through service',Libra:'refined partnership — at home',Scorpio:'intense and loyal',Sagittarius:'freedom in love',Capricorn:'commitment and reliability',Aquarius:'unconventional',Pisces:'most compassionate — exalted' },
+  Mars:    { Aries:'direct and bold — at home',Taurus:'slow but formidable',Gemini:'quick and verbal',Cancer:'indirect and protective',Leo:'bold and proud',Virgo:'precise and methodical',Libra:'acts through negotiation',Scorpio:'strategic and hidden — at home',Sagittarius:'philosophical warrior',Capricorn:'disciplined ambition — exalted',Aquarius:'fights for collective causes',Pisces:'intuitive action' },
+  Jupiter: { Aries:'expansion through initiative',Taurus:'wealth through patience',Gemini:'expansion through knowledge',Cancer:'deep abundance — exalted',Leo:'generous and visible',Virgo:'expansion through service',Libra:'abundance through fairness',Scorpio:'expansion through depth',Sagittarius:'full wisdom — at home',Capricorn:'slow and structured',Aquarius:'collective wisdom',Pisces:'spiritual abundance — at home' },
+  Saturn:  { Aries:'patience is the karmic lesson',Taurus:'slow material building',Gemini:'structured communication',Cancer:'emotional discipline',Leo:'earned not assumed leadership',Virgo:'disciplined service',Libra:'fairness fully expressed — exalted',Scorpio:'deep karmic transformation',Sagittarius:'wisdom earned through long journeys',Capricorn:'full discipline — at home',Aquarius:'structured innovation — at home',Pisces:'karmic lessons in boundaries' },
+};
+
+function lonToSign(lon) {
+  const normalized = ((lon % 360) + 360) % 360;
+  return {
+    sign: ZODIAC_SIGNS[Math.floor(normalized / 30)],
+    degree: Math.floor(normalized % 30),
+    longitude: normalized
+  };
+}
+
+function getDignity(planet, sign) {
+  const d = PLANET_DIGNITY[planet];
+  if (!d) return '';
+  if (d.own && d.own.includes(sign)) return 'own sign';
+  if (d.exalted && d.exalted.includes(sign)) return 'exalted';
+  if (d.debilitated && d.debilitated.includes(sign)) return 'debilitated';
+  return '';
+}
+
+function parseJPLLongitude(resultText) {
+  try {
+    const soeIdx = resultText.indexOf('$$SOE');
+    const eoeIdx = resultText.indexOf('$$EOE');
+    if (soeIdx === -1 || eoeIdx === -1) return null;
+    const beforeSOE = resultText.slice(0, soeIdx);
+    const headerLines = beforeSOE.trim().split('\n');
+    const headerLine = headerLines[headerLines.length - 1];
+    const headers = headerLine.split(',').map(s => s.trim().toLowerCase());
+    let lonColIdx = headers.findIndex(h => h.includes('obseclon') || h.includes('eclon'));
+    if (lonColIdx === -1) lonColIdx = 1;
+    const dataSection = resultText.slice(soeIdx + 5, eoeIdx).trim();
+    const lines = dataSection.split('\n').filter(l => l.trim());
+    if (!lines.length) return null;
+    const cols = lines[0].split(',').map(s => s.trim());
+    const lon = parseFloat(cols[lonColIdx]);
+    return isNaN(lon) ? null : lon;
+  } catch(e) { return null; }
+}
+
+async function fetchPlanetPosition(jplId, dateStr) {
+  const [y, m, d] = dateStr.split('-');
+  const stop = new Date(parseInt(y), parseInt(m)-1, parseInt(d)+1);
+  const stopStr = stop.getFullYear() + '-' + String(stop.getMonth()+1).padStart(2,'0') + '-' + String(stop.getDate()).padStart(2,'0');
+
+  const params = new URLSearchParams({
+    format: 'text',
+    COMMAND: `'${jplId}'`,
+    EPHEM_TYPE: "'OBSERVER'",
+    CENTER: "'500@399'",
+    START_TIME: `'${dateStr}'`,
+    STOP_TIME: `'${stopStr}'`,
+    STEP_SIZE: "'1d'",
+    QUANTITIES: "'31'",
+    CSV_FORMAT: "'YES'"
+  });
+
+  const url = `https://ssd.jpl.nasa.gov/api/horizons.api?${params.toString()}`;
+  const fetchP = fetch(url).then(r => r.text());
+  const timeoutP = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 15000));
+  const text = await Promise.race([fetchP, timeoutP]);
+  return parseJPLLongitude(text);
+}
+
+async function getBirthChart(dateStr) {
+  const planets = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn'];
+  const results = {};
+  await Promise.allSettled(planets.map(async p => {
+    try {
+      const lon = await fetchPlanetPosition(JPL_PLANETS[p], dateStr);
+      if (lon !== null) {
+        const { sign, degree } = lonToSign(lon);
+        const dignity = getDignity(p, sign);
+        const meaning = (SIGN_MEANINGS[p] && SIGN_MEANINGS[p][sign]) || '';
+        results[p] = { sign, degree, dignity, meaning };
+      }
+    } catch(e) {}
+  }));
+  return results;
+}
+
+function getRahuKetu(dateStr) {
+  try {
+    const date = new Date(dateStr);
+    const j2000 = new Date('2000-01-01');
+    const years = (date - j2000) / (1000 * 60 * 60 * 24 * 365.25);
+    const rahuLon = ((125.04 - (19.3568 * years)) % 360 + 360) % 360;
+    const ketuLon = (rahuLon + 180) % 360;
+    return {
+      Rahu: { ...lonToSign(rahuLon), meaning: 'Karmic direction — where growth and challenge intersect' },
+      Ketu: { ...lonToSign(ketuLon), meaning: 'Karmic release — what the soul is moving away from' }
+    };
+  } catch(e) { return {}; }
+}
+
+// Geocoding
+const CITY_COORDS = {
+  'philadelphia':{lat:39.9526,lng:-75.1652},'bangkok':{lat:13.7563,lng:100.5018},
+  'new york':{lat:40.7128,lng:-74.0060},'los angeles':{lat:34.0522,lng:-118.2437},
+  'chicago':{lat:41.8781,lng:-87.6298},'houston':{lat:29.7604,lng:-95.3698},
+  'munster':{lat:41.5642,lng:-87.5125},'cairo':{lat:30.0444,lng:31.2357},
+  'london':{lat:51.5074,lng:-0.1278},'paris':{lat:48.8566,lng:2.3522},
+  'tokyo':{lat:35.6762,lng:139.6503},'singapore':{lat:1.3521,lng:103.8198},
+  'dubai':{lat:25.2048,lng:55.2708},'sydney':{lat:-33.8688,lng:151.2093},
+  'toronto':{lat:43.6532,lng:-79.3832},'mumbai':{lat:19.0760,lng:72.8777},
+  'delhi':{lat:28.7041,lng:77.1025},'beijing':{lat:39.9042,lng:116.4074},
+  'seoul':{lat:37.5665,lng:126.9780},'vientiane':{lat:17.9757,lng:102.6331},
+  'chiang mai':{lat:18.7883,lng:98.9853},'ho chi minh':{lat:10.8231,lng:106.6297},
+  'hanoi':{lat:21.0285,lng:105.8542},'phnom penh':{lat:11.5564,lng:104.9282},
+  'kuala lumpur':{lat:3.1390,lng:101.6869},'jakarta':{lat:-6.2088,lng:106.8456},
+  'manila':{lat:14.5995,lng:120.9842},'boston':{lat:42.3601,lng:-71.0589},
+  'miami':{lat:25.7617,lng:-80.1918},'atlanta':{lat:33.7490,lng:-84.3880},
+  'seattle':{lat:47.6062,lng:-122.3321},'denver':{lat:39.7392,lng:-104.9903},
+};
+
+async function geocode(birthplace) {
+  if (!birthplace) return null;
+  const key = birthplace.toLowerCase().trim();
+  for (const [city, coords] of Object.entries(CITY_COORDS)) {
+    if (key.includes(city)) return coords;
+  }
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(birthplace)}&format=json&limit=1`;
+    const r = await Promise.race([
+      fetch(url, { headers: { 'User-Agent': 'MorDoo/1.0 (mordoo-sepia.vercel.app)' } }).then(r => r.json()),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000))
+    ]);
+    if (r && r.length > 0) return { lat: parseFloat(r[0].lat), lng: parseFloat(r[0].lon) };
+  } catch(e) {}
+  return null;
+}
+
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).end();
+
+  try {
+    const { birthday, birthplace } = req.body;
+    if (!birthday) return res.status(400).json({ error: 'birthday required' });
+
+    const parts = birthday.replace(/-/g,'/').split('/');
+    const mo = parseInt(parts[0]), dy = parseInt(parts[1]), yr = parseInt(parts[2]);
+    if (isNaN(mo) || isNaN(dy) || isNaN(yr)) return res.status(400).json({ error: 'invalid date' });
+
+    const jplDate = yr + '-' + String(mo).padStart(2,'0') + '-' + String(dy).padStart(2,'0');
+
+    // Fetch everything in parallel
+    const [chart, coords] = await Promise.all([
+      getBirthChart(jplDate),
+      geocode(birthplace || '')
+    ]);
+    const rahuKetu = getRahuKetu(jplDate);
+
+    return res.status(200).json({
+      chart,
+      rahuKetu,
+      coords,
+      jplDate,
+      planetsFound: Object.keys(chart).length
+    });
+
+  } catch(err) {
+    console.error('Chart API error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
