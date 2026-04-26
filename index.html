@@ -766,12 +766,11 @@ async function fetchNatalChart(birthday, birthplace, birthtime) {
 }
 
 function isClarification(text) {
-  // Detect if the Mor Doo's last response was asking for clarification
-  // rather than delivering a reading — so the user's answer doesn't count as a question
+  // Only true clarifications — Mor Doo needs missing required data to proceed
+  // Does NOT include rhetorical questions, invitations to continue, or reading closers
   if (!text) return false;
   const t = text.toLowerCase();
 
-  // Explicit question patterns the Mor Doo asks
   const clarifyPatterns = [
     /share with me.*(name|birthday|birthplace|birth time)/i,
     /what is your birth/i,
@@ -781,17 +780,10 @@ function isClarification(text) {
     /one more.*(?:piece|anchor|detail)/i,
     /is this.*(?:live in|investment|primary|rental)/i,
     /buying.*(?:alone|partner|family|together)/i,
-    /who is moving/i,
-    /partner['']?s? name/i,
+    /partner[’']?s? name/i,
     /what is your.*(?:name|birthday|birth|place|time)/i,
     /may i ask/i,
-    /\?\s*$/, // ends in a question mark (last sentence)
   ];
-
-  // Check if the message ends with a question or contains a clarifying ask
-  const sentences = t.split(/[.!]/);
-  const lastSentence = sentences[sentences.length - 1] || '';
-  if (lastSentence.includes('?')) return true;
 
   return clarifyPatterns.some(p => p.test(t));
 }
