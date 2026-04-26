@@ -907,6 +907,16 @@ function showContextCard(numberText, numberType) {
         <div style="font-size:11px;color:var(--text-dim);margin-top:5px;letter-spacing:0.03em;">Even approximate is helpful — morning, afternoon, evening, or night</div>
       </div>`;
 
+  const genderField = `
+      <div class="context-group">
+        <div class="context-group-label">Your gender (optional — can affect name & relationship readings)</div>
+        <div class="context-btns">
+          <button class="context-btn" data-group="gender" data-val="female" onclick="selectContext(this)">♀ Female</button>
+          <button class="context-btn" data-group="gender" data-val="male" onclick="selectContext(this)">♂ Male</button>
+          <button class="context-btn" data-group="gender" data-val="nonbinary" onclick="selectContext(this)">◈ Non-binary</button>
+        </div>
+      </div>`;
+
   // If all three are already known, show a simpler card
   const alreadyKnowsYou = hasBirthday && hasBirthplace;
   const titleText = alreadyKnowsYou
@@ -957,6 +967,7 @@ function showContextCard(numberText, numberType) {
       ${birthdayField}
       ${birthplaceField}
       ${birthTimeField}
+      ${genderField}
       <button class="context-submit" id="contextSubmit" onclick="submitContext()">Read My ${numberType === 'address' ? 'Address' : 'Number'} ✦</button>
     </div>
   `;
@@ -1017,7 +1028,8 @@ async function submitContext() {
     birthTime: birthTime || '',
     household: contextSelections.household || 'solo',
     partnerInfo: partnerInfo || '',
-    partnerBirthplace: partnerBirthplace || ''
+    partnerBirthplace: partnerBirthplace || '',
+    gender: contextSelections.gender || ''
   };
   // Inject context card data into chat history as a hidden system message
   // so the AI can use birthday/birthplace/birthtime in all follow-up responses
@@ -1025,6 +1037,7 @@ async function submitContext() {
   if (birthday) contextSummaryParts.push('birthday: ' + birthday);
   if (birthplace) contextSummaryParts.push('birthplace: ' + birthplace);
   if (birthTime) contextSummaryParts.push('birth time: ' + birthTime);
+  if (ctx.gender) contextSummaryParts.push('gender: ' + ctx.gender);
   if (partnerInfo) contextSummaryParts.push('partner name and birthday: ' + partnerInfo);
   if (partnerBirthplace) contextSummaryParts.push('partner birthplace: ' + partnerBirthplace);
   if (contextSelections.household) contextSummaryParts.push('household: ' + contextSelections.household);
