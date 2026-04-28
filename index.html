@@ -350,6 +350,138 @@
   .ndark .natal-nasa { color: rgba(184,134,11,0.16); }
   .nlight .natal-nasa { color: rgba(184,134,11,0.22); }
 
+  /* ── Share Card ─────────────────────────────────────────────────── */
+  .share-card-wrap {
+    max-width: 480px;
+    margin: 8px 0 0 52px;
+    animation: fadeUp 0.5s ease forwards;
+    opacity: 0;
+  }
+  .share-card {
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    font-family: 'Sarabun', sans-serif;
+    transition: background 0.3s, border-color 0.3s;
+  }
+  .share-card.sc-light { background: #EDE8DC; border: 1px solid rgba(184,134,11,0.25); }
+  .share-card.sc-dark  { background: #18120A; border: 1px solid rgba(184,134,11,0.2); }
+
+  .sc-corner { position: absolute; width: 16px; height: 16px; }
+  .sc-corner.tl { top: 8px; left: 8px; border-top: 1px solid #B8892A; border-left: 1px solid #B8892A; border-radius: 3px 0 0 0; }
+  .sc-corner.tr { top: 8px; right: 8px; border-top: 1px solid #B8892A; border-right: 1px solid #B8892A; border-radius: 0 3px 0 0; }
+  .sc-corner.bl { bottom: 8px; left: 8px; border-bottom: 1px solid #B8892A; border-left: 1px solid #B8892A; border-radius: 0 0 0 3px; }
+  .sc-corner.br { bottom: 8px; right: 8px; border-bottom: 1px solid #B8892A; border-right: 1px solid #B8892A; border-radius: 0 0 3px 0; }
+
+  .sc-hdr { padding: 16px 18px 12px; transition: background 0.3s; }
+  .share-card.sc-light .sc-hdr { background: #E2D9C6; }
+  .share-card.sc-dark  .sc-hdr { background: #2A1E08; }
+
+  .sc-accent { height: 1px; background: linear-gradient(90deg, transparent, #B8892A 30%, #C9A84C 50%, #B8892A 70%, transparent); }
+
+  .sc-brand-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .sc-brand-th { font-size: 10px; letter-spacing: 0.2em; font-weight: 500; }
+  .share-card.sc-light .sc-brand-th { color: #B8892A; }
+  .share-card.sc-dark  .sc-brand-th { color: #C9A84C; }
+  .sc-brand-sub { font-size: 8px; letter-spacing: 0.14em; margin-top: 2px; }
+  .share-card.sc-light .sc-brand-sub { color: #8B6914; }
+  .share-card.sc-dark  .sc-brand-sub { color: #7A6030; }
+
+  .sc-user-row { display: flex; align-items: center; gap: 10px; }
+  .sc-av { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; border: 1px solid #B8892A; }
+  .share-card.sc-light .sc-av { background: #E2D0A0; color: #6B4A1E; }
+  .share-card.sc-dark  .sc-av { background: #2A1E08; color: #C9A84C; }
+  .sc-uname { font-size: 13px; font-weight: 500; }
+  .share-card.sc-light .sc-uname { color: #3A2810; }
+  .share-card.sc-dark  .sc-uname { color: #F0E4C8; }
+  .sc-usub { font-size: 10px; }
+  .share-card.sc-light .sc-usub { color: #8B6914; }
+  .share-card.sc-dark  .sc-usub { color: #8B7040; }
+
+  .sc-body { padding: 4px 18px 14px; }
+  .sc-divider { display: flex; align-items: center; gap: 8px; margin: 12px 0; }
+  .sc-dline { flex: 1; height: 0.5px; }
+  .share-card.sc-light .sc-dline { background: #C9A84C; }
+  .share-card.sc-dark  .sc-dline { background: #3A2C10; }
+  .sc-gem { width: 5px; height: 5px; transform: rotate(45deg); flex-shrink: 0; }
+  .share-card.sc-light .sc-gem { background: #B8892A; }
+  .share-card.sc-dark  .sc-gem { background: #C9A84C; }
+
+  .sc-label { font-size: 8px; letter-spacing: 0.2em; font-weight: 500; margin-bottom: 6px; display: block; text-transform: uppercase; }
+  .share-card.sc-light .sc-label { color: #B8892A; }
+  .share-card.sc-dark  .sc-label { color: #C9A84C; }
+
+  .sc-summary-box { border-radius: 10px; padding: 11px 13px; margin-bottom: 12px; }
+  .share-card.sc-light .sc-summary-box { background: #F7F1E4; border: 0.5px solid #D4B87A; }
+  .share-card.sc-dark  .sc-summary-box { background: #0F0B04; border: 0.5px solid #3A2C10; }
+  .sc-summary-text { font-size: 12px; line-height: 1.7; font-family: 'Playfair Display', serif; font-style: italic; }
+  .share-card.sc-light .sc-summary-text { color: #3A2810; }
+  .share-card.sc-dark  .sc-summary-text { color: #D4C4A0; }
+  .sc-summary-loading { font-size: 11px; font-style: italic; opacity: 0.6; }
+  .share-card.sc-light .sc-summary-loading { color: #8B6914; }
+  .share-card.sc-dark  .sc-summary-loading { color: #7A6030; }
+
+  .sc-natal-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+  .sc-natal-item { text-align: center; padding: 6px 4px; border-radius: 7px; }
+  .share-card.sc-light .sc-natal-item { background: #F7F1E4; border: 0.5px solid #D4B87A; }
+  .share-card.sc-dark  .sc-natal-item { background: #0F0B04; border: 0.5px solid #3A2C10; }
+  .sc-natal-planet { font-size: 8px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; }
+  .share-card.sc-light .sc-natal-planet { color: #B8892A; }
+  .share-card.sc-dark  .sc-natal-planet { color: #C9A84C; }
+  .sc-natal-sign { font-size: 11px; margin-top: 2px; }
+  .share-card.sc-light .sc-natal-sign { color: #3A2810; }
+  .share-card.sc-dark  .sc-natal-sign { color: #D4C4A0; }
+
+  .sc-color-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .sc-swatch { width: 26px; height: 26px; border-radius: 6px; flex-shrink: 0; }
+  .share-card.sc-light .sc-swatch { border: 0.5px solid rgba(0,0,0,0.12); }
+  .share-card.sc-dark  .sc-swatch { border: 0.5px solid rgba(255,255,255,0.08); }
+  .sc-color-title { font-size: 12px; font-weight: 500; }
+  .share-card.sc-light .sc-color-title { color: #3A2810; }
+  .share-card.sc-dark  .sc-color-title { color: #F0E4C8; }
+  .sc-color-desc { font-size: 10px; margin-top: 1px; }
+  .share-card.sc-light .sc-color-desc { color: #8B6914; }
+  .share-card.sc-dark  .sc-color-desc { color: #8B7040; }
+
+  .sc-ftr { padding: 9px 18px 16px; display: flex; justify-content: space-between; align-items: center; transition: background 0.3s; }
+  .share-card.sc-light .sc-ftr { background: #E2D9C6; }
+  .share-card.sc-dark  .sc-ftr { background: #2A1E08; }
+  .sc-fbranding { font-size: 10px; letter-spacing: 0.06em; font-weight: 500; }
+  .share-card.sc-light .sc-fbranding { color: #8B6914; }
+  .share-card.sc-dark  .sc-fbranding { color: #7A6030; }
+  .sc-fbranding span { font-weight: 400; }
+  .share-card.sc-light .sc-fbranding span { color: #9B7A3A; }
+  .share-card.sc-dark  .sc-fbranding span { color: #6A5428; }
+  .sc-fdate { font-size: 9px; }
+  .share-card.sc-light .sc-fdate { color: #9B7A3A; }
+  .share-card.sc-dark  .sc-fdate { color: #6A5428; }
+
+  .sc-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .sc-mode-btn { padding: 5px 14px; border-radius: 7px; font-size: 11px; cursor: pointer; border: 1px solid #B8892A; font-family: 'Sarabun', sans-serif; letter-spacing: 0.05em; background: transparent; color: #6B4A1E; transition: all 0.15s; }
+  .sc-mode-btn.active { background: #B8892A; color: #FDF6E8; }
+  .sc-toggle-row { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #6B4A1E; }
+  .sc-tog { width: 34px; height: 19px; border-radius: 10px; background: #C9B99A; position: relative; cursor: pointer; transition: background 0.2s; border: none; outline: none; }
+  .sc-tog.on { background: #B8892A; }
+  .sc-tog::after { content: ''; position: absolute; top: 3px; left: 3px; width: 13px; height: 13px; border-radius: 50%; background: #FDF6E8; transition: left 0.2s; }
+  .sc-tog.on::after { left: 18px; }
+  .sc-action-row { display: flex; gap: 8px; margin-top: 10px; }
+  .sc-action-btn { flex: 1; padding: 9px; border-radius: 10px; font-size: 12px; font-weight: 500; cursor: pointer; text-align: center; font-family: 'Sarabun', sans-serif; letter-spacing: 0.05em; transition: all 0.2s; }
+  .sc-action-btn.sec { background: transparent; border: 1px solid #B8892A; color: #6B4A1E; }
+  .sc-action-btn.sec:hover { background: rgba(184,134,11,0.08); }
+  .sc-action-btn.pri { background: #B8892A; border: 1px solid #B8892A; color: #FDF6E8; }
+  .sc-action-btn.pri:hover { background: #9A7418; }
+
+  /* Per-bubble share button */
+  .bubble-share-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 10px; padding: 5px 12px;
+    background: transparent; border: 1px solid rgba(184,134,11,0.25);
+    border-radius: 20px; font-size: 11px; color: var(--text-dim);
+    cursor: pointer; font-family: 'Sarabun', sans-serif;
+    letter-spacing: 0.05em; transition: all 0.2s;
+  }
+  .bubble-share-btn:hover { border-color: var(--gold); color: var(--gold); }
+
 </style>
 </head>
 <body>
@@ -394,8 +526,8 @@
   </div>
 </div>
 
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
-const MAX_MESSAGES = 5;
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwzwjo0NxyTwoprZ8h3sULI5rDpe7gKnjjfSV9J_NwoHWgybaLgHvcu7q3_sueWEa4sZA/exec';
 
 const petalsEl = document.getElementById('petals');
@@ -697,6 +829,216 @@ function nToggle(uid) {
 }
 
 
+// ── Share Card ────────────────────────────────────────────────────────────
+
+let lastNatalCacheText = null; // store for trigger A + D
+let lastNatalPlanets = null;   // parsed planets for share card grid
+
+async function generateShareSummary(readingText) {
+  // Build context from session
+  const allText = history.map(m => m.content || '').join(' ');
+  const lpMatch = allText.match(/Life Path[:\s]+(\d+)/i);
+  const lp = lpMatch ? lpMatch[1] : null;
+  const zodMatch = allText.match(/\b(Metal|Water|Wood|Fire|Earth)\s+(Rat|Ox|Tiger|Rabbit|Dragon|Snake|Horse|Goat|Monkey|Rooster|Dog|Pig)\b/i);
+  const zodiac = zodMatch ? zodMatch[0] : null;
+
+  const prompt = `You are the Mor Doo — a Thai fortune teller who reads through Thai numerology (Life Path numbers, name numbers, lek-sasat), Chinese/Thai zodiac (animal and element), and planetary positions. In 2 to 3 sentences, summarize the essence of this reading. Weave together the person's Life Path${lp ? ' ' + lp : ''}, their zodiac${zodiac ? ' (' + zodiac + ')' : ''}, and their key planetary placements. Be poetic, specific to their numbers and signs, and speak as the Mor Doo. Do not start with "Your". No bullet points. No line breaks.
+
+Reading to summarize:
+${readingText.slice(0, 1200)}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 180,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    return data.content?.[0]?.text?.trim() || '';
+  } catch(e) {
+    console.error('Share summary error:', e);
+    return '';
+  }
+}
+
+function buildShareCardHTML(uid, summaryText, planets, mode) {
+  const isDark = mode === 'dark';
+  const modeClass = isDark ? 'sc-dark' : 'sc-light';
+
+  // Extract user info from session
+  const allText = history.map(m => m.content || '').join(' ');
+  const dateIdx = allText.search(/\d{1,2}\/\d{1,2}\/\d{4}/);
+  const nearDate = dateIdx > 0 ? allText.slice(Math.max(0, dateIdx - 60), dateIdx).trim() : '';
+  const nameSeq = nearDate.match(/([A-Z][a-z]{2,18}(?:\s+[A-Z][a-z]{2,18})*)\s*$/);
+  const firstName = nameSeq ? nameSeq[1].split(' ')[0] : '';
+  const initials = firstName ? firstName.slice(0,2).toUpperCase() : '✦';
+
+  // Life Path + zodiac for sub-line
+  const lpMatch = allText.match(/Life Path[:\s]+(\d+)/i);
+  const lp = lpMatch ? 'Life Path ' + lpMatch[1] : '';
+  const zodMatch = allText.match(/\b(Metal|Water|Wood|Fire|Earth)\s+(Rat|Ox|Tiger|Rabbit|Dragon|Snake|Horse|Goat|Monkey|Rooster|Dog|Pig)\b/i);
+  const zodiac = zodMatch ? zodMatch[0] : '';
+  const sunSign = planets?.Sun?.sign || '';
+  const subLine = [sunSign ? sunSign + ' Sun' : '', zodiac, lp].filter(Boolean).join(' · ');
+
+  // Natal grid — top 6 planets
+  const planetOrder = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn'];
+  const gridPlanets = planetOrder.filter(p => planets && planets[p]).slice(0, 6);
+  const natalGridHTML = gridPlanets.map(p => `
+    <div class="sc-natal-item">
+      <div class="sc-natal-planet">${p}</div>
+      <div class="sc-natal-sign">${planets[p].sign}</div>
+    </div>`).join('');
+
+  const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  // Yantra SVG icon
+  const yantraSVG = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="opacity:0.7;flex-shrink:0;margin-top:2px;">
+    <circle cx="12" cy="12" r="11" stroke="#B8892A" stroke-width="0.8"/>
+    <line x1="12" y1="1" x2="12" y2="23" stroke="#B8892A" stroke-width="0.6"/>
+    <line x1="1" y1="12" x2="23" y2="12" stroke="#B8892A" stroke-width="0.6"/>
+    <line x1="3.5" y1="3.5" x2="20.5" y2="20.5" stroke="#C9A84C" stroke-width="0.5"/>
+    <line x1="20.5" y1="3.5" x2="3.5" y2="20.5" stroke="#C9A84C" stroke-width="0.5"/>
+    <circle cx="12" cy="12" r="2" fill="#B8892A"/>
+    <circle cx="12" cy="1.5" r="1" fill="#C9A84C"/>
+    <circle cx="12" cy="22.5" r="1" fill="#C9A84C"/>
+  </svg>`;
+
+  const showName = firstName ? `${firstName}.` : 'The Seeker';
+
+  return `
+  <div class="sc-controls">
+    <button class="sc-mode-btn ${!isDark ? 'active' : ''}" onclick="scSetMode('${uid}','light')">Light</button>
+    <button class="sc-mode-btn ${isDark ? 'active' : ''}" onclick="scSetMode('${uid}','dark')">Dark</button>
+    <div class="sc-toggle-row" id="${uid}-pii-row" style="margin-left:4px;">
+      <span>Reveal name</span>
+      <button class="sc-tog" id="${uid}-tog" onclick="scTogglePII('${uid}')"></button>
+      <span id="${uid}-tog-lbl">Off</span>
+    </div>
+  </div>
+  <div class="share-card ${modeClass}" id="${uid}-card">
+    <div class="sc-corner tl"></div><div class="sc-corner tr"></div>
+    <div class="sc-corner bl"></div><div class="sc-corner br"></div>
+    <div class="sc-hdr">
+      <div class="sc-brand-row">
+        <div>
+          <div class="sc-brand-th">หมอดู · MOR DOO</div>
+          <div class="sc-brand-sub">ANCIENT THAI NUMEROLOGY</div>
+        </div>
+        ${yantraSVG}
+      </div>
+      <div class="sc-user-row">
+        <div class="sc-av">${initials}</div>
+        <div>
+          <div class="sc-uname" id="${uid}-name">${showName}</div>
+          <div class="sc-usub">${subLine}</div>
+        </div>
+      </div>
+    </div>
+    <div class="sc-accent"></div>
+    <div class="sc-body">
+      <div class="sc-divider"><div class="sc-dline"></div><div class="sc-gem"></div><div class="sc-dline"></div></div>
+      <span class="sc-label">Reading essence</span>
+      <div class="sc-summary-box">
+        <div class="sc-summary-text" id="${uid}-summary">${summaryText || '<span class="sc-summary-loading">The Mor Doo is composing your essence...</span>'}</div>
+      </div>
+      ${gridPlanets.length > 0 ? `
+      <span class="sc-label">Natal chart</span>
+      <div class="sc-natal-grid">${natalGridHTML}</div>` : ''}
+      <div class="sc-divider"><div class="sc-dline"></div><div class="sc-gem"></div><div class="sc-dline"></div></div>
+    </div>
+    <div class="sc-ftr">
+      <div class="sc-fbranding">Mor Doo <span>with Bee</span></div>
+      <div class="sc-fdate">${today}</div>
+    </div>
+  </div>
+  <div class="sc-action-row">
+    <button class="sc-action-btn sec" onclick="scSaveImage('${uid}')">Save image</button>
+    <button class="sc-action-btn pri" onclick="scShare('${uid}')">Share ✦</button>
+  </div>`;
+}
+
+async function showShareCard(readingText, trigger, planets) {
+  const chat = document.getElementById('chat');
+  const uid = 'sc' + Date.now();
+
+  const wrap = document.createElement('div');
+  wrap.className = 'share-card-wrap';
+  wrap.id = uid + '-wrap';
+  wrap.innerHTML = buildShareCardHTML(uid, '', planets || lastNatalPlanets, 'dark');
+  chat.appendChild(wrap);
+  setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
+
+  // Async: generate summary and inject
+  const summary = await generateShareSummary(readingText);
+  const summaryEl = document.getElementById(uid + '-summary');
+  if (summaryEl && summary) summaryEl.textContent = summary;
+}
+
+function scSetMode(uid, mode) {
+  const card = document.getElementById(uid + '-card');
+  if (!card) return;
+  card.className = 'share-card sc-' + mode;
+  document.querySelectorAll(`#${uid}-wrap .sc-mode-btn`).forEach(b => {
+    b.classList.toggle('active', b.textContent.toLowerCase() === mode);
+  });
+}
+
+function scTogglePII(uid) {
+  const tog = document.getElementById(uid + '-tog');
+  const lbl = document.getElementById(uid + '-tog-lbl');
+  const nameEl = document.getElementById(uid + '-name');
+  if (!tog) return;
+  const isOn = tog.classList.toggle('on');
+  lbl.textContent = isOn ? 'On' : 'Off';
+  // Extract full first name from session
+  const allText = history.map(m => m.content || '').join(' ');
+  const dateIdx = allText.search(/\d{1,2}\/\d{1,2}\/\d{4}/);
+  const nearDate = dateIdx > 0 ? allText.slice(Math.max(0, dateIdx - 60), dateIdx).trim() : '';
+  const nameSeq = nearDate.match(/([A-Z][a-z]{2,18}(?:\s+[A-Z][a-z]{2,18})*)\s*$/);
+  const firstName = nameSeq ? nameSeq[1].split(' ')[0] : '';
+  if (nameEl) nameEl.textContent = isOn && firstName ? firstName : (firstName ? firstName + '.' : 'The Seeker');
+}
+
+async function scSaveImage(uid) {
+  const card = document.getElementById(uid + '-card');
+  if (!card) return;
+  // Use html2canvas if available, else fallback message
+  if (typeof html2canvas !== 'undefined') {
+    try {
+      const canvas = await html2canvas(card, { backgroundColor: null, scale: 2 });
+      const link = document.createElement('a');
+      link.download = 'mordoo-reading.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch(e) { alert('Screenshot failed. Try a screenshot tool on your device.'); }
+  } else {
+    alert('To save: take a screenshot of the card on your device.');
+  }
+}
+
+async function scShare(uid) {
+  const card = document.getElementById(uid + '-card');
+  if (!card) return;
+  const summary = document.getElementById(uid + '-summary')?.textContent || 'My Mor Doo reading';
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'My Mor Doo Reading', text: summary + '\n\nGet your reading at Mor Doo with Bee.' });
+    } catch(e) { /* user cancelled */ }
+  } else {
+    // Fallback: copy summary to clipboard
+    try {
+      await navigator.clipboard.writeText(summary + '\n\nGet your reading at Mor Doo with Bee.');
+      const btn = document.querySelector(`#${uid}-wrap .sc-action-btn.pri`);
+      if (btn) { btn.textContent = 'Copied ✦'; setTimeout(() => { btn.textContent = 'Share ✦'; }, 2000); }
+    } catch(e) {}
+  }
+}
+
 // ── Fetch natal chart from dedicated /api/chart endpoint ──────────────────
 async function fetchNatalChart(birthday, birthplace, birthtime) {
   console.log('fetchNatalChart called with:', birthday, birthplace);
@@ -759,6 +1101,17 @@ async function fetchNatalChart(birthday, birthplace, birthtime) {
 
     // Show the talisman
     showNatalChart(cacheText, chartName, chartDate);
+
+    // ── Trigger A: auto-show share card below natal chart ──────────────
+    lastNatalCacheText = cacheText;
+    lastNatalPlanets = data.chart || null;
+    // Wait for the reading response to arrive before showing share card
+    // We use a short delay so the chat reading renders first
+    setTimeout(async () => {
+      const lastReading = [...history].reverse().find(m => m.role === 'assistant' && m.content && !m.content.startsWith('[') && m.content.length > 80);
+      const readingText = lastReading ? lastReading.content : cacheText;
+      await showShareCard(readingText, 'natal', data.chart);
+    }, 1800);
 
   } catch(err) {
     console.error('fetchNatalChart error:', err.message);
@@ -1194,7 +1547,11 @@ async function generateScorecard(numberText, numberType, ctx) {
   document.getElementById('userInput').focus();
 
   if (messageCount >= MAX_MESSAGES) {
-    setTimeout(showWaitlistCard, 1000);
+    const lastReading = [...history].reverse().find(m => m.role === 'assistant' && m.content && !m.content.startsWith('[') && m.content.length > 80);
+    if (lastReading) {
+      await showShareCard(lastReading.content, 'session_end', lastNatalPlanets);
+    }
+    setTimeout(showWaitlistCard, 600);
   }
 }
 
@@ -1484,7 +1841,9 @@ function addMessage(role, content) {
   const div = document.createElement('div');
   div.className = `message message-${role}`;
   if (role === 'mordoo') {
-    div.innerHTML = `<div class="mordoo-avatar">🔮</div><div class="mordoo-bubble">${fmt(content)}</div>`;
+    const shareBtnHTML = `<button class="bubble-share-btn" onclick="triggerBubbleShare(this)">✦ Share this reading</button>`;
+    div.innerHTML = `<div class="mordoo-avatar">🔮</div><div class="mordoo-bubble">${fmt(content)}${shareBtnHTML}</div>`;
+    div._readingContent = content;
   } else {
     div.innerHTML = `<div class="user-bubble">${esc(content)}</div>`;
   }
@@ -1495,6 +1854,16 @@ function addMessage(role, content) {
   if (resetBtn) resetBtn.classList.add('visible');
   const input = document.getElementById('userInput');
   if (input) input.placeholder = 'Type here...';
+}
+
+async function triggerBubbleShare(btn) {
+  // Get the reading text from the bubble
+  const bubble = btn.closest('.mordoo-bubble');
+  const content = bubble ? bubble.innerText.replace('✦ Share this reading', '').trim() : '';
+  btn.textContent = '✦ Preparing...';
+  btn.style.pointerEvents = 'none';
+  await showShareCard(content, 'bubble', lastNatalPlanets);
+  btn.textContent = '✦ Shared below';
 }
 
 function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -1653,7 +2022,12 @@ async function sendMessage() {
     }
     if (messageCount >= MAX_MESSAGES) {
       gtag('event', 'session_limit_reached', {event_category: 'engagement', event_label: '5_questions_used'});
-      setTimeout(showWaitlistCard, 1000);
+      // ── Trigger D: session-end share card before waitlist ──────────
+      const lastReading = [...history].reverse().find(m => m.role === 'assistant' && m.content && !m.content.startsWith('[') && m.content.length > 80);
+      if (lastReading) {
+        await showShareCard(lastReading.content, 'session_end', lastNatalPlanets);
+      }
+      setTimeout(showWaitlistCard, 600);
     }
   } catch(err) {
     removeTyping();
