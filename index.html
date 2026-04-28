@@ -471,6 +471,16 @@
   .sc-action-btn.pri { background: #B8892A; border: 1px solid #B8892A; color: #FDF6E8; }
   .sc-action-btn.pri:hover { background: #9A7418; }
 
+  .sc-tip-box { border-radius: 8px; padding: 9px 12px; margin-top: 8px; }
+  .share-card.sc-light .sc-tip-box { background: rgba(184,134,11,0.08); border: 0.5px solid rgba(184,134,11,0.2); }
+  .share-card.sc-dark  .sc-tip-box { background: rgba(184,134,11,0.06); border: 0.5px solid rgba(184,134,11,0.15); }
+  .sc-tip-label { font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 500; margin-bottom: 4px; }
+  .share-card.sc-light .sc-tip-label { color: #B8892A; }
+  .share-card.sc-dark  .sc-tip-label { color: #C9A84C; }
+  .sc-tip-text { font-size: 12px; line-height: 1.6; font-family: 'Sarabun', sans-serif; font-weight: 300; }
+  .share-card.sc-light .sc-tip-text { color: #3A2810; }
+  .share-card.sc-dark  .sc-tip-text { color: #E8DCC8; }
+
   /* Per-bubble share button */
   .bubble-share-btn {
     display: inline-flex; align-items: center; gap: 5px;
@@ -835,14 +845,27 @@ function nToggle(uid) {
 let lastNatalCacheText = null; // store for trigger A + D
 let lastNatalPlanets = null;   // parsed planets for share card grid
 
-async function generateShareSummary(readingText) {
+async function generateShareSummary(readingText, trigger, planets) {
   const allText = history.map(m => m.content || '').join(' ');
   const lpMatch = allText.match(/Life Path[:\s]+(\d+)/i);
   const lp = lpMatch ? lpMatch[1] : null;
   const zodMatch = allText.match(/\b(Metal|Water|Wood|Fire|Earth)\s+(Rat|Ox|Tiger|Rabbit|Dragon|Snake|Horse|Goat|Monkey|Rooster|Dog|Pig)\b/i);
   const zodiac = zodMatch ? zodMatch[0] : null;
+  const isNatal = trigger === 'natal';
 
-  const prompt = `You are the Mor Doo — a Thai fortune teller who reads through Thai numerology (Life Path numbers, name numbers, lek-sasat), Chinese and Thai zodiac (animal and element), and planetary positions. In 2 to 3 sentences, summarize the essence of this reading. Weave together the person's Life Path${lp ? ' ' + lp : ''}, their zodiac${zodiac ? ' (' + zodiac + ')' : ''}, and their key planetary placements. Be poetic, specific to their numbers and signs, and speak as the Mor Doo. Do not start with "Your". No bullet points. No line breaks.\n\nReading to summarize:\n${readingText.slice(0, 1000)}`;
+  const prompt = `You are the Mor Doo — a Thai fortune teller who reads through Thai numerology (Life Path numbers, name numbers, lek-sasat), Chinese and Thai zodiac (animal and element), and planetary positions.
+
+Respond ONLY with a JSON object. No markdown, no backticks, no explanation. Just the raw JSON.
+
+From this reading, extract:
+1. "summary": 2-3 sentences summarizing the essence. Weave together Life Path${lp ? ' ' + lp : ''}, zodiac${zodiac ? ' (' + zodiac + ')' : ''}, and planetary energy. Poetic, specific, spoken as the Mor Doo. Do not start with "Your".
+2. "color": the color to wear or carry today from the reading (just the color name, e.g. "Deep violet" or "Rose gold"). If not mentioned, derive one from the planetary energy.
+3. "colorReason": one short phrase explaining why (e.g. "Mars energy — for courage and bold action").
+4. "tip": one practical, modernized Thai wisdom tip from this reading. Should feel like spiritual life advice, not generic. Examples: "Speak before you overthink it — Mars will not wait", "Let others help carry what you've built today", "Silence before noon; your best words come after".
+5. "tipLabel": a 1-3 word label for the tip category, e.g. "Today's practice", "The Mor Doo says", "For your energy".
+
+Reading:
+${readingText.slice(0, 1200)}`;
 
   try {
     const res = await fetch('/api/chat', {
@@ -854,16 +877,19 @@ async function generateShareSummary(readingText) {
       })
     });
     const data = await res.json();
-    return data.reply?.trim() || '';
+    const raw = data.reply?.trim() || '{}';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    return JSON.parse(clean);
   } catch(e) {
     console.error('Share summary error:', e);
-    return '';
+    return { summary: '', color: '', colorReason: '', tip: '', tipLabel: '' };
   }
 }
 
-function buildShareCardHTML(uid, summaryText, planets, mode) {
+function buildShareCardHTML(uid, insight, planets, mode, trigger) {
   const isDark = mode === 'dark';
   const modeClass = isDark ? 'sc-dark' : 'sc-light';
+  const isNatal = trigger === 'natal';
 
   // Extract user info from session
   const allText = history.map(m => m.content || '').join(' ');
@@ -881,18 +907,8 @@ function buildShareCardHTML(uid, summaryText, planets, mode) {
   const sunSign = planets?.Sun?.sign || '';
   const subLine = [sunSign ? sunSign + ' Sun' : '', zodiac, lp].filter(Boolean).join(' · ');
 
-  // Natal grid — top 6 planets
-  const planetOrder = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn'];
-  const gridPlanets = planetOrder.filter(p => planets && planets[p]).slice(0, 6);
-  const natalGridHTML = gridPlanets.map(p => `
-    <div class="sc-natal-item">
-      <div class="sc-natal-planet">${p}</div>
-      <div class="sc-natal-sign">${planets[p].sign}</div>
-    </div>`).join('');
-
   const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-  // Yantra SVG icon
   const yantraSVG = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="opacity:0.7;flex-shrink:0;margin-top:2px;">
     <circle cx="12" cy="12" r="11" stroke="#B8892A" stroke-width="0.8"/>
     <line x1="12" y1="1" x2="12" y2="23" stroke="#B8892A" stroke-width="0.6"/>
@@ -905,6 +921,40 @@ function buildShareCardHTML(uid, summaryText, planets, mode) {
   </svg>`;
 
   const showName = firstName ? `${firstName}.` : 'The Seeker';
+
+  // ── Bottom section: contextual based on reading type ──────────────────
+  // Natal reading → planet grid
+  // All other readings → color + tip
+  let bottomHTML = '';
+  if (isNatal && planets) {
+    const planetOrder = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn'];
+    const gridPlanets = planetOrder.filter(p => planets[p]).slice(0, 6);
+    if (gridPlanets.length > 0) {
+      const natalGridHTML = gridPlanets.map(p => `
+        <div class="sc-natal-item">
+          <div class="sc-natal-planet">${p}</div>
+          <div class="sc-natal-sign">${planets[p].sign}</div>
+        </div>`).join('');
+      bottomHTML = `<span class="sc-label">Natal chart</span>
+        <div class="sc-natal-grid" id="${uid}-bottom">${natalGridHTML}</div>`;
+    }
+  } else {
+    // Color + tip — shown loading initially, filled in after API call
+    bottomHTML = `
+      <div class="sc-insight-row" id="${uid}-bottom">
+        <div class="sc-color-row">
+          <div class="sc-swatch" id="${uid}-swatch" style="background:#888;"></div>
+          <div>
+            <div class="sc-color-title" id="${uid}-color">...</div>
+            <div class="sc-color-desc" id="${uid}-colordesc">The Mor Doo is reading the energy...</div>
+          </div>
+        </div>
+        <div class="sc-tip-box">
+          <div class="sc-tip-label" id="${uid}-tiplabel">Today's practice</div>
+          <div class="sc-tip-text" id="${uid}-tip">...</div>
+        </div>
+      </div>`;
+  }
 
   return `
   <div class="sc-controls">
@@ -940,11 +990,9 @@ function buildShareCardHTML(uid, summaryText, planets, mode) {
       <div class="sc-divider"><div class="sc-dline"></div><div class="sc-gem"></div><div class="sc-dline"></div></div>
       <span class="sc-label">Reading essence</span>
       <div class="sc-summary-box">
-        <div class="sc-summary-text" id="${uid}-summary">${summaryText || '<span class="sc-summary-loading">The Mor Doo is composing your essence...</span>'}</div>
+        <div class="sc-summary-text" id="${uid}-summary"><span class="sc-summary-loading">The Mor Doo is composing your essence...</span></div>
       </div>
-      ${gridPlanets.length > 0 ? `
-      <span class="sc-label">Natal chart</span>
-      <div class="sc-natal-grid">${natalGridHTML}</div>` : ''}
+      ${bottomHTML}
       <div class="sc-divider"><div class="sc-dline"></div><div class="sc-gem"></div><div class="sc-dline"></div></div>
     </div>
     <div class="sc-ftr">
@@ -958,21 +1006,56 @@ function buildShareCardHTML(uid, summaryText, planets, mode) {
   </div>`;
 }
 
+// Color name → approximate hex for the swatch
+function colorNameToHex(name) {
+  const map = {
+    'red':'#C0392B','crimson':'#8B1A1A','scarlet':'#8B0000','pink':'#D4688A','rose':'#C0748A',
+    'orange':'#C07430','amber':'#B8892A','gold':'#C9A84C','yellow':'#C4A020','cream':'#EDE8DC',
+    'green':'#2D6A4A','emerald':'#1A5C3A','teal':'#1D6B6B','mint':'#3A9A7A',
+    'blue':'#2A5A8B','navy':'#1A2A5C','indigo':'#3A3A8B','cobalt':'#2A4A8B',
+    'violet':'#5A3A8B','purple':'#6B3A8B','lavender':'#7A5A9A','magenta':'#8B2A6B',
+    'brown':'#6B4A35','bronze':'#8B6A3A','copper':'#A0603A',
+    'black':'#1A1208','white':'#FBF7F0','silver':'#8A8880','gray':'#6B6860','grey':'#6B6860',
+  };
+  const lower = (name || '').toLowerCase();
+  for (const [key, hex] of Object.entries(map)) {
+    if (lower.includes(key)) return hex;
+  }
+  return '#B8892A'; // default gold
+}
+
 async function showShareCard(readingText, trigger, planets) {
   const chat = document.getElementById('chat');
   const uid = 'sc' + Date.now();
+  const isNatal = trigger === 'natal';
 
   const wrap = document.createElement('div');
   wrap.className = 'share-card-wrap';
   wrap.id = uid + '-wrap';
-  wrap.innerHTML = buildShareCardHTML(uid, '', planets || lastNatalPlanets, 'dark');
+  wrap.innerHTML = buildShareCardHTML(uid, null, planets || lastNatalPlanets, 'dark', trigger);
   chat.appendChild(wrap);
   setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
 
-  // Async: generate summary and inject
-  const summary = await generateShareSummary(readingText);
+  // Async: generate summary + insight and inject
+  const insight = await generateShareSummary(readingText, trigger, planets || lastNatalPlanets);
+
+  // Inject summary
   const summaryEl = document.getElementById(uid + '-summary');
-  if (summaryEl && summary) summaryEl.textContent = summary;
+  if (summaryEl && insight.summary) summaryEl.textContent = insight.summary;
+
+  // Inject contextual bottom section for non-natal readings
+  if (!isNatal) {
+    const colorEl = document.getElementById(uid + '-color');
+    const colorDescEl = document.getElementById(uid + '-colordesc');
+    const swatchEl = document.getElementById(uid + '-swatch');
+    const tipEl = document.getElementById(uid + '-tip');
+    const tipLabelEl = document.getElementById(uid + '-tiplabel');
+    if (colorEl && insight.color) colorEl.textContent = insight.color;
+    if (colorDescEl && insight.colorReason) colorDescEl.textContent = insight.colorReason;
+    if (swatchEl && insight.color) swatchEl.style.background = colorNameToHex(insight.color);
+    if (tipEl && insight.tip) tipEl.textContent = insight.tip;
+    if (tipLabelEl && insight.tipLabel) tipLabelEl.textContent = insight.tipLabel;
+  }
 }
 
 function scSetMode(uid, mode) {
