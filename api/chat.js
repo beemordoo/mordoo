@@ -802,7 +802,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { messages, scorecard, scorecardContext } = req.body;
+  const { messages, scorecard, scorecardContext, userTimezone, userLocalDate } = req.body;
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'Invalid request' });
   }
@@ -1577,34 +1577,57 @@ NUMBERS: 1=pioneer, 2=diplomat, 3=communicator, 4=builder, 5=liberator, 6=nurtur
 
 AUSPICIOUS: 9 (progress), 8 (wealth), 6 (flow). Avoid 4 in prominent positions.
 ${(() => {
-  const now = new Date();
+  // Use user's local timezone if provided, else fall back to server time
+  let now;
+  if (userLocalDate) {
+    // userLocalDate is "YYYY-MM-DDTHH:mm" in user's local time
+    now = new Date(userLocalDate);
+  } else if (userTimezone) {
+    const localStr = new Date().toLocaleString('en-CA', { timeZone: userTimezone, hour12: false });
+    now = new Date(localStr);
+  } else {
+    now = new Date();
+  }
+
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
   const day = now.getDate();
+  const dayOfWeek = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][now.getDay()];
+  const hour = now.getHours();
 
-  // Chinese New Year dates (approximate — always in Jan or Feb)
+  // Wednesday split: before 6pm = Mercury day, 6pm+ = Rahu night
+  const isWednesdayNight = dayOfWeek === 'Wednesday' && hour >= 18;
+  const dayGovernor = {
+    Sunday: 'Sun', Monday: 'Moon', Tuesday: 'Mars',
+    Wednesday: isWednesdayNight ? 'Rahu' : 'Mercury',
+    Thursday: 'Jupiter', Friday: 'Venus', Saturday: 'Saturn'
+  }[dayOfWeek];
+
+  // Chinese New Year dates
   const cnyDates = {
-    2024: [2,10], 2025: [1,29], 2026: [2,17], 2027: [2,6],
-    2028: [1,26], 2029: [2,13], 2030: [2,3]
+    2024:[2,10],2025:[1,29],2026:[2,17],2027:[2,6],
+    2028:[1,26],2029:[2,13],2030:[2,3]
   };
-
-  // Determine zodiac year — if before CNY, use previous year's animal
   const cny = cnyDates[year] || [2,1];
   const isBeforeCNY = month < cny[0] || (month === cny[0] && day < cny[1]);
   const zodiacYear = isBeforeCNY ? year - 1 : year;
 
   const animals = ['Rat','Ox','Tiger','Rabbit','Dragon','Snake','Horse','Goat','Monkey','Rooster','Dog','Pig'];
-  const elements = ['Metal','Metal','Water','Water','Wood','Wood','Fire','Fire','Earth','Earth'];
-  // 2020 = Rat, index 0 of a 12-year cycle
-  const animalIndex = ((zodiacYear - 2020) % 12 + 12) % 12;
-  // Element cycles every 2 years starting from Metal in 2020
-  const elementIndex = ((zodiacYear - 2020) % 10 + 10) % 10;
   const elementNames = ['Metal','Metal','Water','Water','Wood','Wood','Fire','Fire','Earth','Earth'];
+  const animalIndex = ((zodiacYear - 2020) % 12 + 12) % 12;
+  const elementIndex = ((zodiacYear - 2020) % 10 + 10) % 10;
   const animal = animals[animalIndex];
   const element = elementNames[elementIndex];
 
   const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  return 'Current date: ' + months[month-1] + ' ' + day + ', ' + year + '. The current Chinese/Thai zodiac year is the ' + element + ' ' + animal + ' year. Always reference the ' + element + ' ' + animal + ' when discussing the current year energy.';
+  const tz = userTimezone || 'server time';
+
+  return `Current date in user's location: ${dayOfWeek}, ${months[month-1]} ${day}, ${year} (timezone: ${tz}). ` +
+    `Today is governed by ${dayGovernor}${isWednesdayNight ? ' (Wednesday night — Rahu governs after 6pm in Thai tradition)' : ''}. ` +
+    `The current hour is ${hour}:00 local time. ` +
+    `The current Chinese/Thai zodiac year is the ${element} ${animal} year. ` +
+    `Always reference the ${element} ${animal} when discussing the current year energy. ` +
+    `IMPORTANT: Always use ${dayOfWeek} as today's day — do not guess or recalculate.`;
 })()}
 
 OUTPUT QUALITY — GRAMMAR AND FORMATTING:
