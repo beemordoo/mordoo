@@ -835,30 +835,25 @@ let lastNatalCacheText = null; // store for trigger A + D
 let lastNatalPlanets = null;   // parsed planets for share card grid
 
 async function generateShareSummary(readingText) {
-  // Build context from session
   const allText = history.map(m => m.content || '').join(' ');
   const lpMatch = allText.match(/Life Path[:\s]+(\d+)/i);
   const lp = lpMatch ? lpMatch[1] : null;
   const zodMatch = allText.match(/\b(Metal|Water|Wood|Fire|Earth)\s+(Rat|Ox|Tiger|Rabbit|Dragon|Snake|Horse|Goat|Monkey|Rooster|Dog|Pig)\b/i);
   const zodiac = zodMatch ? zodMatch[0] : null;
 
-  const prompt = `You are the Mor Doo — a Thai fortune teller who reads through Thai numerology (Life Path numbers, name numbers, lek-sasat), Chinese/Thai zodiac (animal and element), and planetary positions. In 2 to 3 sentences, summarize the essence of this reading. Weave together the person's Life Path${lp ? ' ' + lp : ''}, their zodiac${zodiac ? ' (' + zodiac + ')' : ''}, and their key planetary placements. Be poetic, specific to their numbers and signs, and speak as the Mor Doo. Do not start with "Your". No bullet points. No line breaks.
-
-Reading to summarize:
-${readingText.slice(0, 1200)}`;
+  const prompt = `You are the Mor Doo — a Thai fortune teller who reads through Thai numerology (Life Path numbers, name numbers, lek-sasat), Chinese and Thai zodiac (animal and element), and planetary positions. In 2 to 3 sentences, summarize the essence of this reading. Weave together the person's Life Path${lp ? ' ' + lp : ''}, their zodiac${zodiac ? ' (' + zodiac + ')' : ''}, and their key planetary placements. Be poetic, specific to their numbers and signs, and speak as the Mor Doo. Do not start with "Your". No bullet points. No line breaks.\n\nReading to summarize:\n${readingText.slice(0, 1000)}`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 180,
-        messages: [{ role: 'user', content: prompt }]
+        messages: [{ role: 'user', content: prompt }],
+        summaryMode: true
       })
     });
     const data = await res.json();
-    return data.content?.[0]?.text?.trim() || '';
+    return data.reply?.trim() || '';
   } catch(e) {
     console.error('Share summary error:', e);
     return '';
@@ -1549,9 +1544,9 @@ async function generateScorecard(numberText, numberType, ctx) {
   if (messageCount >= MAX_MESSAGES) {
     const lastReading = [...history].reverse().find(m => m.role === 'assistant' && m.content && !m.content.startsWith('[') && m.content.length > 80);
     if (lastReading) {
-      await showShareCard(lastReading.content, 'session_end', lastNatalPlanets);
+      showShareCard(lastReading.content, 'session_end', lastNatalPlanets);
     }
-    setTimeout(showWaitlistCard, 600);
+    setTimeout(showWaitlistCard, 800);
   }
 }
 
@@ -2022,12 +2017,12 @@ async function sendMessage() {
     }
     if (messageCount >= MAX_MESSAGES) {
       gtag('event', 'session_limit_reached', {event_category: 'engagement', event_label: '5_questions_used'});
-      // ── Trigger D: session-end share card before waitlist ──────────
+      // ── Trigger D: session-end share card before waitlist (non-blocking) ──
       const lastReading = [...history].reverse().find(m => m.role === 'assistant' && m.content && !m.content.startsWith('[') && m.content.length > 80);
       if (lastReading) {
-        await showShareCard(lastReading.content, 'session_end', lastNatalPlanets);
+        showShareCard(lastReading.content, 'session_end', lastNatalPlanets);
       }
-      setTimeout(showWaitlistCard, 600);
+      setTimeout(showWaitlistCard, 800);
     }
   } catch(err) {
     removeTyping();
