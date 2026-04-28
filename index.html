@@ -1003,35 +1003,92 @@ function scTogglePII(uid) {
 async function scSaveImage(uid) {
   const card = document.getElementById(uid + '-card');
   if (!card) return;
-  // Use html2canvas if available, else fallback message
-  if (typeof html2canvas !== 'undefined') {
-    try {
-      const canvas = await html2canvas(card, { backgroundColor: null, scale: 2 });
+  const btn = document.querySelector(`#${uid}-wrap .sc-action-btn.sec`);
+  if (btn) { btn.textContent = 'Saving...'; btn.style.pointerEvents = 'none'; }
+
+  try {
+    if (typeof html2canvas === 'undefined') {
+      throw new Error('html2canvas not loaded yet');
+    }
+    const canvas = await html2canvas(card, {
+      backgroundColor: null,
+      scale: 3,
+      useCORS: true,
+      logging: false
+    });
+
+    canvas.toBlob(async (blob) => {
+      // On mobile — use Web Share API to trigger native save-to-photos sheet
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], 'mordoo-reading.png', { type: 'image/png' })] })) {
+        try {
+          await navigator.share({
+            files: [new File([blob], 'mordoo-reading.png', { type: 'image/png' })],
+            title: 'My Mor Doo Reading'
+          });
+          if (btn) { btn.textContent = 'Saved ✦'; setTimeout(() => { btn.textContent = 'Save image'; btn.style.pointerEvents = ''; }, 2000); }
+          return;
+        } catch(e) { /* user cancelled or not supported, fall through to download */ }
+      }
+      // Desktop — trigger download
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.download = 'mordoo-reading.png';
-      link.href = canvas.toDataURL('image/png');
+      link.href = url;
       link.click();
-    } catch(e) { alert('Screenshot failed. Try a screenshot tool on your device.'); }
-  } else {
-    alert('To save: take a screenshot of the card on your device.');
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      if (btn) { btn.textContent = 'Saved ✦'; setTimeout(() => { btn.textContent = 'Save image'; btn.style.pointerEvents = ''; }, 2000); }
+    }, 'image/png');
+
+  } catch(e) {
+    console.error('Save error:', e);
+    if (btn) { btn.textContent = 'Screenshot your screen'; btn.style.pointerEvents = ''; }
+    setTimeout(() => { if (btn) btn.textContent = 'Save image'; }, 3000);
   }
 }
 
 async function scShare(uid) {
   const card = document.getElementById(uid + '-card');
-  if (!card) return;
-  const summary = document.getElementById(uid + '-summary')?.textContent || 'My Mor Doo reading';
-  if (navigator.share) {
+  const summaryEl = document.getElementById(uid + '-summary');
+  const summary = summaryEl?.textContent?.trim() || 'My Mor Doo reading';
+  const shareText = summary + '\n\nGet your reading at Mor Doo with Bee.';
+  const btn = document.querySelector(`#${uid}-wrap .sc-action-btn.pri`);
+
+  // Try image share first (mobile native share sheet)
+  if (typeof html2canvas !== 'undefined' && card) {
     try {
-      await navigator.share({ title: 'My Mor Doo Reading', text: summary + '\n\nGet your reading at Mor Doo with Bee.' });
-    } catch(e) { /* user cancelled */ }
-  } else {
-    // Fallback: copy summary to clipboard
+      const canvas = await html2canvas(card, { backgroundColor: null, scale: 3, useCORS: true, logging: false });
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+      const file = new File([blob], 'mordoo-reading.png', { type: 'image/png' });
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'My Mor Doo Reading', text: shareText });
+        return;
+      }
+      // Image share not supported — try text share
+      if (navigator.share) {
+        await navigator.share({ title: 'My Mor Doo Reading', text: shareText });
+        return;
+      }
+    } catch(e) {
+      if (e.name === 'AbortError') return; // user cancelled
+      // Fall through to clipboard
+    }
+  } else if (navigator.share) {
     try {
-      await navigator.clipboard.writeText(summary + '\n\nGet your reading at Mor Doo with Bee.');
-      const btn = document.querySelector(`#${uid}-wrap .sc-action-btn.pri`);
-      if (btn) { btn.textContent = 'Copied ✦'; setTimeout(() => { btn.textContent = 'Share ✦'; }, 2000); }
-    } catch(e) {}
+      await navigator.share({ title: 'My Mor Doo Reading', text: shareText });
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+
+  // Fallback — copy text to clipboard
+  try {
+    await navigator.clipboard.writeText(shareText);
+    if (btn) { btn.textContent = 'Copied ✦'; setTimeout(() => { btn.textContent = 'Share ✦'; }, 2500); }
+  } catch(e) {
+    // Last resort — prompt
+    prompt('Copy your reading:', shareText);
   }
 }
 
@@ -1101,13 +1158,17 @@ async function fetchNatalChart(birthday, birthplace, birthtime) {
     // ── Trigger A: auto-show share card below natal chart ──────────────
     lastNatalCacheText = cacheText;
     lastNatalPlanets = data.chart || null;
-    // Wait for the reading response to arrive before showing share card
-    // We use a short delay so the chat reading renders first
+    // Delay long enough for the AI reading response to finish and enter history
     setTimeout(async () => {
-      const lastReading = [...history].reverse().find(m => m.role === 'assistant' && m.content && !m.content.startsWith('[') && m.content.length > 80);
+      // Find the most recent substantive assistant reading (not internal tags)
+      const lastReading = [...history].reverse().find(m =>
+        m.role === 'assistant' && m.content &&
+        !m.content.startsWith('[') && !m.content.startsWith('Noted') &&
+        !m.content.startsWith('Understood') && m.content.length > 120
+      );
       const readingText = lastReading ? lastReading.content : cacheText;
       await showShareCard(readingText, 'natal', data.chart);
-    }, 1800);
+    }, 4000);
 
   } catch(err) {
     console.error('fetchNatalChart error:', err.message);
