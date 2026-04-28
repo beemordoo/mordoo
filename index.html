@@ -1155,20 +1155,9 @@ async function fetchNatalChart(birthday, birthplace, birthtime) {
     // Show the talisman
     showNatalChart(cacheText, chartName, chartDate);
 
-    // ── Trigger A: auto-show share card below natal chart ──────────────
+    // Store planets for share card — card fires from sendMessage after reading renders
     lastNatalCacheText = cacheText;
     lastNatalPlanets = data.chart || null;
-    // Delay long enough for the AI reading response to finish and enter history
-    setTimeout(async () => {
-      // Find the most recent substantive assistant reading (not internal tags)
-      const lastReading = [...history].reverse().find(m =>
-        m.role === 'assistant' && m.content &&
-        !m.content.startsWith('[') && !m.content.startsWith('Noted') &&
-        !m.content.startsWith('Understood') && m.content.length > 120
-      );
-      const readingText = lastReading ? lastReading.content : cacheText;
-      await showShareCard(readingText, 'natal', data.chart);
-    }, 4000);
 
   } catch(err) {
     console.error('fetchNatalChart error:', err.message);
@@ -2076,6 +2065,14 @@ async function sendMessage() {
     if (data.reply) {
       history.push({ role: 'assistant', content: data.reply });
       addMessage('mordoo', data.reply);
+
+      // ── Trigger A: natal chart share card — fires after reading renders ──
+      // alreadyCached means the natal chart was fetched this session
+      // Only fire once per session (natalShareCardShown flag)
+      if (alreadyCached && lastNatalPlanets && !window._natalShareShown) {
+        window._natalShareShown = true;
+        showShareCard(data.reply, 'natal', lastNatalPlanets);
+      }
     }
     if (messageCount >= MAX_MESSAGES) {
       gtag('event', 'session_limit_reached', {event_category: 'engagement', event_label: '5_questions_used'});
