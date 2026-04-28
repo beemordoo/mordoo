@@ -2114,10 +2114,12 @@ async function sendMessage() {
   // Normal chat
   showTyping();
   try {
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const userLocalDate = new Date().toLocaleString('en-CA', { timeZone: userTimezone, hour12: false }).slice(0, 16);
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: history })
+      body: JSON.stringify({ messages: history, userTimezone, userLocalDate })
     });
     removeTyping();
     const data = await res.json();
