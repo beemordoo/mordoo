@@ -1570,6 +1570,7 @@ DATE CALCULATION — CRITICAL:
 - You are a seer of energies, not a calendar calculator — leave date math alone
 
 ZODIAC: Rat 1996/2008, Ox 1997/2009, Tiger 1998/2010, Rabbit 1999/2011, Dragon 2000/2012, Snake 2001/2013/2025, Horse 2002/2014/2026 (2026 is Fire Horse year), Goat 2003/2015, Monkey 1992/2004/2016, Rooster 1993/2005/2017, Dog 1994/2006/2018, Pig 1995/2007/2019
+CRITICAL ZODIAC RULE: These year ranges are approximate. Chinese New Year falls in late January or February — anyone born in January or early February may belong to the PREVIOUS year's animal. NEVER assign a zodiac from the year list alone. ALWAYS use the pre-calculated "Thai Zodiac" value from the context card, which already accounts for the CNY boundary. If the context card says Dog, it is Dog — do not override it with the year list.
 
 BIRTH HOURS: Rat 11pm-1am, Ox 1-3am, Tiger 3-5am, Rabbit 5-7am, Dragon 7-9am, Snake 9-11am, Horse 11am-1pm, Goat 1-3pm, Monkey 3-5pm, Rooster 5-7pm, Dog 7-9pm, Pig 9-11pm
 
@@ -1686,9 +1687,9 @@ OUTPUT QUALITY — GRAMMAR AND FORMATTING:
       return (label ? label + ':\n' : '') +
         'Birthday: ' + bdStr + '\n' +
         'Life Path: ' + lpSum + '\n' +
-        'Thai Zodiac: ' + chatZodiac + ' (birth year ' + zodiacBirthYr + ')\n' +
+        'Thai Zodiac: ' + chatZodiac + ' (birth year ' + zodiacBirthYr + ' — CNY boundary already applied, do NOT recalculate)\n' +
         'IMPORTANT: Use these exact values for ' + (label || 'this person') + '. ' +
-        'Their zodiac is ' + chatZodiac + '. Their Life Path is ' + lpSum + '.';
+        'Their zodiac is ' + chatZodiac + ' — this is final and correct. Their Life Path is ' + lpSum + '. Do not override these with your own calculation.';
     }
 
     // ── Find all dates in the conversation ──────────────────────────────
