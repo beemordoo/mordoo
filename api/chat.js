@@ -812,13 +812,22 @@ export default async function handler(req, res) {
     try {
       const lastUserMsg = messages.filter(m => m.role === 'user').slice(-1)[0];
       const prompt = lastUserMsg?.content || '';
-      const summaryRes = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 400,
-        system: 'You are a JSON generator. Respond ONLY with a raw JSON object — no markdown, no backticks, no explanation. The JSON must have exactly these keys: summary, colorLabel, color, colorReason, tip, tipLabel.',
-        messages: [{ role: 'user', content: prompt }]
+      const summaryRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 400,
+          system: 'You are a JSON generator. Respond ONLY with a raw JSON object — no markdown, no backticks, no explanation. The JSON must have exactly these keys: summary, colorLabel, color, colorReason, tip, tipLabel.',
+          messages: [{ role: 'user', content: prompt }]
+        })
       });
-      const raw = summaryRes.content?.[0]?.text?.trim() || '{}';
+      const summaryData = await summaryRes.json();
+      const raw = summaryData.content?.[0]?.text?.trim() || '{}';
       const clean = raw.replace(/```json|```/g, '').trim();
       return res.status(200).json({ reply: clean });
     } catch(e) {
