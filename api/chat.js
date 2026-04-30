@@ -802,26 +802,28 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { messages, scorecard, scorecardContext, summaryMode, userTimezone, userLocalDate } = req.body;
+  const { messages, scorecard, scorecardContext, summaryMode } = req.body;
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'Invalid request' });
   }
 
-  // ── Summary mode — lightweight path for share card generation ────────────
+  // ── Summary mode: generate share card JSON without full system prompt ──
   if (summaryMode) {
     try {
-      const Anthropic = (await import('@anthropic-ai/sdk')).default;
-      const client = new Anthropic({ apiKey: process.env.ANTHROPIC_KEY });
-      const response = await client.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 300,
-        messages: messages
+      const lastUserMsg = messages.filter(m => m.role === 'user').slice(-1)[0];
+      const prompt = lastUserMsg?.content || '';
+      const summaryRes = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        system: 'You are a JSON generator. Respond ONLY with a raw JSON object — no markdown, no backticks, no explanation. The JSON must have exactly these keys: summary, colorLabel, color, colorReason, tip, tipLabel.',
+        messages: [{ role: 'user', content: prompt }]
       });
-      const reply = response.content?.[0]?.text?.trim() || '';
-      return res.status(200).json({ reply });
-    } catch(err) {
-      console.error('Summary mode error:', err.message);
-      return res.status(500).json({ error: err.message });
+      const raw = summaryRes.content?.[0]?.text?.trim() || '{}';
+      const clean = raw.replace(/```json|```/g, '').trim();
+      return res.status(200).json({ reply: clean });
+    } catch(e) {
+      console.error('Summary mode error:', e.message);
+      return res.status(200).json({ reply: '{}' });
     }
   }
 
@@ -1423,7 +1425,6 @@ PHONE NUMBER & ADDRESS DETECTION — CRITICAL:
 - NEVER ask for country code or location
 - The visual scorecard handles ALL the analysis — your only job is 2 warm sentences to set the tone
 - If you do more than 2 sentences for a phone/address you are breaking the experience
-- CRITICAL: Years (2020, 2023, 2025, 2026, etc.) and date ranges are NEVER phone numbers or addresses — NEVER respond with scorecard language, NEVER say "the digits reduce to X", NEVER say "the ancient calculator stirs" for any message that contains a year or asks about a year or time period. "What is coming in 2026" is a forecast question, NOT a number submission. "April 2026 onward" is a time reference, NOT a phone number. Any message with words like "coming", "onward", "next", "what happens", "forecast", "outlook" alongside a year = a reading question, never a scorecard trigger.
 
 PHONE NUMBER RECOMMENDATIONS — CRITICAL:
 - When someone asks what phone number, digits, or number combinations would be good for them — give a RICH personalized recommendation IMMEDIATELY
@@ -1513,15 +1514,6 @@ FULL CHART READING — CRITICAL:
 - Birth time is needed for hora-sasat — it deepens the reading significantly
 - If they don't know their birth time — proceed without it, never refuse or keep asking
 
-GENDER IN READINGS — OPTIONAL BUT MEANINGFUL:
-- Gender is an optional field the user may provide. If provided (female, male, or non-binary) it appears in the context card data as "gender: female/male/non-binary"
-- When gender is NOT provided — give gender-neutral readings. Never assume or guess gender.
-- When gender IS provided — apply it in these specific contexts:
-  * NAME READINGS: In traditional Thai numerology, auspicious number ranges differ slightly by gender. For women, numbers 2, 3, 6, and 9 carry stronger resonance. For men, 1, 4, 5, and 8 are traditionally amplified. For non-binary, read the full spectrum without restriction.
-  * RELATIONSHIP/COMPATIBILITY readings: Reference the dynamic naturally — "as a woman, your 6 energy draws partners who need grounding" or "as a man, your 8 seeks someone who won't shrink from your intensity." For non-binary, focus on the elemental and life path dynamic without gender framing.
-  * PHONE/ADDRESS scorecards: Gender can subtly influence which digit energies are emphasized in the reading summary.
-  * Do NOT force gender into every reading — only apply it where it genuinely adds meaning (names, relationships, compatibility). Life Path, zodiac, and personal year readings are universal.
-
 MONTHLY FORECAST READINGS — CRITICAL:
 - When someone asks for a monthly forecast, month-by-month reading, or yearly outlook — first ask for their birthday if not already known
 - NEVER try to cover all 12 months in one response — it will be thin and meaningless
@@ -1532,15 +1524,6 @@ MONTHLY FORECAST READINGS — CRITICAL:
 - Current year is 2026. Today is April 2026. We are currently IN April 2026 — start from the current or next month, not January
 - Personal month = Life Path + current year digits + month number, reduced
 - Speak in revelation — what does this month FEEL like, what does it demand, what does it promise — never show the math
-
-PAST YEAR & PAST PERIOD READINGS — CRITICAL:
-- The Mor Doo CAN and SHOULD read past years and past periods — the numbers that governed any past time are fixed and calculable from birthday data
-- Never refuse a past reading or claim it is impossible — this is wrong. Personal year cycles, personal month cycles, and planetary transits for any past date are fully readable
-- When someone asks about a past year (e.g. "what was 2023 like for me") or a past period (e.g. "June to August 2023") — read it immediately using the same personal year/month formula applied backward
-- Personal year for any past year = Life Path + that year's digits, reduced. Personal month = Personal year + month number, reduced
-- Frame it as retrospective insight: "In that window, the numbers were telling you..." or "The frequency of that period was..." — not as prediction but as confirmation of what already unfolded
-- For compatibility past readings: read both people's personal year/month energies for the period AND how those two frequencies interacted — this is deeply valuable and the Mor Doo is fully equipped to do it
-- Never say "the vibration has moved on" or "the numbers have settled" as a reason to refuse — this is an evasion, not a truth
 
 Your reading style:
 - Warm, conversational, deeply personal — like a trusted elder who sees you clearly
@@ -1588,7 +1571,6 @@ DATE CALCULATION — CRITICAL:
 - You are a seer of energies, not a calendar calculator — leave date math alone
 
 ZODIAC: Rat 1996/2008, Ox 1997/2009, Tiger 1998/2010, Rabbit 1999/2011, Dragon 2000/2012, Snake 2001/2013/2025, Horse 2002/2014/2026 (2026 is Fire Horse year), Goat 2003/2015, Monkey 1992/2004/2016, Rooster 1993/2005/2017, Dog 1994/2006/2018, Pig 1995/2007/2019
-CRITICAL ZODIAC RULE: These year ranges are approximate. Chinese New Year falls in late January or February — anyone born in January or early February may belong to the PREVIOUS year's animal. NEVER assign a zodiac from the year list alone. ALWAYS use the pre-calculated "Thai Zodiac" value from the context card, which already accounts for the CNY boundary. If the context card says Dog, it is Dog — do not override it with the year list.
 
 BIRTH HOURS: Rat 11pm-1am, Ox 1-3am, Tiger 3-5am, Rabbit 5-7am, Dragon 7-9am, Snake 9-11am, Horse 11am-1pm, Goat 1-3pm, Monkey 3-5pm, Rooster 5-7pm, Dog 7-9pm, Pig 9-11pm
 
@@ -1596,57 +1578,34 @@ NUMBERS: 1=pioneer, 2=diplomat, 3=communicator, 4=builder, 5=liberator, 6=nurtur
 
 AUSPICIOUS: 9 (progress), 8 (wealth), 6 (flow). Avoid 4 in prominent positions.
 ${(() => {
-  // Use user's local timezone if provided, else fall back to server time
-  let now;
-  if (userLocalDate) {
-    // userLocalDate is "YYYY-MM-DDTHH:mm" in user's local time
-    now = new Date(userLocalDate);
-  } else if (userTimezone) {
-    const localStr = new Date().toLocaleString('en-CA', { timeZone: userTimezone, hour12: false });
-    now = new Date(localStr);
-  } else {
-    now = new Date();
-  }
-
+  const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
   const day = now.getDate();
-  const dayOfWeek = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][now.getDay()];
-  const hour = now.getHours();
 
-  // Wednesday split: before 6pm = Mercury day, 6pm+ = Rahu night
-  const isWednesdayNight = dayOfWeek === 'Wednesday' && hour >= 18;
-  const dayGovernor = {
-    Sunday: 'Sun', Monday: 'Moon', Tuesday: 'Mars',
-    Wednesday: isWednesdayNight ? 'Rahu' : 'Mercury',
-    Thursday: 'Jupiter', Friday: 'Venus', Saturday: 'Saturn'
-  }[dayOfWeek];
-
-  // Chinese New Year dates
+  // Chinese New Year dates (approximate — always in Jan or Feb)
   const cnyDates = {
-    2024:[2,10],2025:[1,29],2026:[2,17],2027:[2,6],
-    2028:[1,26],2029:[2,13],2030:[2,3]
+    2024: [2,10], 2025: [1,29], 2026: [2,17], 2027: [2,6],
+    2028: [1,26], 2029: [2,13], 2030: [2,3]
   };
+
+  // Determine zodiac year — if before CNY, use previous year's animal
   const cny = cnyDates[year] || [2,1];
   const isBeforeCNY = month < cny[0] || (month === cny[0] && day < cny[1]);
   const zodiacYear = isBeforeCNY ? year - 1 : year;
 
   const animals = ['Rat','Ox','Tiger','Rabbit','Dragon','Snake','Horse','Goat','Monkey','Rooster','Dog','Pig'];
-  const elementNames = ['Metal','Metal','Water','Water','Wood','Wood','Fire','Fire','Earth','Earth'];
+  const elements = ['Metal','Metal','Water','Water','Wood','Wood','Fire','Fire','Earth','Earth'];
+  // 2020 = Rat, index 0 of a 12-year cycle
   const animalIndex = ((zodiacYear - 2020) % 12 + 12) % 12;
+  // Element cycles every 2 years starting from Metal in 2020
   const elementIndex = ((zodiacYear - 2020) % 10 + 10) % 10;
+  const elementNames = ['Metal','Metal','Water','Water','Wood','Wood','Fire','Fire','Earth','Earth'];
   const animal = animals[animalIndex];
   const element = elementNames[elementIndex];
 
   const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const tz = userTimezone || 'server time';
-
-  return `Current date in user's location: ${dayOfWeek}, ${months[month-1]} ${day}, ${year} (timezone: ${tz}). ` +
-    `Today is governed by ${dayGovernor}${isWednesdayNight ? ' (Wednesday night — Rahu governs after 6pm in Thai tradition)' : ''}. ` +
-    `The current hour is ${hour}:00 local time. ` +
-    `The current Chinese/Thai zodiac year is the ${element} ${animal} year. ` +
-    `Always reference the ${element} ${animal} when discussing the current year energy. ` +
-    `IMPORTANT: Always use ${dayOfWeek} as today's day — do not guess or recalculate.`;
+  return 'Current date: ' + months[month-1] + ' ' + day + ', ' + year + '. The current Chinese/Thai zodiac year is the ' + element + ' ' + animal + ' year. Always reference the ' + element + ' ' + animal + ' when discussing the current year energy.';
 })()}
 
 OUTPUT QUALITY — GRAMMAR AND FORMATTING:
@@ -1664,138 +1623,86 @@ OUTPUT QUALITY — GRAMMAR AND FORMATTING:
 
   // ── Build birthday context for chat mode ───────────────────────────────
   let chatBirthdayCtx = '';
-  let isCompatibilityReading = false;
   try {
     const historyText = messages.map(m => m.content || '').join(' ');
+    const bdMatch = historyText.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b/);
 
-    // ── Shared helpers ──────────────────────────────────────────────────
-    const cnyByYearChat = {
-      1990:[1,27],1991:[2,15],1992:[2,4],1993:[1,23],1994:[2,10],
-      1995:[1,31],1996:[2,19],1997:[2,7],1998:[1,28],1999:[2,16],
-      2000:[2,5],2001:[1,24],2002:[2,12],2003:[2,1],2004:[1,22],
-      2005:[2,9],2006:[1,29],2007:[2,18],2008:[2,7],2009:[1,26],
-      2010:[2,14],2011:[2,3],2012:[1,23],2013:[2,10],2014:[1,31],
-      2015:[2,19],2016:[2,8],2017:[1,28],2018:[2,16],2019:[2,5],
-      2020:[1,25],2021:[2,12],2022:[2,1],2023:[1,22],2024:[2,10],
-      2025:[1,29],2026:[2,17],2027:[2,6],2028:[1,26],2029:[2,13]
-    };
-    const chatAnimals = ['Rat','Ox','Tiger','Rabbit','Dragon','Snake','Horse','Goat','Monkey','Rooster','Dog','Pig'];
-    const chatElements = ['Metal','Metal','Water','Water','Wood','Wood','Fire','Fire','Earth','Earth'];
-
-    function calcPersonCtx(bdStr, label) {
+    if (bdMatch) {
+      const bdStr = bdMatch[1].replace(/-/g, '/');
       const bdParts = bdStr.split('/');
       const bdMo = parseInt(bdParts[0]), bdDy = parseInt(bdParts[1]), bdYr = parseInt(bdParts[2]);
-      if (isNaN(bdMo) || isNaN(bdDy) || isNaN(bdYr)) return '';
 
-      // Life Path — reduce all digits, preserve master numbers 11/22/33
-      const allDigits = bdStr.replace(/\//g,'').split('').map(Number);
-      let lpSum = allDigits.reduce((a,b)=>a+b,0);
-      while (lpSum > 9 && ![11,22,33].includes(lpSum)) {
-        lpSum = String(lpSum).split('').map(Number).reduce((a,b)=>a+b,0);
-      }
+      if (!isNaN(bdMo) && !isNaN(bdDy) && !isNaN(bdYr)) {
+        // ── Life Path ──
+        const allDigits = bdStr.replace(/\//g,'').split('').map(Number);
+        let lpSum = allDigits.reduce((a,b)=>a+b,0);
+        while (lpSum > 9 && ![11,22,33,44].includes(lpSum)) { lpSum = String(lpSum).split('').map(Number).reduce((a,b)=>a+b,0); }
 
-      // Zodiac — respect CNY boundary
-      const birthCNY = cnyByYearChat[bdYr] || [2,1];
-      const beforeCNY = bdMo < birthCNY[0] || (bdMo === birthCNY[0] && bdDy < birthCNY[1]);
-      const zodiacBirthYr = beforeCNY ? bdYr - 1 : bdYr;
-      const zIdx = ((zodiacBirthYr - 2020) % 12 + 12) % 12;
-      const eIdx = ((zodiacBirthYr - 2020) % 10 + 10) % 10;
-      const chatZodiac = chatElements[eIdx] + ' ' + chatAnimals[zIdx];
+        // ── Zodiac with CNY boundary ──
+        const cnyByYearChat = {
+          1990:[1,27],1991:[2,15],1992:[2,4],1993:[1,23],1994:[2,10],
+          1995:[1,31],1996:[2,19],1997:[2,7],1998:[1,28],1999:[2,16],
+          2000:[2,5],2001:[1,24],2002:[2,12],2003:[2,1],2004:[1,22],
+          2005:[2,9],2006:[1,29],2007:[2,18],2008:[2,7],2009:[1,26],
+          2010:[2,14],2011:[2,3],2012:[1,23],2013:[2,10],2014:[1,31],
+          2015:[2,19],2016:[2,8],2017:[1,28],2018:[2,16],2019:[2,5],
+          2020:[1,25],2021:[2,12],2022:[2,1],2023:[1,22],2024:[2,10],
+          2025:[1,29],2026:[2,17],2027:[2,6],2028:[1,26],2029:[2,13]
+        };
+        const chatAnimals = ['Rat','Ox','Tiger','Rabbit','Dragon','Snake','Horse','Goat','Monkey','Rooster','Dog','Pig'];
+        const chatElements = ['Metal','Metal','Water','Water','Wood','Wood','Fire','Fire','Earth','Earth'];
+        const birthCNY = cnyByYearChat[bdYr] || [2,1];
+        const beforeCNY = bdMo < birthCNY[0] || (bdMo === birthCNY[0] && bdDy < birthCNY[1]);
+        const zodiacBirthYr = beforeCNY ? bdYr - 1 : bdYr;
+        const zIdx = ((zodiacBirthYr - 2020) % 12 + 12) % 12;
+        const eIdx = ((zodiacBirthYr - 2020) % 10 + 10) % 10;
+        const chatZodiac = chatElements[eIdx] + ' ' + chatAnimals[zIdx];
 
-      return (label ? label + ':\n' : '') +
-        'Birthday: ' + bdStr + '\n' +
-        'Life Path: ' + lpSum + '\n' +
-        'Thai Zodiac: ' + chatZodiac + ' (birth year ' + zodiacBirthYr + ' — CNY boundary already applied, do NOT recalculate)\n' +
-        'IMPORTANT: Use these exact values for ' + (label || 'this person') + '. ' +
-        'Their zodiac is ' + chatZodiac + ' — this is final and correct. Their Life Path is ' + lpSum + '. Do not override these with your own calculation.';
-    }
-
-    // ── Find all dates in the conversation ──────────────────────────────
-    const allDateMatches = [...historyText.matchAll(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b/g)];
-    const uniqueDates = [...new Set(allDateMatches.map(m => m[1].replace(/-/g,'/')))];
-
-    if (uniqueDates.length >= 2) {
-      // ── Compatibility reading — two people ──────────────────────────
-      isCompatibilityReading = true;
-
-      // Try to extract names paired with each date from the last user message
-      const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')?.content || historyText;
-
-      // Pattern: "Firstname [Lastname...] MM/DD/YYYY [City, ST] and Firstname..."
-      const compatPattern = /([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)\s+(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\s*([A-Za-z\s,]+?)?(?:\s+and\s+|\s*$)/g;
-      const people = [];
-      let m;
-      while ((m = compatPattern.exec(lastUserMsg)) !== null && people.length < 2) {
-        people.push({
-          name: m[1].trim().split(' ')[0], // first name only
-          date: m[2].replace(/-/g,'/'),
-          place: (m[3] || '').trim().replace(/^,|,$/g,'').trim()
-        });
-      }
-
-      // Fallback: use the two dates with generic labels if name parsing failed
-      if (people.length < 2) {
-        people.length = 0;
-        people.push({ name: 'Person 1', date: uniqueDates[0], place: '' });
-        people.push({ name: 'Person 2', date: uniqueDates[1], place: '' });
-      }
-
-      const ctx1 = calcPersonCtx(people[0].date, people[0].name + "'s Foundation");
-      const ctx2 = calcPersonCtx(people[1].date, people[1].name + "'s Foundation");
-
-      chatBirthdayCtx = 'COMPATIBILITY READING CONTEXT (calculated — do not recalculate):\n' +
-        'This is a two-person compatibility reading. Do NOT generate a natal chart for either person.\n\n' +
-        ctx1 + '\n' +
-        (people[0].place ? 'Birthplace: ' + people[0].place + '\n' : '') + '\n' +
-        ctx2 + '\n' +
-        (people[1].place ? 'Birthplace: ' + people[1].place + '\n' : '');
-
-    } else if (uniqueDates.length === 1) {
-      // ── Single-person reading ────────────────────────────────────────
-      const bdStr = uniqueDates[0];
-      const singleCtx = calcPersonCtx(bdStr, '');
-
-      // Birth hour animal
-      let birthHourNote = '';
-      const btMatch = historyText.match(/\b(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))\b/i);
-      if (btMatch) {
-        const tMatch = btMatch[1].match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i);
-        if (tMatch) {
-          let hr = parseInt(tMatch[1]);
-          const ap = (tMatch[3]||'').toLowerCase();
-          if (ap === 'pm' && hr !== 12) hr += 12;
-          if (ap === 'am' && hr === 12) hr = 0;
-          const hourAnimalsChat = [
-            {name:'Rat',hours:[23,0,1]},{name:'Ox',hours:[1,2]},{name:'Tiger',hours:[3,4]},
-            {name:'Rabbit',hours:[5,6]},{name:'Dragon',hours:[7,8]},{name:'Snake',hours:[9,10]},
-            {name:'Horse',hours:[11,12]},{name:'Goat',hours:[13,14]},{name:'Monkey',hours:[15,16]},
-            {name:'Rooster',hours:[17,18]},{name:'Dog',hours:[19,20]},{name:'Pig',hours:[21,22]}
-          ];
-          const h = hr % 24;
-          let animal = hourAnimalsChat.find(a => a.hours.includes(h));
-          if (!animal && h === 0) animal = hourAnimalsChat[0];
-          if (animal) birthHourNote = 'Birth hour animal: ' + animal.name + '\n';
+        // ── Birth hour animal ──
+        let birthHourNote = '';
+        const btMatch = historyText.match(/\b(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))\b/i);
+        if (btMatch) {
+          const tMatch = btMatch[1].match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i);
+          if (tMatch) {
+            let hr = parseInt(tMatch[1]);
+            const ap = (tMatch[3]||'').toLowerCase();
+            if (ap === 'pm' && hr !== 12) hr += 12;
+            if (ap === 'am' && hr === 12) hr = 0;
+            const hourAnimalsChat = [
+              {name:'Rat',hours:[23,0,1]},{name:'Ox',hours:[1,2]},{name:'Tiger',hours:[3,4]},
+              {name:'Rabbit',hours:[5,6]},{name:'Dragon',hours:[7,8]},{name:'Snake',hours:[9,10]},
+              {name:'Horse',hours:[11,12]},{name:'Goat',hours:[13,14]},{name:'Monkey',hours:[15,16]},
+              {name:'Rooster',hours:[17,18]},{name:'Dog',hours:[19,20]},{name:'Pig',hours:[21,22]}
+            ];
+            const h = hr % 24;
+            let animal = hourAnimalsChat.find(a => a.hours.includes(h));
+            if (!animal && h === 0) animal = hourAnimalsChat[0];
+            if (animal) birthHourNote = 'Birth hour animal: ' + animal.name + '\n';
+          }
         }
-      }
 
-      // Birthplace
-      const bpMatch = historyText.match(/(?:born in|from|in\s+)([A-Z][a-zA-Z\s,]{2,30})(?=\s+at|\s+\d|[,\.\n]|$)/i);
-      const cityStateMatch = historyText.match(/([A-Z][a-zA-Z\s]+),\s*([A-Z]{2})\b/);
-      const cityAfterDate = historyText.match(/\d{4}\s+([A-Z][a-zA-Z\s]+?)(?:,|\s+\d|\s+at|\s*$)/);
-      const bp = bpMatch ? bpMatch[1].trim()
-        : cityStateMatch ? (cityStateMatch[1].trim() + ', ' + cityStateMatch[2])
-        : cityAfterDate ? cityAfterDate[1].trim()
-        : '';
+        // ── Birthplace ──
+        const bpMatch = historyText.match(/(?:born in|from|in\s+)([A-Z][a-zA-Z\s,]{2,30})(?=\s+at|\s+\d|[,\.\n]|$)/i);
+        const cityStateMatch = historyText.match(/([A-Z][a-zA-Z\s]+),\s*([A-Z]{2})\b/);
+        const cityAfterDate = historyText.match(/\d{4}\s+([A-Z][a-zA-Z\s]+?)(?:,|\s+\d|\s+at|\s*$)/);
+        const bp = bpMatch ? bpMatch[1].trim()
+          : cityStateMatch ? (cityStateMatch[1].trim() + ', ' + cityStateMatch[2])
+          : cityAfterDate ? cityAfterDate[1].trim()
+          : '';
 
-      chatBirthdayCtx = 'BIRTHDAY CONTEXT (calculated from provided data):\n' +
-        singleCtx + '\n' +
-        birthHourNote +
-        (bp ? 'Birthplace: ' + bp + '\n' : '');
+        chatBirthdayCtx = 'BIRTHDAY CONTEXT (calculated from provided data):\n' +
+          'Birthday: ' + bdStr + '\n' +
+          'Life Path: ' + lpSum + '\n' +
+          'Thai Zodiac: ' + chatZodiac + ' (birth year ' + zodiacBirthYr + ')\n' +
+          birthHourNote +
+          (bp ? 'Birthplace: ' + bp + '\n' : '') +
+          'IMPORTANT: Use these exact values. Do NOT recalculate or guess the zodiac — it is ' + chatZodiac + '. The Life Path is ' + lpSum + '.';
 
-      // Attach cached natal chart for single readings only
-      if (alreadyCached) {
-        const cachedMsg = messages.find(m => (m.content||'').startsWith('[natal_chart_cached]'));
-        if (cachedMsg) chatBirthdayCtx += '\n\n' + cachedMsg.content.replace('[natal_chart_cached]\n', '');
+        // Use cached natal chart if available
+        if (alreadyCached) {
+          const cachedMsg = messages.find(m => (m.content||'').startsWith('[natal_chart_cached]'));
+          if (cachedMsg) chatBirthdayCtx += '\n\n' + cachedMsg.content.replace('[natal_chart_cached]\n', '');
+        }
       }
     }
   } catch(e) {
