@@ -1293,13 +1293,24 @@ async function showShareCard(readingText, trigger, planets) {
   const summaryEl = document.getElementById(uid + '-summary');
   if (summaryEl) {
     if (insight.summary) {
-      // Scrub any PII that slipped through — dates, birth years, phone patterns
-      const scrubbed = insight.summary
-        .replace(/\b(born|birthday|birth date|birthdate)[^.]*\./gi, '')
+      // Scrub PII — dates, birth years, year phrases, full names
+      const allSessionText = history.map(m => m.content || '').join(' ');
+      const dIdx = allSessionText.search(/\d{1,2}\/\d{1,2}\/\d{4}/);
+      const nearD = dIdx > 0 ? allSessionText.slice(Math.max(0, dIdx - 60), dIdx).trim() : '';
+      const nSeq = nearD.match(/([A-Z][a-z]{2,18}(?:\s+[A-Z][a-z]{2,18})*)\s*$/);
+      const fullNameForScrub = nSeq ? nSeq[1] : '';
+      const firstNameForScrub = fullNameForScrub ? fullNameForScrub.split(' ')[0] : '';
+      // Store scrubbed + full versions for toggle
+      let scrubbed = insight.summary
+        .replace(/\bin the year\s+(19|20)\d{2}\b/gi, '')
+        .replace(/\b(born in|born a|born the|born on|born|birthday|birth date|birthdate)[^,.]*[,.]/gi, '')
         .replace(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/gi, '')
         .replace(/\b\d{1,2}\/\d{1,2}\/\d{4}\b/g, '')
         .replace(/\b(19|20)\d{2}\b/g, '')
         .trim();
+      // Store full summary on element for toggle use; scrubbed is shown by default
+      summaryEl.dataset.full = insight.summary;
+      summaryEl.dataset.scrubbed = scrubbed;
       summaryEl.innerHTML = fmt(scrubbed);
     } else {
       const sentences = readingText.replace(/\n+/g, ' ').match(/[^.!?]+[.!?]+/g) || [];
@@ -1351,6 +1362,17 @@ function scTogglePII(uid) {
   if (nameEl) {
     // ON = reveal full name, OFF = anonymous (first name + dot)
     nameEl.textContent = isOn && fullName ? fullName : (firstName ? firstName + '.' : 'The Seeker');
+  }
+  // Also toggle essence text — OFF shows scrubbed version, ON shows full
+  const summaryEl = document.getElementById(uid + '-summary');
+  if (summaryEl) {
+    const full = summaryEl.dataset.full;
+    const scrubbed = summaryEl.dataset.scrubbed;
+    if (isOn && full) {
+      summaryEl.innerHTML = fmt(full);
+    } else if (!isOn && scrubbed) {
+      summaryEl.innerHTML = fmt(scrubbed);
+    }
   }
 }
 
