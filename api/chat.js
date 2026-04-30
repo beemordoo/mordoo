@@ -802,9 +802,27 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { messages, scorecard, scorecardContext, userTimezone, userLocalDate } = req.body;
+  const { messages, scorecard, scorecardContext, summaryMode, userTimezone, userLocalDate } = req.body;
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'Invalid request' });
+  }
+
+  // ── Summary mode — lightweight path for share card generation ────────────
+  if (summaryMode) {
+    try {
+      const Anthropic = (await import('@anthropic-ai/sdk')).default;
+      const client = new Anthropic({ apiKey: process.env.ANTHROPIC_KEY });
+      const response = await client.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        messages: messages
+      });
+      const reply = response.content?.[0]?.text?.trim() || '';
+      return res.status(200).json({ reply });
+    } catch(err) {
+      console.error('Summary mode error:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
   }
 
   // Session-level variables — natal chart cache shared across scorecard and chat paths
