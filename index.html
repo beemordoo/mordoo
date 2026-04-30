@@ -182,7 +182,6 @@
   .reset-btn { position: fixed; top: 16px; right: 16px; z-index: 20; background: var(--surface); border: 1px solid rgba(184,134,11,0.2); border-radius: 20px; padding: 7px 14px; color: var(--text-dim); font-family: 'Sarabun', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.2s; display: none; box-shadow: 0 2px 8px rgba(61,43,31,0.08); }
   .reset-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--cream-dark); }
   .reset-btn.visible { display: block; animation: fadeDown 0.4s ease forwards; }
-  @media (max-width: 600px) { .reset-btn { top: 12px; right: 12px; font-size: 11px; padding: 6px 11px; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }
 
   /* Input */
   .input-area { position: fixed; bottom: 0; left: 0; right: 0; z-index: 10; background: linear-gradient(transparent, var(--cream) 35%); padding: 20px; }
@@ -506,7 +505,6 @@
     display: flex; align-items: center; gap: 6px;
   }
   .guide-btn:hover { background: rgba(184,134,11,0.2); border-color: var(--gold); }
-  /* Hide guide button once session starts — reset-btn takes the top-right slot */
   body.session-active .guide-btn { display: none !important; }
 
   .guide-overlay {
@@ -1108,9 +1106,9 @@ Respond ONLY with a JSON object. No markdown, no backticks, no explanation. Just
 From this reading, extract:
 1. "summary": 2-3 sentences summarizing the essence. Weave together Life Path${lp ? ' ' + lp : ''}, zodiac${zodiac ? ' (' + zodiac + ')' : ''}, and planetary energy. Poetic, specific, spoken as the Mor Doo. Do not start with "Your".
 2. "colorLabel": a short contextual label explaining WHY this color is being recommended. 3-6 words. Examples: "What to wear today", "To counterbalance Saturn's weight", "To draw Mars energy in", "Color to carry for courage", "To invite Venus's softness", "For emotional grounding today". Make it specific to the reading's energy.
-3. "color": the color to wear or carry today — derive from the planetary energy or Life Path even if not explicitly mentioned. MUST be a specific color name, never empty. Examples: "Deep violet", "Rose gold", "Forest green", "Burnt amber".
+3. "color": the color to wear or carry today from the reading (just the color name, e.g. "Deep violet" or "Rose gold"). If not mentioned, derive one from the planetary energy.
 4. "colorReason": one short phrase explaining the energy behind it (e.g. "Mars energy — for courage and bold action").
-5. "tip": one practical, modernized Thai wisdom tip from this reading. Must be specific to the reading — never generic or empty. Examples: "Speak before you overthink it — Mars will not wait", "Let others help carry what you've built today", "Silence before noon; your best words come after".
+5. "tip": one practical, modernized Thai wisdom tip from this reading. Should feel like spiritual life advice, not generic. Examples: "Speak before you overthink it — Mars will not wait", "Let others help carry what you've built today", "Silence before noon; your best words come after".
 6. "tipLabel": a 1-3 word label for the tip category, e.g. "Today's practice", "The Mor Doo says", "For your energy".
 
 Reading:
@@ -1289,27 +1287,18 @@ async function showShareCard(readingText, trigger, planets) {
   // Async: generate summary + insight and inject
   const insight = await generateShareSummary(readingText, trigger, planets || lastNatalPlanets);
 
-  // Inject summary — always clear loading state, fallback to excerpt if API fails
+  // Inject summary — scrub PII, use fallback if empty
   const summaryEl = document.getElementById(uid + '-summary');
   if (summaryEl) {
     if (insight.summary) {
-      // Scrub PII — dates, birth years, year phrases, full names
-      const allSessionText = history.map(m => m.content || '').join(' ');
-      const dIdx = allSessionText.search(/\d{1,2}\/\d{1,2}\/\d{4}/);
-      const nearD = dIdx > 0 ? allSessionText.slice(Math.max(0, dIdx - 60), dIdx).trim() : '';
-      const nSeq = nearD.match(/([A-Z][a-z]{2,18}(?:\s+[A-Z][a-z]{2,18})*)\s*$/);
-      const fullNameForScrub = nSeq ? nSeq[1] : '';
-      const firstNameForScrub = fullNameForScrub ? fullNameForScrub.split(' ')[0] : '';
-      // Store scrubbed + full versions for toggle
       let scrubbed = insight.summary
         .replace(/\btoday is\s+(January|February|March|April|May|June|July|August|September|October|November|December)[^.]+\./gi, '')
         .replace(/\bin the year\s+(19|20)\d{2}\b/gi, '')
-        .replace(/\b(born in|born a|born the|born on|born|birthday|birth date|birthdate)[^,.]*[,.]/gi, '')
+        .replace(/\b(born in|born a|born the|born on|born|birthday)[^,.]*[,.]/gi, '')
         .replace(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/gi, '')
         .replace(/\b\d{1,2}\/\d{1,2}\/\d{4}\b/g, '')
         .replace(/\b(19|20)\d{2}\b/g, '')
         .trim();
-      // Store full summary on element for toggle use; scrubbed is shown by default
       summaryEl.dataset.full = insight.summary;
       summaryEl.dataset.scrubbed = scrubbed;
       summaryEl.innerHTML = fmt(scrubbed);
@@ -1328,7 +1317,6 @@ async function showShareCard(readingText, trigger, planets) {
     const swatchEl = document.getElementById(uid + '-swatch');
     const tipEl = document.getElementById(uid + '-tip');
     const tipLabelEl = document.getElementById(uid + '-tiplabel');
-    // Always populate — use fallbacks if API returned empty fields
     if (colorLabelEl) colorLabelEl.textContent = insight.colorLabel || 'Color for today';
     if (colorEl) colorEl.textContent = insight.color || 'Gold';
     if (colorDescEl) colorDescEl.textContent = insight.colorReason || 'For alignment with your current energy';
@@ -1354,27 +1342,21 @@ function scTogglePII(uid) {
   if (!tog) return;
   const isOn = tog.classList.toggle('on');
   lbl.textContent = isOn ? 'On' : 'Off';
-  // Extract full name from session history
+  // Extract full first name from session
   const allText = history.map(m => m.content || '').join(' ');
   const dateIdx = allText.search(/\d{1,2}\/\d{1,2}\/\d{4}/);
   const nearDate = dateIdx > 0 ? allText.slice(Math.max(0, dateIdx - 60), dateIdx).trim() : '';
   const nameSeq = nearDate.match(/([A-Z][a-z]{2,18}(?:\s+[A-Z][a-z]{2,18})*)\s*$/);
-  const fullName = nameSeq ? nameSeq[1] : '';
-  const firstName = fullName ? fullName.split(' ')[0] : '';
+  const firstName = nameSeq ? nameSeq[1].split(' ')[0] : '';
   if (nameEl) {
-    // ON = reveal full name, OFF = anonymous (first name + dot)
     nameEl.textContent = isOn && fullName ? fullName : (firstName ? firstName + '.' : 'The Seeker');
   }
-  // Also toggle essence text — OFF shows scrubbed version, ON shows full
-  const summaryEl = document.getElementById(uid + '-summary');
-  if (summaryEl) {
-    const full = summaryEl.dataset.full;
-    const scrubbed = summaryEl.dataset.scrubbed;
-    if (isOn && full) {
-      summaryEl.innerHTML = fmt(full);
-    } else if (!isOn && scrubbed) {
-      summaryEl.innerHTML = fmt(scrubbed);
-    }
+  const summaryTogEl = document.getElementById(uid + '-summary');
+  if (summaryTogEl) {
+    const full = summaryTogEl.dataset.full;
+    const scrubbed = summaryTogEl.dataset.scrubbed;
+    if (isOn && full) summaryTogEl.innerHTML = fmt(full);
+    else if (!isOn && scrubbed) summaryTogEl.innerHTML = fmt(scrubbed);
   }
 }
 
@@ -1543,13 +1525,14 @@ function isClarification(text) {
 
 function isPhoneOrAddress(text) {
   const t = text.trim();
-
   // Never trigger scorecard for year references or date ranges
-  // e.g. "2026", "April 2026", "June 2023 to August 2023", "what is coming in 2026"
   const standaloneYear = /\b(19|20)\d{2}\b/;
   const hasWords = /[a-zA-Z]/.test(t);
   if (standaloneYear.test(t) && hasWords) return false;
-  // Pure year with no other content (e.g. just "2026" typed alone) — still not a phone
+  if (/^(19|20)\d{2}$/.test(t.trim())) return false;
+
+  // Never trigger scorecard for year references or date ranges
+  // e.g. "2026", "April 2026", "June 2023 to August 2023", "what is coming in 2026"
   if (/^(19|20)\d{2}$/.test(t.trim())) return false;
 
   // Address check first — before any other filtering
