@@ -182,6 +182,7 @@
   .reset-btn { position: fixed; top: 16px; right: 16px; z-index: 20; background: var(--surface); border: 1px solid rgba(184,134,11,0.2); border-radius: 20px; padding: 7px 14px; color: var(--text-dim); font-family: 'Sarabun', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.2s; display: none; box-shadow: 0 2px 8px rgba(61,43,31,0.08); }
   .reset-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--cream-dark); }
   .reset-btn.visible { display: block; animation: fadeDown 0.4s ease forwards; }
+  @media (max-width: 600px) { .reset-btn { top: 12px; right: 12px; font-size: 11px; padding: 6px 11px; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }
 
   /* Input */
   .input-area { position: fixed; bottom: 0; left: 0; right: 0; z-index: 10; background: linear-gradient(transparent, var(--cream) 35%); padding: 20px; }
@@ -459,6 +460,7 @@
   .share-card.sc-dark  .sc-fdate { color: #6A5428; }
 
   .sc-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  @media (max-width: 600px) { .sc-controls { padding-right: 110px; } }
   .sc-mode-btn { padding: 5px 14px; border-radius: 7px; font-size: 11px; cursor: pointer; border: 1px solid #B8892A; font-family: 'Sarabun', sans-serif; letter-spacing: 0.05em; background: transparent; color: #6B4A1E; transition: all 0.15s; }
   .sc-mode-btn.active { background: #B8892A; color: #FDF6E8; }
   .sc-toggle-row { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #6B4A1E; }
