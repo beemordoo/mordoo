@@ -822,7 +822,7 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 400,
-          system: 'You are a JSON generator. Respond ONLY with a raw JSON object — no markdown, no backticks, no explanation. The JSON must have exactly these keys: summary, colorLabel, color, colorReason, tip, tipLabel.',
+          system: 'You are a JSON generator. Respond ONLY with a raw JSON object — no markdown, no backticks, no explanation. The JSON must have exactly these keys: summary, colorLabel, color, colorReason, tip, tipLabel. CRITICAL: Never include birthdates, birth years, specific ages, phone numbers, addresses, or any personally identifiable information in any field. Refer to the person only by first name or not at all.',
           messages: [{ role: 'user', content: prompt }]
         })
       });
