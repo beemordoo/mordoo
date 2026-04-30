@@ -506,6 +506,8 @@
     display: flex; align-items: center; gap: 6px;
   }
   .guide-btn:hover { background: rgba(184,134,11,0.2); border-color: var(--gold); }
+  /* Hide guide button once session starts — reset-btn takes the top-right slot */
+  body.session-active .guide-btn { display: none !important; }
 
   .guide-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.45);
@@ -1287,9 +1289,17 @@ async function showShareCard(readingText, trigger, planets) {
   // Async: generate summary + insight and inject
   const insight = await generateShareSummary(readingText, trigger, planets || lastNatalPlanets);
 
-  // Inject summary
+  // Inject summary — always clear loading state, fallback to excerpt if API fails
   const summaryEl = document.getElementById(uid + '-summary');
-  if (summaryEl && insight.summary) summaryEl.textContent = insight.summary;
+  if (summaryEl) {
+    if (insight.summary) {
+      summaryEl.textContent = insight.summary;
+    } else {
+      const sentences = readingText.replace(/\n+/g, ' ').match(/[^.!?]+[.!?]+/g) || [];
+      const fallback = sentences.slice(0, 2).join(' ').trim();
+      summaryEl.textContent = fallback || 'The numbers have spoken.';
+    }
+  }
 
   // Inject contextual bottom section for non-natal readings
   if (!isNatal) {
@@ -2135,7 +2145,7 @@ function showCompatForm() {
 
   // Show reset button
   const resetBtn = document.getElementById('resetBtn');
-  if (resetBtn) resetBtn.classList.add('visible');
+  if (resetBtn) { resetBtn.classList.add('visible'); document.body.classList.add('session-active'); }
 }
 
 function isValidDate(str) {
@@ -2207,7 +2217,7 @@ function addMessage(role, content) {
   setTimeout(() => div.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
   // Show reset button and update placeholder after first interaction
   const resetBtn = document.getElementById('resetBtn');
-  if (resetBtn) resetBtn.classList.add('visible');
+  if (resetBtn) { resetBtn.classList.add('visible'); document.body.classList.add('session-active'); }
   const input = document.getElementById('userInput');
   if (input) input.placeholder = 'Type here...';
 }
