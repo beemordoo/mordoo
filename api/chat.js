@@ -966,6 +966,8 @@ export default async function handler(req, res) {
       } else {
         horaSaatContext = 'Birth time provided but could not determine exact hour animal. Apply general hora-sasat principle: numbers whose root planet aligns with the time of day (morning=Sun/active, midday=peak energy, evening=Venus/social, night=Moon/intuitive) score 3-5 points higher.';
       }
+    } else {
+      horaSaatContext = 'BIRTH TIME STATUS: NOT PROVIDED. Apply the BIRTH TIME — HANDLE WITH CARE rules: include ONE brief acknowledgment line near the start of the reading ("Birth time was not given — for the deepest accuracy in hora-sasat, sharing it (even approximate) opens another layer. For now, this is what the Mor Doo sees..."), then proceed fully with the lek-sasat number reading using Life Path, name root, zodiac, ruling day-planet, and birthplace energy. DO NOT name a birth-hour animal, hora-sasat hour reading, or ruling planet of the hour. DO NOT invent or guess the hour. The acknowledgment is one line — the scorecard reading itself is the focus.';
     }
 
     // Calculate birthplace numerology if provided
@@ -1532,15 +1534,22 @@ HOME PURCHASE CONVERSATION — ALWAYS ASK THESE BEFORE READING TIMING:
 - For a family: timing is driven by the primary decision-maker's cycle, but note if children's birth years carry any strong energy about transition and change
 
 BIRTH TIME — HANDLE WITH CARE:
-- Birth time enriches hora-sasat readings but is NEVER required — a full complete reading is possible without it
-- NEVER ask for birth time as a follow-up after the person has already answered your clarifying questions — if they didn't volunteer it, proceed without it
+- Birth time enriches hora-sasat readings but is NEVER required — a full reading is always possible without it
+- If birth time IS provided (exact or approximate) — use it, integrate hora-sasat, name the birth hour animal and ruling planet
+- If birth time is NOT provided — DO THIS, in this order:
+  1. Open the reading normally with the anchors you DO have (name, birthday, birthplace if given)
+  2. Include ONE brief, gentle line near the start acknowledging it: e.g. "Birth time was not given — for the deepest accuracy in hora-sasat, sharing it (even approximate — morning, afternoon, evening, or night) opens another layer. For now, this is what the Mor Doo sees..."
+  3. Then proceed fully and confidently with everything birth time is NOT required for: Life Path, name root, zodiac animal and element, ruling day-planet, Sun sign and other planetary placements that don't depend on time, birthplace energy, year cycles
+  4. NEVER claim a birth-hour animal, hora-sasat hour reading, Rat/Ox/Tiger/etc. hour, ruling planet of the hour, or Rising/Ascendant sign when birth time is missing — these are time-dependent and inventing them is a violation of the reading
+  5. NEVER claim Moon sign as definitive when birth time is missing if the person was born on a day the Moon changed signs — if uncertain, frame Moon placement as "likely" and note birth time would confirm
+- NEVER ask for birth time more than once. If they didn't include it after one ask (or in the initial context card), proceed with the acknowledgment line above — do not keep asking
 - NEVER ask for a partner's birth time — it is never required for any reading
-- If birth time is not provided — do not ask for it, do not reference its absence, just read without it
-- If someone volunteers their birth time unprompted — use it and enrich the reading
-- If someone says they don't know their birth time — accept it immediately: "The Mor Doo reads clearly without it — the other anchors are strong"
-- Approximate birth time (morning / afternoon / evening / night) is perfectly sufficient for hora-sasat — each animal covers a 2-hour window so approximate is accurate enough
-- NEVER suggest the reading is less valid because birth time is unknown — this discourages people
-- NEVER use birth time as a reason to delay giving a reading
+- If someone volunteers their birth time unprompted — use it immediately and enrich the reading
+- If someone says they don't know their birth time — accept it immediately and use the acknowledgment line above, then proceed
+- Approximate birth time (morning / afternoon / evening / night) is sufficient for hora-sasat — each animal covers a 2-hour window
+- The acknowledgment is ONE line, not a paragraph — the reading itself is the focus, not the missing piece
+- NEVER suggest the reading is less valid because birth time is unknown — frame it as "another layer available," not "incomplete"
+- NEVER use birth time as a reason to delay or shorten the reading
 
 COMPATIBILITY READINGS — CRITICAL:
 - Compatibility is NOT only romantic — the Mor Doo reads love, family, and business partnerships equally
@@ -1578,11 +1587,10 @@ GUIDING THE READING — CRITICAL:
 - Never ask reflective questions like "how does this resonate with you?"
 
 FULL CHART READING — CRITICAL:
-- When someone asks for a "full chart", "full reading", or shares their name and birthday — always ask for birth time as well if not already provided
-- Request all four anchors together in one ask: full name, birthday (MM/DD/YYYY), birthplace (city and state/province or country), and birth time (exact or approximate)
-- Frame it warmly: "To open your full chart I need four anchors — **your full name, birthday (MM/DD/YYYY), birthplace (city and state/province or country), and birth time** (even approximate — morning, afternoon, evening, or night helps). Share what you have and the reading will unfold."
-- Birth time is needed for hora-sasat — it deepens the reading significantly
-- If they don't know their birth time — proceed without it, never refuse or keep asking
+- When someone asks for a "full chart" or "full reading" and has NOT yet provided their info — request all four anchors in ONE ask: full name, birthday (MM/DD/YYYY), birthplace, and birth time (exact or approximate)
+- Frame it warmly: "To open your full chart the Mor Doo asks for four anchors — **your full name, birthday (MM/DD/YYYY), birthplace (city and state/province or country), and birth time** (even approximate — morning, afternoon, evening, or night helps). Share what you have and the reading will unfold."
+- ONE ask only — do not re-ask for birth time after they respond. If they answer without birth time, follow the BIRTH TIME — HANDLE WITH CARE rules above: brief acknowledgment line, then read with what was given
+- Birth time deepens hora-sasat but the reading proceeds completely without it
 
 GENDER IN READINGS — OPTIONAL BUT MEANINGFUL:
 - Gender is an optional field the user may provide. If provided (female, male, or non-binary) it appears in the context card data as "gender: female/male/non-binary"
@@ -1854,11 +1862,16 @@ OUTPUT QUALITY — GRAMMAR AND FORMATTING:
       const bdStr = uniqueDates[0];
       const singleCtx = calcPersonCtx(bdStr, '');
 
-      // Birth hour animal
+      // Birth hour animal — only set when an EXACT clock time is given
       let birthHourNote = '';
-      const btMatch = historyText.match(/\b(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))\b/i);
-      if (btMatch) {
-        const tMatch = btMatch[1].match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i);
+      let birthTimeStatus = ''; // explicit signal to the model
+      const btExactMatch = historyText.match(/\b(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))\b/i);
+      const btApproxMatch = !btExactMatch
+        ? historyText.match(/\b(early morning|late night|before dawn|dawn|sunrise|morning|noon|midday|afternoon|sunset|dusk|evening|night|midnight)\b/i)
+        : null;
+
+      if (btExactMatch) {
+        const tMatch = btExactMatch[1].match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i);
         if (tMatch) {
           let hr = parseInt(tMatch[1]);
           const ap = (tMatch[3]||'').toLowerCase();
@@ -1873,8 +1886,15 @@ OUTPUT QUALITY — GRAMMAR AND FORMATTING:
           const h = hr % 24;
           let animal = hourAnimalsChat.find(a => a.hours.includes(h));
           if (!animal && h === 0) animal = hourAnimalsChat[0];
-          if (animal) birthHourNote = 'Birth hour animal: ' + animal.name + '\n';
+          if (animal) {
+            birthHourNote = 'Birth hour animal: ' + animal.name + '\n';
+            birthTimeStatus = 'BIRTH TIME STATUS: provided (exact) — full hora-sasat layer is available, name the birth hour animal in the reading.\n';
+          }
         }
+      } else if (btApproxMatch) {
+        birthTimeStatus = 'BIRTH TIME STATUS: provided (approximate — "' + btApproxMatch[1] + '"). Use the approximate-time rules: present the most likely birth-hour animal but acknowledge the adjacent possibility ("likely born in the [Animal] hour, though if earlier/later it may be [other Animal]"). Never show hour ranges to the user.\n';
+      } else {
+        birthTimeStatus = 'BIRTH TIME STATUS: NOT PROVIDED. Apply the BIRTH TIME — HANDLE WITH CARE rules: include ONE brief acknowledgment line near the start ("Birth time was not given — for the deepest accuracy in hora-sasat, sharing it (even approximate — morning, afternoon, evening, or night) opens another layer. For now, this is what the Mor Doo sees..."), then proceed fully with everything birth time is NOT required for. DO NOT name a birth-hour animal, hora-sasat hour reading, ruling planet of the hour, or Rising/Ascendant sign. DO NOT invent or guess the hour. The acknowledgment is one line — the reading itself is the focus.\n';
       }
 
       // Birthplace
@@ -1889,6 +1909,7 @@ OUTPUT QUALITY — GRAMMAR AND FORMATTING:
       chatBirthdayCtx = 'BIRTHDAY CONTEXT (calculated from provided data):\n' +
         singleCtx + '\n' +
         birthHourNote +
+        birthTimeStatus +
         (bp ? 'Birthplace: ' + bp + '\n' : '');
 
       // Attach cached natal chart for single readings only
