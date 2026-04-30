@@ -1293,11 +1293,18 @@ async function showShareCard(readingText, trigger, planets) {
   const summaryEl = document.getElementById(uid + '-summary');
   if (summaryEl) {
     if (insight.summary) {
-      summaryEl.textContent = insight.summary;
+      // Scrub any PII that slipped through — dates, birth years, phone patterns
+      const scrubbed = insight.summary
+        .replace(/\b(born|birthday|birth date|birthdate)[^.]*\./gi, '')
+        .replace(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/gi, '')
+        .replace(/\b\d{1,2}\/\d{1,2}\/\d{4}\b/g, '')
+        .replace(/\b(19|20)\d{2}\b/g, '')
+        .trim();
+      summaryEl.innerHTML = fmt(scrubbed);
     } else {
       const sentences = readingText.replace(/\n+/g, ' ').match(/[^.!?]+[.!?]+/g) || [];
       const fallback = sentences.slice(0, 2).join(' ').trim();
-      summaryEl.textContent = fallback || 'The numbers have spoken.';
+      summaryEl.innerHTML = fmt(fallback) || 'The numbers have spoken.';
     }
   }
 
@@ -1334,13 +1341,17 @@ function scTogglePII(uid) {
   if (!tog) return;
   const isOn = tog.classList.toggle('on');
   lbl.textContent = isOn ? 'On' : 'Off';
-  // Extract full first name from session
+  // Extract full name from session history
   const allText = history.map(m => m.content || '').join(' ');
   const dateIdx = allText.search(/\d{1,2}\/\d{1,2}\/\d{4}/);
   const nearDate = dateIdx > 0 ? allText.slice(Math.max(0, dateIdx - 60), dateIdx).trim() : '';
   const nameSeq = nearDate.match(/([A-Z][a-z]{2,18}(?:\s+[A-Z][a-z]{2,18})*)\s*$/);
-  const firstName = nameSeq ? nameSeq[1].split(' ')[0] : '';
-  if (nameEl) nameEl.textContent = isOn && firstName ? firstName : (firstName ? firstName + '.' : 'The Seeker');
+  const fullName = nameSeq ? nameSeq[1] : '';
+  const firstName = fullName ? fullName.split(' ')[0] : '';
+  if (nameEl) {
+    // ON = reveal full name, OFF = anonymous (first name + dot)
+    nameEl.textContent = isOn && fullName ? fullName : (firstName ? firstName + '.' : 'The Seeker');
+  }
 }
 
 async function scSaveImage(uid) {
