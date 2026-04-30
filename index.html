@@ -1302,6 +1302,7 @@ async function showShareCard(readingText, trigger, planets) {
       const firstNameForScrub = fullNameForScrub ? fullNameForScrub.split(' ')[0] : '';
       // Store scrubbed + full versions for toggle
       let scrubbed = insight.summary
+        .replace(/\btoday is\s+(January|February|March|April|May|June|July|August|September|October|November|December)[^.]+\./gi, '')
         .replace(/\bin the year\s+(19|20)\d{2}\b/gi, '')
         .replace(/\b(born in|born a|born the|born on|born|birthday|birth date|birthdate)[^,.]*[,.]/gi, '')
         .replace(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/gi, '')
