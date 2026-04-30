@@ -494,12 +494,223 @@
   }
   .bubble-share-btn:hover { border-color: var(--gold); color: var(--gold); }
 
+  /* ── Guide Drawer ──────────────────────────────────────────────────── */
+  .guide-btn {
+    position: fixed; top: 16px; right: 16px; z-index: 200;
+    background: rgba(184,134,11,0.12); border: 1px solid rgba(184,134,11,0.3);
+    color: var(--gold); border-radius: 20px; padding: 7px 14px;
+    font-size: 12px; letter-spacing: 0.08em; cursor: pointer;
+    font-family: 'Sarabun', sans-serif; transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .guide-btn:hover { background: rgba(184,134,11,0.2); border-color: var(--gold); }
+
+  .guide-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  }
+  .guide-overlay.open { opacity: 1; pointer-events: all; }
+
+  .guide-drawer {
+    position: fixed; top: 0; right: -380px; width: 360px; max-width: 92vw;
+    height: 100dvh; z-index: 400; background: #1C1409;
+    border-left: 1px solid rgba(184,134,11,0.2);
+    display: flex; flex-direction: column;
+    transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
+    overflow: hidden;
+  }
+  .guide-drawer.open { right: 0; }
+
+  .guide-drawer-hdr {
+    padding: 20px 20px 14px; border-bottom: 0.5px solid rgba(184,134,11,0.15);
+    flex-shrink: 0; background: #2A1E08;
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .guide-drawer-title { font-size: 11px; letter-spacing: 0.2em; color: #C9A84C; font-weight: 500; }
+  .guide-drawer-sub { font-size: 13px; color: #F0E4C8; margin-top: 3px; font-weight: 400; }
+  .guide-close {
+    background: none; border: none; color: rgba(184,134,11,0.5);
+    font-size: 20px; cursor: pointer; padding: 0; line-height: 1;
+    transition: color 0.2s; flex-shrink: 0; margin-top: 2px;
+  }
+  .guide-close:hover { color: #C9A84C; }
+
+  .guide-body { flex: 1; overflow-y: auto; padding: 16px 20px 32px; }
+  .guide-body::-webkit-scrollbar { width: 3px; }
+  .guide-body::-webkit-scrollbar-thumb { background: rgba(184,134,11,0.2); border-radius: 2px; }
+
+  .guide-section { margin-bottom: 22px; }
+  .guide-section-title {
+    font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: #C9A84C; font-weight: 500; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .guide-section-title::after {
+    content: ''; flex: 1; height: 0.5px; background: rgba(184,134,11,0.2);
+  }
+  .guide-note {
+    font-size: 12px; line-height: 1.7; color: #D4C4A0;
+    background: rgba(184,134,11,0.06); border: 0.5px solid rgba(184,134,11,0.15);
+    border-radius: 10px; padding: 11px 13px; margin-bottom: 8px;
+  }
+  .guide-note strong { color: #C9A84C; font-weight: 500; }
+  .guide-note em { color: #E8DCC8; font-style: italic; }
+
+  .guide-tip {
+    font-size: 12px; line-height: 1.65; color: #B8A080;
+    padding: 8px 0; border-bottom: 0.5px solid rgba(184,134,11,0.08);
+  }
+  .guide-tip:last-child { border-bottom: none; }
+  .guide-tip .tip-icon { margin-right: 6px; }
+
+  .guide-example-btn {
+    width: 100%; text-align: left; background: rgba(184,134,11,0.06);
+    border: 0.5px solid rgba(184,134,11,0.15); border-radius: 8px;
+    padding: 9px 12px; margin-bottom: 6px; cursor: pointer;
+    font-size: 12px; color: #D4C4A0; font-family: 'Sarabun', sans-serif;
+    letter-spacing: 0.02em; transition: all 0.2s; line-height: 1.5;
+  }
+  .guide-example-btn:hover { background: rgba(184,134,11,0.12); border-color: rgba(184,134,11,0.3); color: #F0E4C8; }
+  .guide-example-btn .ex-label {
+    font-size: 9px; letter-spacing: 0.15em; color: #C9A84C;
+    text-transform: uppercase; display: block; margin-bottom: 3px;
+  }
+
+  .guide-divider {
+    display: flex; align-items: center; gap: 8px; margin: 6px 0 14px;
+  }
+  .guide-divider-line { flex: 1; height: 0.5px; background: rgba(184,134,11,0.15); }
+  .guide-divider-gem { width: 4px; height: 4px; background: #B8892A; transform: rotate(45deg); flex-shrink: 0; }
+
+  .guide-warning {
+    font-size: 12px; line-height: 1.7; color: #C9A84C;
+    background: rgba(184,134,11,0.08); border: 0.5px solid rgba(184,134,11,0.25);
+    border-radius: 10px; padding: 11px 13px; margin-bottom: 8px;
+  }
+
 </style>
 </head>
 <body>
 <div class="bg-layer"></div>
 <div class="petals" id="petals"></div>
 <button class="reset-btn" id="resetBtn" onclick="gtag('event','new_reading_started',{event_category:'engagement',event_label:'reset_button'});location.reload();" title="Start a new reading">✦ New Reading</button>
+
+<!-- Guide button -->
+<button class="guide-btn" onclick="openGuide()" aria-label="First time here?">✦ First time here?</button>
+
+<!-- Overlay -->
+<div class="guide-overlay" id="guideOverlay" onclick="closeGuide()"></div>
+
+<!-- Guide drawer -->
+<div class="guide-drawer" id="guideDrawer" role="dialog" aria-label="Guide to Mor Doo">
+  <div class="guide-drawer-hdr">
+    <div>
+      <div class="guide-drawer-title">หมอดู · MOR DOO</div>
+      <div class="guide-drawer-sub">Your guide to the reading</div>
+    </div>
+    <button class="guide-close" onclick="closeGuide()" aria-label="Close">✕</button>
+  </div>
+  <div class="guide-body">
+
+    <!-- How to begin -->
+    <div class="guide-section">
+      <div class="guide-section-title">How to begin</div>
+      <div class="guide-note">
+        Start by sharing your <strong>full name, birthday (MM/DD/YYYY), birthplace,</strong> and <strong>birth time</strong> if you know it. The Mor Doo reads your numbers, your zodiac animal, and your planetary chart together — the more she knows, the deeper the reading.
+      </div>
+      <div class="guide-note">
+        <em>Birth time is optional but unlocks your rising sign and birth hour animal — both significant in Thai astrology.</em>
+      </div>
+    </div>
+
+    <div class="guide-divider"><div class="guide-divider-line"></div><div class="guide-divider-gem"></div><div class="guide-divider-line"></div></div>
+
+    <!-- What you can ask -->
+    <div class="guide-section">
+      <div class="guide-section-title">What you can ask</div>
+
+      <button class="guide-example-btn" onclick="useExample(this)">
+        <span class="ex-label">Daily energy</span>
+        What color should I wear today and why?
+      </button>
+      <button class="guide-example-btn" onclick="useExample(this)">
+        <span class="ex-label">Daily energy</span>
+        What is the energy around me today and what should I be mindful of?
+      </button>
+      <button class="guide-example-btn" onclick="useExample(this)">
+        <span class="ex-label">Weekly outlook</span>
+        What does this week hold for me — what to lean into and what to avoid?
+      </button>
+      <button class="guide-example-btn" onclick="useExample(this)">
+        <span class="ex-label">Monthly reading</span>
+        Read the energy of the next 3 months for me — what is coming and how should I move?
+      </button>
+      <button class="guide-example-btn" onclick="useExample(this)">
+        <span class="ex-label">Guidance</span>
+        I have a decision I can't make — can the Mor Doo help me see clearly?
+      </button>
+      <button class="guide-example-btn" onclick="useExample(this)">
+        <span class="ex-label">Guidance</span>
+        Something has been bothering me. Can you help me understand the energy around it?
+      </button>
+      <button class="guide-example-btn" onclick="useExample(this)">
+        <span class="ex-label">Compatibility</span>
+        Read the compatibility between me and someone I'll describe.
+      </button>
+      <button class="guide-example-btn" onclick="useExample(this)">
+        <span class="ex-label">Naming</span>
+        Help me find the best name for my new business using numerology.
+      </button>
+      <button class="guide-example-btn" onclick="useExample(this)">
+        <span class="ex-label">Naming</span>
+        What names carry the best energy for a child born on this date?
+      </button>
+      <button class="guide-example-btn" onclick="useExample(this)">
+        <span class="ex-label">Numbers</span>
+        Score my phone number — does it carry good energy for me?
+      </button>
+      <button class="guide-example-btn" onclick="useExample(this)">
+        <span class="ex-label">Numbers</span>
+        Is my home address auspicious for wealth and stability?
+      </button>
+      <button class="guide-example-btn" onclick="useExample(this)">
+        <span class="ex-label">Spiritual practice</span>
+        What serm duang practice would help strengthen my fortune right now?
+      </button>
+    </div>
+
+    <div class="guide-divider"><div class="guide-divider-line"></div><div class="guide-divider-gem"></div><div class="guide-divider-line"></div></div>
+
+    <!-- Tips for best readings -->
+    <div class="guide-section">
+      <div class="guide-section-title">For the clearest readings</div>
+
+      <div class="guide-warning">
+        ✦ <strong>For yearly forecasts</strong> — ask in <strong>3-month increments</strong> for the most accurate and detailed reading. A full year reading must compress 12 months into one answer and becomes vague. Ask: <em>"What does the next 3 months hold?"</em> then return for the next window.
+      </div>
+
+      <div class="guide-tip"><span class="tip-icon">✦</span>Be specific about what matters to you — career, love, health, finances, a particular situation. The Mor Doo reads more precisely when she knows what lens to use.</div>
+      <div class="guide-tip"><span class="tip-icon">✦</span>Ask one thing at a time. The numbers speak more clearly when the question has a single direction.</div>
+      <div class="guide-tip"><span class="tip-icon">✦</span>If a reading surprises you, ask why. The Mor Doo can go deeper into any part of what she shared.</div>
+      <div class="guide-tip"><span class="tip-icon">✦</span>Each session includes <strong style="color:#C9A84C;">5 questions</strong>. Use them with intention.</div>
+    </div>
+
+    <div class="guide-divider"><div class="guide-divider-line"></div><div class="guide-divider-gem"></div><div class="guide-divider-line"></div></div>
+
+    <!-- About -->
+    <div class="guide-section">
+      <div class="guide-section-title">About the Mor Doo</div>
+      <div class="guide-note">
+        The Mor Doo reads through three lenses together: <strong>Thai numerology</strong> (Life Path, name numbers, lek-sasat), <strong>Chinese and Thai zodiac</strong> (your animal, element, and birth hour), and <strong>planetary positions</strong> calculated from your exact birth date. This is not generic astrology — it is your specific numbers, read the Thai way.
+      </div>
+      <div class="guide-note">
+        <em>Readings are for spiritual exploration only — not a substitute for medical, legal, or financial advice.</em>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <div class="app">
   <header class="header">
     <div class="thai-title">หมอดู · The Seer Who Sees</div>
@@ -541,6 +752,37 @@
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 const MAX_MESSAGES = 5;
+
+// ── Guide drawer ───────────────────────────────────────────────────────────
+function openGuide() {
+  document.getElementById('guideDrawer').classList.add('open');
+  document.getElementById('guideOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeGuide() {
+  document.getElementById('guideDrawer').classList.remove('open');
+  document.getElementById('guideOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function useExample(btn) {
+  // Get the example text (strip the ex-label span text)
+  const label = btn.querySelector('.ex-label');
+  const fullText = btn.textContent.trim();
+  const labelText = label ? label.textContent.trim() : '';
+  const exampleText = fullText.replace(labelText, '').trim();
+  closeGuide();
+  const input = document.getElementById('userInput');
+  if (input) {
+    input.value = exampleText;
+    input.focus();
+    autoResize(input);
+    // Remove welcome card if still visible
+    const welcome = document.querySelector('.welcome-card');
+    if (welcome) welcome.style.opacity = '0.5';
+  }
+}
+// Close drawer on Escape key
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeGuide(); });
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwzwjo0NxyTwoprZ8h3sULI5rDpe7gKnjjfSV9J_NwoHWgybaLgHvcu7q3_sueWEa4sZA/exec';
 
 const petalsEl = document.getElementById('petals');
