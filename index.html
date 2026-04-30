@@ -192,10 +192,12 @@
   .send-btn { width: 40px; height: 40px; min-width: 40px; background: linear-gradient(135deg, var(--gold), var(--gold-bright)); border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; color: #fff; font-size: 18px; }
   .send-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 4px 16px rgba(184,134,11,0.4); }
   .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .typing { display: flex; gap: 14px; align-items: center; animation: fadeUp 0.3s ease forwards; }
+  .typing { display: flex; gap: 14px; align-items: flex-start; animation: fadeUp 0.3s ease forwards; }
   .typing-avatar { width: 38px; height: 38px; min-width: 38px; background: linear-gradient(135deg, var(--gold), var(--gold-bright)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; border: 2px solid rgba(184,134,11,0.2); }
-  .typing-dots { background: var(--surface); border: 1px solid rgba(184,134,11,0.2); border-radius: 4px 20px 20px 20px; padding: 16px 22px; display: flex; gap: 6px; align-items: center; }
-  .typing-dot { width: 6px; height: 6px; background: var(--gold); border-radius: 50%; opacity: 0.4; animation: dotPulse 1.4s ease-in-out infinite; }
+  .typing-bubble { background: var(--surface); border: 1px solid rgba(184,134,11,0.2); border-radius: 4px 20px 20px 20px; padding: 13px 18px; max-width: 280px; }
+  .typing-msg { font-size: 13px; color: var(--gold); letter-spacing: 0.02em; font-style: italic; min-height: 20px; transition: opacity 0.4s ease; }
+  .typing-dots { display: flex; gap: 5px; align-items: center; margin-top: 8px; }
+  .typing-dot { width: 5px; height: 5px; background: var(--gold); border-radius: 50%; opacity: 0.3; animation: dotPulse 1.4s ease-in-out infinite; }
   .typing-dot:nth-child(2) { animation-delay: 0.2s; }
   .typing-dot:nth-child(3) { animation-delay: 0.4s; }
   @keyframes dotPulse { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.1); } }
@@ -1589,6 +1591,7 @@ async function generateScorecard(numberText, numberType, ctx) {
 *The ancient calculator stirs — the scorecard takes shape.*`;
   history.push({ role: 'assistant', content: fullIntro });
 
+  await waitForSeerDelay();
   removeTyping();
   addMessage('mordoo', fullIntro);
 
@@ -1987,15 +1990,75 @@ function fmt(t) {
     .replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
 }
 
+const SEER_MESSAGES = [
+  "Gathering your personal fortune\u2026",
+  "The numbers are speaking\u2026",
+  "Consulting the stars and your path\u2026",
+  "Reading the energy around you\u2026",
+  "The Mor Doo is listening\u2026",
+  "Tracing your life path through the heavens\u2026",
+  "The planets are aligning your answer\u2026",
+  "Feeling the current of your numbers\u2026",
+  "The ancient signs are surfacing\u2026",
+  "Your chart holds the answer \u2014 a moment\u2026",
+  "Breathing in your energy\u2026",
+  "The seer\u2019s eye is opening\u2026",
+  "What the numbers carry, the stars confirm\u2026",
+  "Your fortune is taking shape\u2026",
+  "The thread between birth and now is clear\u2026",
+];
+
+let _typingInterval = null;
+let _typingStart = 0;
+const MIN_SEER_DELAY = 5000; // minimum ms before response renders
+
 function showTyping() {
+  _typingStart = Date.now();
   const chat = document.getElementById('chat');
   const div = document.createElement('div');
   div.className = 'typing'; div.id = 'typing-indicator';
-  div.innerHTML = `<div class="typing-avatar">🔮</div><div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+  const firstMsg = SEER_MESSAGES[Math.floor(Math.random() * SEER_MESSAGES.length)];
+  div.innerHTML = `
+    <div class="typing-avatar">🔮</div>
+    <div class="typing-bubble">
+      <div class="typing-msg" id="typing-msg">${firstMsg}</div>
+      <div class="typing-dots">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>`;
   chat.appendChild(div);
   div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+
+  // Cycle messages every 2.2s
+  const used = new Set([firstMsg]);
+  _typingInterval = setInterval(() => {
+    const msgEl = document.getElementById('typing-msg');
+    if (!msgEl) return;
+    const available = SEER_MESSAGES.filter(m => !used.has(m));
+    const pool = available.length > 0 ? available : SEER_MESSAGES;
+    const next = pool[Math.floor(Math.random() * pool.length)];
+    used.add(next);
+    msgEl.style.opacity = '0';
+    setTimeout(() => {
+      if (msgEl) { msgEl.textContent = next; msgEl.style.opacity = '1'; }
+    }, 350);
+  }, 2200);
 }
-function removeTyping() { const el = document.getElementById('typing-indicator'); if (el) el.remove(); }
+
+function removeTyping() {
+  if (_typingInterval) { clearInterval(_typingInterval); _typingInterval = null; }
+  const el = document.getElementById('typing-indicator');
+  if (el) el.remove();
+}
+
+// Waits until the minimum seer delay has passed before resolving
+function waitForSeerDelay() {
+  const elapsed = Date.now() - _typingStart;
+  const remaining = Math.max(0, MIN_SEER_DELAY - elapsed);
+  return new Promise(res => setTimeout(res, remaining));
+}
 
 async function sendMessage() {
   if (isLoading || messageCount >= MAX_MESSAGES) return;
@@ -2125,6 +2188,7 @@ async function sendMessage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: history, userTimezone, userLocalDate })
     });
+    await waitForSeerDelay();
     removeTyping();
     const data = await res.json();
     if (data.reply) {
