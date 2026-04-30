@@ -814,8 +814,7 @@ export default async function handler(req, res) {
       const client = new Anthropic({ apiKey: process.env.ANTHROPIC_KEY });
       const response = await client.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 600,
-        system: 'You are a JSON generator for a Thai numerology app share card. Respond ONLY with a raw JSON object — no markdown, no backticks, no explanation. Required keys: summary, colorLabel, color, colorReason, tip, tipLabel. RULES: Never include birthdates, birth years, full dates like "April 30 2026", full last names, or phone numbers. Never say "today is [date]", "born in [year]", or "in the year [year]". Use first name only. Color and tip must always be specific and non-empty.',
+        max_tokens: 300,
         messages: messages
       });
       const reply = response.content?.[0]?.text?.trim() || '';
@@ -1079,16 +1078,48 @@ export default async function handler(req, res) {
       const zodiacElement = zodiacElements[elemIdx];
 
       // Day of week — Thai planetary ruler with Wednesday split
+      // Five-category color system per day (Thairath/Royal Thai Astrologers standard)
+      // birthDayColors = fixed personal lucky colors based on day of week born (สีมงคลประจำวันเกิด)
+      // dailyColors = five goal-specific colors for today (สีมงคลประจำวัน) — repeating weekly
+      // kalaKinee = the actively inauspicious color to avoid on that day (สีกาลกิณี)
       const date = new Date(year, month-1, day);
       const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
       const thevada = [
-        { name: 'Sunday',    planet: 'Sun',     color: 'Red',          auspicious: 'Authority, vitality, career, leadership' },
-        { name: 'Monday',    planet: 'Moon',    color: 'Yellow/Cream', auspicious: 'Intuition, new beginnings, home, family' },
-        { name: 'Tuesday',   planet: 'Mars',    color: 'Pink/Red',     auspicious: 'Courage, protection, bold action' },
-        { name: 'Wednesday', planet: 'Mercury', color: 'Green',        auspicious: 'Commerce, communication, contracts, travel' },
-        { name: 'Thursday',  planet: 'Jupiter', color: 'Orange',       auspicious: 'Wisdom, expansion, abundance, signing documents' },
-        { name: 'Friday',    planet: 'Venus',   color: 'Blue/White',   auspicious: 'Love, beauty, wealth, partnerships' },
-        { name: 'Saturday',  planet: 'Saturn',  color: 'Black/Purple', auspicious: 'Discipline, property, long-term matters' },
+        { name: 'Sunday',    planet: 'Sun',     color: 'Red',
+          daily: { career: 'Green', money: 'Orange', luck: 'Red', charm: 'Pink', authority: 'Cream/Tan' },
+          kalaKinee: 'Blue',
+          birthDayColors: { wear: 'Orange, Red, Pink, Bright Green, White', avoid: 'Blue, Navy' },
+          auspicious: 'Authority, vitality, career, leadership' },
+        { name: 'Monday',    planet: 'Moon',    color: 'Yellow/Cream',
+          daily: { career: 'Black', money: 'Brown', luck: 'Beige/Cream', charm: 'Navy', authority: 'Grey' },
+          kalaKinee: 'Red',
+          birthDayColors: { wear: 'Bright Green, Black, White, Purple', avoid: 'Red, Orange' },
+          auspicious: 'Intuition, new beginnings, home, family' },
+        { name: 'Tuesday',   planet: 'Mars',    color: 'Pink',
+          daily: { career: 'Purple/Navy', money: 'Grey', luck: 'Black', charm: 'Orange/Red', authority: 'Pink' },
+          kalaKinee: 'White',
+          birthDayColors: { wear: 'Yellow, Black, Pink, Purple, Red', avoid: 'Cream, White' },
+          auspicious: 'Courage, protection, bold action' },
+        { name: 'Wednesday', planet: 'Mercury', color: 'Green',
+          daily: { career: 'Green', money: 'Blue', luck: 'Navy', charm: 'White/Yellow', authority: 'Grey/Black' },
+          kalaKinee: 'Pink',
+          birthDayColors: { wear: 'Green, Light Yellow, Gold Yellow', avoid: 'Pink, Bright Red' },
+          auspicious: 'Commerce, communication, contracts, travel' },
+        { name: 'Thursday',  planet: 'Jupiter', color: 'Orange',
+          daily: { career: 'Red', money: 'White', luck: 'Yellow', charm: 'Blue', authority: 'Orange' },
+          kalaKinee: 'Black',
+          birthDayColors: { wear: 'Orange, Yellow, Blue, Navy, Bright Green, Red', avoid: 'Black, Purple' },
+          auspicious: 'Wisdom, expansion, abundance, signing documents' },
+        { name: 'Friday',    planet: 'Venus',   color: 'Light Blue',
+          daily: { career: 'Pink/Orange', money: 'Blue', luck: 'Light Brown', charm: 'Green', authority: 'Navy' },
+          kalaKinee: 'Grey',
+          birthDayColors: { wear: 'Blue, Navy, White, Yellow, Pink', avoid: 'Dark Green, Brown, Grey, Dark tones' },
+          auspicious: 'Love, beauty, wealth, partnerships' },
+        { name: 'Saturday',  planet: 'Saturn',  color: 'Purple',
+          daily: { career: 'Navy', money: 'Purple', luck: 'Black', charm: 'Grey', authority: 'Blue' },
+          kalaKinee: 'Green',
+          birthDayColors: { wear: 'Red, Yellow, Blue, Navy, Pink, Brown', avoid: 'Green, Bright Red' },
+          auspicious: 'Discipline, karmic resolution, long-term matters' },
       ];
       const dayIndex = date.getDay();
       const dayInfo = thevada[dayIndex];
@@ -1099,8 +1130,9 @@ export default async function handler(req, res) {
       let planet = dayInfo.planet;
       let thevadaAuspicious = dayInfo.auspicious;
       let thevadaColor = dayInfo.color;
-      if (dayIndex === 3) { // Wednesday
-        // If birth time provided and is evening/night, apply Rahu overlay
+      // Birth day colors come from the birth date's day of week — fixed for life
+      let thevadaBirthDayColors = dayInfo.birthDayColors;
+      if (dayIndex === 3) { // Wednesday birth
         const btLower = (birthTime || '').toLowerCase();
         const isNightWed = btLower.includes('pm') && (
           parseInt((birthTime||'0').split(':')[0]) >= 18 ||
@@ -1110,12 +1142,35 @@ export default async function handler(req, res) {
           planet = 'Rahu';
           thevadaAuspicious = 'Hidden matters, transformation, the unseen';
           thevadaColor = 'Black';
+          thevadaBirthDayColors = { wear: 'Green, Black, Brown, White', avoid: 'Orange, Gold, Bright Red' };
         }
       }
 
-      // Current planetary hour calculation (for timing readings)
-      // Planetary hour order shifts by day — starts with the day's ruling planet
-      // Order: Sun, Venus, Mercury, Moon, Saturn, Jupiter, Mars, Rahu (repeating)
+      // TODAY'S daily colors and planetary hour must use the USER'S local time,
+      // not the birth date and not the server clock — a user in Bangkok is on a
+      // different calendar day than a user in New York, and planets shift continuously.
+      let userNow;
+      if (userLocalDate) {
+        userNow = new Date(userLocalDate); // "YYYY-MM-DDTHH:mm" in user's local time
+      } else if (userTimezone) {
+        const localStr = new Date().toLocaleString('en-CA', { timeZone: userTimezone, hour12: false });
+        userNow = new Date(localStr);
+      } else {
+        userNow = new Date(); // fallback to server time
+      }
+      const userTodayIndex = userNow.getDay(); // 0=Sun ... 6=Sat in user's local day
+      const userHour = userNow.getHours();     // hour in user's local time
+      const userTodayInfo = thevada[userTodayIndex];
+
+      // Wednesday night check for TODAY (not birth day) — after 6pm Rahu governs
+      const userTodayIsWedNight = userTodayIndex === 3 && userHour >= 18;
+      const thevadaDaily = userTodayInfo.daily;
+      const thevadaKalaKinee = userTodayIsWedNight
+        ? 'Orange, Gold, Bright Red' // Rahu night kala kinee
+        : userTodayInfo.kalaKinee;
+      const todayDayName = userTodayInfo.name + (userTodayIsWedNight ? ' Night (Rahu)' : '');
+
+      // Current planetary hour — based on user's local day + local hour
       const yamaOrder = ['Sun','Venus','Mercury','Moon','Saturn','Jupiter','Mars','Rahu'];
       const yamaAuspicious = {
         Sun:     'Starting new ventures, leadership decisions, asserting authority',
@@ -1127,14 +1182,10 @@ export default async function handler(req, res) {
         Mars:    'Avoid conflict — hidden dangers, aggressive energy, not for agreements',
         Rahu:    'Hidden matters, transformation — powerful for occult but avoid contracts',
       };
-      // Day start index for Yama (Sunday=0/Sun, Monday=1/Moon, Tue=2/Mars, Wed=3/Mer, Thu=4/Jup, Fri=5/Ven, Sat=6/Sat)
-      const yamaStartIndex = [0, 6, 4, 2, 5, 1, 3][dayIndex]; // maps day → yamaOrder start
-      const nowHour = new Date().getHours();
-      const yamaSlot = Math.floor(((nowHour - 6 + 24) % 24) / 3) % 8;
+      // Yama start index by user's local day of week
+      const yamaStartIndex = [0, 6, 4, 2, 5, 1, 3][userTodayIndex];
+      const yamaSlot = Math.floor(((userHour - 6 + 24) % 24) / 3) % 8;
       const currentYamaPlanet = yamaOrder[(yamaStartIndex + yamaSlot) % 8];
-      const currentYamaNum = yamaSlot + 1;
-      const yamaStartHour = ((yamaSlot * 3) + 6) % 24;
-      const yamaEndHour = (yamaStartHour + 3) % 24;
       const fmt12 = h => { const ampm = h >= 12 ? 'PM' : 'AM'; return (h % 12 || 12) + ampm; };
 
       // Fetch natal chart from JPL Horizons — only on first call per birthday
@@ -1189,8 +1240,12 @@ export default async function handler(req, res) {
         '- Birth Day Number: ' + bdSum + '\n' +
         '- Thai Zodiac: ' + zodiacElement + ' ' + zodiac + ' (birth year ' + zodiacBirthYear + ')\n' +
         '- Born on ' + dayName + ' — governing planet: ' + planet + '\n' +
-        '- ' + dayName + ' planetary color: ' + thevadaColor + ' — this planet governs: ' + thevadaAuspicious + '\n' +
-        '- CURRENT PLANETARY HOUR (right now): ' + currentYamaPlanet + ' governs this window — favors: ' + yamaAuspicious[currentYamaPlanet] + '\n' +
+        '- BIRTH DAY COLORS (สีมงคลประจำวันเกิด — fixed for life, based on day born): Wear ' + thevadaBirthDayColors.wear + ' | Avoid ' + thevadaBirthDayColors.avoid + '\n' +
+        '- TODAY IS ' + todayDayName.toUpperCase() + ' in the user\'s local time — FIVE-CATEGORY COLORS for today (สีมงคลประจำวัน):\n' +
+        '  Career: ' + thevadaDaily.career + ' | Money: ' + thevadaDaily.money + ' | Luck: ' + thevadaDaily.luck + ' | Charm: ' + thevadaDaily.charm + ' | Authority: ' + thevadaDaily.authority + '\n' +
+        '  สีกาลกิณี (AVOID today): ' + thevadaKalaKinee + ' — actively inauspicious, never wear on important days\n' +
+        '- Born on ' + dayName + ' — that planet governs: ' + thevadaAuspicious + '\n' +
+        '- CURRENT PLANETARY HOUR (user\'s local time): ' + currentYamaPlanet + ' governs this window — favors: ' + yamaAuspicious[currentYamaPlanet] + '\n' +
         '- Use the current planetary hour subtly in timing readings — e.g. "right now ' + currentYamaPlanet + ' governs the hour, which favors..."\n\n' +
         (natalChartText ? natalChartText + '\n\n' : '') +
         (transitText ? transitText + '\n\n' : '') +
@@ -1200,15 +1255,16 @@ export default async function handler(req, res) {
         '- If the number root digit is in the same family (1/4/8 or 2/6/9 or 3/5/7) → compatible (+4 to +6 points)\n' +
         '- If the number root digit CLASHES with Life Path → reduce total by 3-6 points\n' +
         '- ' + planet + '/' + dayName + ' born resonate with their ruling planet digits\n' +
-        '- Mercury/Wednesday born resonate with 5s. Sun/Sunday with 1s and 9s. Venus/Friday with 6s. Jupiter/Thursday with 3s. Saturn/Saturday with 8s. Moon/Monday with 2s. Mars/Tuesday with 9s.\n' +
-        '- Wednesday Night/Rahu born resonate with 4s and unconventional paths\n\n' +
-        'NATAL CHART USAGE — when JPL planetary positions are provided:\n' +
-        '- Always use the natal positions — they are more accurate than general day-of-week planet associations\n' +
-        '- Lead with the most significant placements: Sun sign, Moon sign, and any planets in own sign or exalted\n' +
-        '- Name debilitated planets honestly but constructively\n' +
-        '- For timing readings: when a transiting planet is conjunct a natal planet, that is a significant window — name it specifically\n' +
-        '- Rahu shows the direction of growth this lifetime, Ketu shows what the person is releasing — use these for life purpose and karmic readings\n' +
-        '- Keep planet descriptions grounded and practical — what does this mean for their actual life, work, relationships, decisions\n' +
+        '- CORRECTED Thai Lek Sasat planet-digit-day resonance (Royal Thai Astrologers Association standard):\n' +
+        '  Sun/Sunday born → resonate with 1s (fame, authority)\n' +
+        '  Moon/Monday born → resonate with 2s (beauty, intuition, family)\n' +
+        '  Mars/Tuesday born → resonate with 3s (courage, drive — NOTE: 3=Mars in Thai system, not Jupiter)\n' +
+        '  Mercury/Wednesday born → resonate with 4s (intelligence, cleverness)\n' +
+        '  Jupiter/Thursday born → resonate with 5s (wisdom, morality, dharma — NOTE: 5=Jupiter in Thai system, not Mercury)\n' +
+        '  Venus/Friday born → resonate with 6s (love, art, beauty)\n' +
+        '  Saturn/Saturday born → resonate with 7s (karma, endurance through difficulty)\n' +
+        '  Rahu/Wednesday Night born → resonate with 8s (obsession, transformation, hidden power)\n' +
+        '  Ketu/9 energy people → resonate with 9s (sacred, psychic, divine protection — most auspicious)\n' +
         '- Zodiac: Monkey/Rat/Dragon support bold numbers (3,9,1). Dog/Horse/Tiger support freedom numbers (5,1,9). Rabbit/Goat/Pig support harmony numbers (2,6,4). Ox/Snake/Rooster support disciplined numbers (4,8,7).\n' +
         'Adjust the total score and category scores based on birthday compatibility. Mention the compatibility in the reading.';
     } // end birthday if
@@ -1221,9 +1277,11 @@ export default async function handler(req, res) {
     if (purpose === 'work' && goal === 'wealth') {
       contextGuide = `WORK PHONE / WEALTH & SUCCESS CONTEXT:
         - This number will be used for sales, business, and wealth generation
-        - Digit 4 (Rahu) = negotiation wit, market adaptability — give it POSITIVE points (+3 to +5)
-        - Digit 3 (Mars) = competitive drive, ambition, closing power — POSITIVE (+6 to +8)
-        - Digit 9 (Mars) = leadership energy, winning mindset — very POSITIVE (+8 to +10)
+        - Digit 4 (Mercury) = cleverness, negotiation wit, market adaptability — give it POSITIVE points (+3 to +5)
+        - Digit 3 (Mars) = competitive drive, bold action, closing power — POSITIVE in work context (+4 to +6)
+        - Digit 9 (Ketu) = sacred luck, divine protection, completion — very POSITIVE (+8 to +10)
+        - Digit 1 (Sun) = authority, fame, leadership — very POSITIVE (+7 to +9)
+        - Digit 5 (Jupiter) = wisdom, righteous abundance — POSITIVE (+6 to +8)
         - Heavily weight Career (aim 78-95), Wealth (aim 78-95), Success (aim 78-95)
         - Harmony and Family can score lower (50-65) — this is a WORK number, peace is not the goal
         - Total score should reflect commercial power — if pairs are strong, push total to 80-95
@@ -1231,7 +1289,9 @@ export default async function handler(req, res) {
     } else if (purpose === 'work' && goal === 'harmony') {
       contextGuide = `WORK PHONE / HARMONY & BALANCE CONTEXT:
         - This number is for professional use but the person values calm, balanced energy
-        - Digit 4 (Rahu) = still somewhat challenging even at work — moderate points (-1 to +2)
+        - Digit 4 (Mercury) = clever and adaptable — moderate positive points (+2 to +4)
+        - Digit 7 (Saturn) = karmic weight and hardship energy — reduces harmony (-3 to -5)
+        - Digit 8 (Rahu) = obsession and hidden turbulence — reduces harmony (-2 to -4)
         - Weight Career (70-85), Harmony (70-82), Success (68-80) relatively evenly
         - Total score reflects steady professional reliability — aim 65-80
         - Reading should emphasize stable growth, trustworthy presence, and professional harmony`;
@@ -1239,7 +1299,10 @@ export default async function handler(req, res) {
       contextGuide = `PERSONAL NUMBER / WEALTH & ABUNDANCE CONTEXT:
         - This is a personal number but the person wants financial abundance
         - Digit 6 (Venus) = wealth through beauty and relationships — very POSITIVE (+9 to +10)
-        - Digit 8 (Saturn) = material power and karmic returns — POSITIVE (+8 to +9)
+        - Digit 9 (Ketu) = sacred luck and divine protection — very POSITIVE (+8 to +10)
+        - Digit 5 (Jupiter) = righteous abundance and wisdom-wealth — POSITIVE (+7 to +9)
+        - Digit 7 (Saturn) = karmic hardship — NEGATIVE in personal context (-4 to -6)
+        - Digit 8 (Rahu) = obsession energy — reduces harmony in personal life (-2 to -4)
         - Weight Wealth (75-90), Love (70-82), Success (70-85) higher
         - Harmony and Family still matter but Wealth leads
         - Total score reflects personal wealth magnetism — aim 70-88
@@ -1247,8 +1310,11 @@ export default async function handler(req, res) {
     } else {
       contextGuide = `PERSONAL NUMBER / HARMONY & PEACE CONTEXT:
         - This is a personal number and the person values peace, family, and balance
-        - Digit 4 (Rahu) = instability and obstacles in personal life — NEGATIVE (-3 to -5)
-        - Digit 3 (Mars) = potential conflict and restlessness — slightly negative in personal context (-1 to -3)
+        - Digit 7 (Saturn) = suffering and karmic burden in personal life — NEGATIVE (-4 to -6)
+        - Digit 8 (Rahu) = obsession and delusion energy — NEGATIVE in personal context (-3 to -5)
+        - Digit 3 (Mars) = potential conflict and aggression — slightly negative in personal context (-1 to -3)
+        - Digit 2 (Moon) = harmony and family warmth — POSITIVE (+6 to +8)
+        - Digit 6 (Venus) = love and domestic peace — very POSITIVE (+8 to +10)
         - Weight Harmony (75-90), Family (75-88), Love (75-88) most heavily
         - Career and Success matter but are secondary
         - Total score reflects peaceful life energy — if harmony digits dominate, aim 68-85
@@ -1265,26 +1331,30 @@ ${birthplaceContext}
 
 ${horaSaatContext}
 
-PLANET MAP (digit → planet → primary life area → secondary life area):
-0=Neptune/neutral → Spirituality & hidden knowledge / Mystery
-1=Sun/positive → Career & authority / Health & vitality
-2=Moon/neutral → Relationships & intuition / Home & family
-3=Jupiter/positive → Wealth & expansion / Education & wisdom
-4=Rahu/context-dependent → Obstacles & karma (personal) / Negotiation & adaptability (work)
-5=Mercury/neutral-positive → Communication & travel / Commerce & quick thinking
-6=Venus/positive → Love & beauty / Luxury & material abundance
-7=Ketu/neutral → Spirituality & loss / Secrets & hidden matters
-8=Saturn/neutral-positive → Karma & property / Discipline & long-term material power
-9=Mars/context-dependent → Success & ambition (work) / Conflict & restlessness (personal)
+PLANET MAP — THAI LEK SASAT (Royal Thai Astrologers Association standard — NOT Western numerology):
+0=Mrityu/revolutionary → Invention & hidden knowledge / Foreign travel & the occult
+1=Sun/positive → Fame & authority / Career & leadership
+2=Moon/positive → Beauty & charm / Emotions & family
+3=Mars/context-dependent → Courage & drive (work) / Anger & conflict (personal)
+4=Mercury/neutral-positive → Intelligence & cleverness / Communication & adaptability
+5=Jupiter/positive → Wisdom, morality & dharma / Abundance through righteousness
+6=Venus/positive → Love & beauty / Art & luxury
+7=Saturn/difficult → Suffering & karmic weight / Endurance through hardship
+8=Rahu/context-dependent → Obsession & hidden power (occult/transformation) / Delusion & legal troubles (personal)
+9=Ketu/sacred → Divine protection & psychic power / Completion & spiritual mastery — MOST AUSPICIOUS single digit
 
-LIFE AREA SCORING RULES — use these planet-to-category mappings when calculating category scores:
-- love: driven by digits 6(Venus), 2(Moon), 3(Jupiter) — Venus dominant
-- wealth: driven by digits 3(Jupiter), 8(Saturn), 9(Mars-work), 6(Venus) — Jupiter and Saturn dominant
-- career: driven by digits 1(Sun), 9(Mars), 5(Mercury), 4(Rahu-work) — Sun dominant
-- luck: driven by digits 3(Jupiter), 1(Sun), 9(Mars) — Jupiter dominant
-- family: driven by digits 2(Moon), 6(Venus), 8(Saturn) — Moon dominant
-- harmony: driven by digits 6(Venus), 2(Moon), 5(Mercury) — Venus and Moon dominant
-- success: driven by digits 1(Sun), 9(Mars), 3(Jupiter), 8(Saturn) — balanced
+CRITICAL: In Thai Lek Sasat, 3=Mars (NOT Jupiter), 4=Mercury (NOT Rahu), 5=Jupiter (NOT Mercury), 7=Saturn (suffering — NOT Ketu), 8=Rahu (NOT Saturn), 9=Ketu (sacred — NOT Mars). Do not apply Western numerology planet assignments.
+Numbers reducing to 9 carry Ketu/sacred energy: 9, 36 (Venus+Mars), 45 (Mercury+Jupiter), 54, 63, 90, 99 — all exceptionally auspicious.
+
+LIFE AREA SCORING RULES — use Thai Lek Sasat planet-to-category mappings:
+- love: driven by digits 6(Venus), 2(Moon), 9(Ketu-sacred bond) — Venus dominant
+- wealth: driven by digits 5(Jupiter/dharma), 6(Venus), 1(Sun/status) — Jupiter dominant
+- career: driven by digits 1(Sun/authority), 4(Mercury/cleverness), 3(Mars/drive) — Sun dominant
+- luck: driven by digits 9(Ketu/sacred), 5(Jupiter), 1(Sun) — Ketu and Jupiter dominant
+- family: driven by digits 2(Moon), 6(Venus), 5(Jupiter/wisdom) — Moon dominant
+- harmony: driven by digits 6(Venus), 2(Moon), 4(Mercury/balance) — Venus and Moon dominant
+- success: driven by digits 1(Sun), 9(Ketu), 5(Jupiter), 6(Venus) — balanced
+- 7(Saturn) and 8(Rahu) are always complex: 7 brings hardship and karmic lessons, 8 brings obsession and hidden power — both reduce harmony scores but can boost ambition/career in specific contexts
 
 PAIRS: Power(15,51,39,93,19,91) Wealth(56,65,89,98,69,96) Charm(46,64,24,42) Wisdom(13,31,35,53) Challenge(14,41,44)
 Good pairs boost total AND boost the categories their planets rule. Multiple good pairs = 80-95. Challenge pairs reduce total.
@@ -1423,7 +1493,6 @@ PHONE NUMBER & ADDRESS DETECTION — CRITICAL:
 - NEVER mention root numbers, master numbers, digital roots, or any calculations
 - NEVER ask for country code or location
 - The visual scorecard handles ALL the analysis — your only job is 2 warm sentences to set the tone
-- CRITICAL: Years (2020, 2023, 2025, 2026, etc.), date ranges, and time periods are NEVER phone numbers or addresses. Messages containing words like "coming", "onward", "next", "what happens", "forecast", "outlook", "what is in store" alongside a year = forecast questions, never scorecard triggers.
 - If you do more than 2 sentences for a phone/address you are breaking the experience
 - CRITICAL: Years (2020, 2023, 2025, 2026, etc.) and date ranges are NEVER phone numbers or addresses — NEVER respond with scorecard language, NEVER say "the digits reduce to X", NEVER say "the ancient calculator stirs" for any message that contains a year or asks about a year or time period. "What is coming in 2026" is a forecast question, NOT a number submission. "April 2026 onward" is a time reference, NOT a phone number. Any message with words like "coming", "onward", "next", "what happens", "forecast", "outlook" alongside a year = a reading question, never a scorecard trigger.
 
@@ -1519,10 +1588,19 @@ GENDER IN READINGS — OPTIONAL BUT MEANINGFUL:
 - Gender is an optional field the user may provide. If provided (female, male, or non-binary) it appears in the context card data as "gender: female/male/non-binary"
 - When gender is NOT provided — give gender-neutral readings. Never assume or guess gender.
 - When gender IS provided — apply it in these specific contexts:
-  * NAME READINGS: In traditional Thai numerology, auspicious number ranges differ slightly by gender. For women, numbers 2, 3, 6, and 9 carry stronger resonance. For men, 1, 4, 5, and 8 are traditionally amplified. For non-binary, read the full spectrum without restriction.
+  * NAME READINGS: In Thai Lek Sasat (Royal Thai Astrologers Association standard), auspicious name number ranges differ by gender.
+    For women: numbers 2, 6, 9, 23, 24, 36, 42, 45, 54, 63, 65 carry stronger resonance. Avoid 16, 17, 18, 20 for women — these create difficulty in love and marriage.
+    For men: numbers 1, 4, 5, 8, 41, 45, 51, 54, 55 are traditionally amplified. Avoid 13, 23, 31, 32, 46, 64, 68, 86 for men — these create instability through relationships.
+    For non-binary: read the full spectrum without restriction.
   * RELATIONSHIP/COMPATIBILITY readings: Reference the dynamic naturally — "as a woman, your 6 energy draws partners who need grounding" or "as a man, your 8 seeks someone who won't shrink from your intensity." For non-binary, focus on the elemental and life path dynamic without gender framing.
   * PHONE/ADDRESS scorecards: Gender can subtly influence which digit energies are emphasized in the reading summary.
   * Do NOT force gender into every reading — only apply it where it genuinely adds meaning (names, relationships, compatibility). Life Path, zodiac, and personal year readings are universal.
+
+LEK SASAT AUSPICIOUS NUMBER GROUPS (Thai official — use when evaluating name numbers or recommending numbers):
+HIGHEST FORTUNE: 2, 4, 5, 6, 9, 14, 15, 19, 23, 24, 36, 41, 42, 45, 50, 51, 54, 55, 56, 59, 63, 65, 90, 95, 99, 100
+MIXED/MIDDLE: 32, 40, 44, 46, 64, 79, 89, 97, 98
+Numbers reducing to 9 carry Ketu/sacred energy and are always auspicious: 9, 36, 45, 54, 63, 90, 99
+Number 9 special significance: phonetically "gao" = forward progress + rice/abundance + Ketu sacred protection — triple resonance makes it the most complete auspicious number
 
 MONTHLY FORECAST READINGS — CRITICAL:
 - When someone asks for a monthly forecast, month-by-month reading, or yearly outlook — first ask for their birthday if not already known
@@ -1562,16 +1640,35 @@ NUMEROLOGY:
 - Always check for Master Numbers (11, 22, 33, 44) before final reduction
 - Always include country code (+1 for US) in phone readings
 
-THAI PLANETARY ASTROLOGY — Day and Hour Governors:
-Each day of the week is governed by a planet that colors its energy. These are planetary influences, not religious figures — present them purely as planetary timing.
-Sunday: Sun governs — Red — authority, career, leadership, vitality
-Monday: Moon governs — Yellow/Cream — intuition, new beginnings, home, family
-Tuesday: Mars governs — Pink/Red — courage, protection, bold action
-Wednesday DAY: Mercury governs — Green — commerce, contracts, communication, travel
-Wednesday NIGHT (after 6pm): Rahu governs — Black — hidden matters, transformation, the unseen (unique to Thai tradition — present as a planetary shift, not a religious one)
-Thursday: Jupiter governs — Orange — wisdom, expansion, abundance, best day for signing documents and new ventures
-Friday: Venus governs — Blue/White — love, beauty, wealth, partnerships
-Saturday: Saturn governs — Black/Purple — discipline, property, long-term planning, karmic returns
+THAI PLANETARY ASTROLOGY — Day Governors, Colors & Serm Duang:
+Each day is governed by a planet. There are TWO color systems — always distinguish them in readings.
+
+BIRTH DAY COLORS (สีมงคลประจำวันเกิด) — fixed personal lucky colors for life, based on day of week born:
+Sunday-born: Wear Orange/Red/Pink/Green/White — Avoid Blue/Navy
+Monday-born: Wear Bright Green/Black/White/Purple — Avoid Red/Orange
+Tuesday-born: Wear Yellow/Black/Pink/Purple/Red — Avoid Cream/White
+Wednesday day-born: Wear Green/Light Yellow/Gold — Avoid Pink/Bright Red
+Wednesday night (Rahu)-born: Wear Green/Black/Brown/White — Avoid Orange/Gold/Bright Red
+Thursday-born: Wear Orange/Yellow/Blue/Navy/Green/Red — Avoid Black/Purple
+Friday-born: Wear Blue/Navy/White/Yellow/Pink — Avoid Dark Green/Brown/Grey/Dark tones
+Saturday-born: Wear Red/Yellow/Blue/Navy/Pink/Brown — Avoid Green/Bright Red
+
+DAILY FIVE-CATEGORY COLORS (สีมงคลประจำวัน) — goal-specific, repeating weekly. Always name the กาลกิณี (inauspicious color to AVOID):
+Sunday: Career=Green, Money=Orange, Luck=Red, Charm=Pink, Authority=Cream | กาลกิณี=Blue
+Monday: Career=Black, Money=Brown, Luck=Beige/Cream, Charm=Navy, Authority=Grey | กาลกิณี=Red
+Tuesday: Career=Purple/Navy, Money=Grey, Luck=Black, Charm=Orange/Red, Authority=Pink | กาลกิณี=White
+Wednesday: Career=Green, Money=Blue, Luck=Navy, Charm=White/Yellow, Authority=Grey/Black | กาลกิณี=Pink
+Thursday: Career=Red, Money=White, Luck=Yellow, Charm=Blue, Authority=Orange | กาลกิณี=Black
+Friday: Career=Pink/Orange, Money=Blue, Luck=Light Brown, Charm=Green, Authority=Navy | กาลกิณี=Grey
+Saturday: Career=Navy, Money=Purple, Luck=Black, Charm=Grey, Authority=Blue | กาลกิณี=Green
+
+SERM DUANG COLOR PRESCRIPTION RULES:
+- Birth day colors = personal baseline ("เดอะเบส") — worn every day for protection and fortune
+- Daily colors = layered on top for specific goals on specific days
+- กาลกิณี = actively harmful color — never wear on interviews, negotiations, meetings with seniors, or any important occasion
+- When prescribing serm duang: give the planet reason first, then the action — "Jupiter rules Thursday, so orange amplifies wisdom energy today"
+- Always name กาลกิณี explicitly: "Avoid [color] today — it is [day]'s inauspicious color"
+- When birth day color aligns with today's goal color = maximum serm duang — name this alignment when it occurs
 
 PLANETARY HOURS — the 8 time windows that govern quality of timing:
 The day is divided into 8 planetary windows of 3 hours each. Each window is governed by a planet.
