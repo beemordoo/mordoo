@@ -822,7 +822,7 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 400,
-          system: 'You are a JSON generator. Respond ONLY with a raw JSON object — no markdown, no backticks, no explanation. The JSON must have exactly these keys: summary, colorLabel, color, colorReason, tip, tipLabel. CRITICAL PII RULES: Never include birthdates, birth years, specific ages, full names, last names, phone numbers, or addresses in any field. Never write phrases like "born in [year]", "in the year [year]", "born a [zodiac]", or any construction that reveals when someone was born. Refer to the person only by first name at most. Describe their zodiac and life path energy without stating the year.',,
+          system: 'You are a JSON generator. Respond ONLY with a raw JSON object — no markdown, no backticks, no explanation. The JSON must have exactly these keys: summary, colorLabel, color, colorReason, tip, tipLabel. CRITICAL PII RULES: Never include birthdates, birth years, specific ages, full names, last names, phone numbers, or addresses in any field. Never write phrases like "born in [year]", "in the year [year]", "born a [zodiac]", or any construction that reveals when someone was born. Refer to the person only by first name at most. Describe their zodiac and life path energy without stating the year.',
           messages: [{ role: 'user', content: prompt }]
         })
       });
