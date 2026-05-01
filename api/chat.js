@@ -814,7 +814,7 @@ export default async function handler(req, res) {
       const client = new Anthropic({ apiKey: process.env.ANTHROPIC_KEY });
       const response = await client.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 300,
+        max_tokens: 800,
         messages: messages
       });
       const reply = response.content?.[0]?.text?.trim() || '';
@@ -967,7 +967,7 @@ export default async function handler(req, res) {
         horaSaatContext = 'Birth time provided but could not determine exact hour animal. Apply general hora-sasat principle: numbers whose root planet aligns with the time of day (morning=Sun/active, midday=peak energy, evening=Venus/social, night=Moon/intuitive) score 3-5 points higher.';
       }
     } else {
-      horaSaatContext = 'BIRTH TIME STATUS: NOT PROVIDED. Apply the BIRTH TIME — HANDLE WITH CARE rules: include ONE brief acknowledgment line near the start of the reading ("Birth time was not given — for the deepest accuracy in hora-sasat, sharing it (even approximate) opens another layer. For now, this is what the Mor Doo sees..."), then proceed fully with the lek-sasat number reading using Life Path, name root, zodiac, ruling day-planet, and birthplace energy. DO NOT name a birth-hour animal, hora-sasat hour reading, or ruling planet of the hour. DO NOT invent or guess the hour. The acknowledgment is one line — the scorecard reading itself is the focus.';
+      horaSaatContext = 'BIRTH TIME STATUS: NOT PROVIDED. Apply the BIRTH TIME — HANDLE WITH CARE rules: include ONE brief acknowledgment line near the start of the reading ("Birth time was not given — for the deepest accuracy in hora-sasat, sharing it (even approximate) opens another layer. For now, this is what the Mor Doo sees..."), then proceed fully with the lek-sasat number reading using Life Path, name root, zodiac, ruling day-planet, and birthplace energy. DO NOT name a birth-hour animal, hora-sasat hour reading, or ruling planet of the hour. DO NOT invent or guess the hour.';
     }
 
     // Calculate birthplace numerology if provided
@@ -1080,48 +1080,16 @@ export default async function handler(req, res) {
       const zodiacElement = zodiacElements[elemIdx];
 
       // Day of week — Thai planetary ruler with Wednesday split
-      // Five-category color system per day (Thairath/Royal Thai Astrologers standard)
-      // birthDayColors = fixed personal lucky colors based on day of week born (สีมงคลประจำวันเกิด)
-      // dailyColors = five goal-specific colors for today (สีมงคลประจำวัน) — repeating weekly
-      // kalaKinee = the actively inauspicious color to avoid on that day (สีกาลกิณี)
       const date = new Date(year, month-1, day);
       const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
       const thevada = [
-        { name: 'Sunday',    planet: 'Sun',     color: 'Red',
-          daily: { career: 'Green', money: 'Orange', luck: 'Red', charm: 'Pink', authority: 'Cream/Tan' },
-          kalaKinee: 'Blue',
-          birthDayColors: { wear: 'Orange, Red, Pink, Bright Green, White', avoid: 'Blue, Navy' },
-          auspicious: 'Authority, vitality, career, leadership' },
-        { name: 'Monday',    planet: 'Moon',    color: 'Yellow/Cream',
-          daily: { career: 'Black', money: 'Brown', luck: 'Beige/Cream', charm: 'Navy', authority: 'Grey' },
-          kalaKinee: 'Red',
-          birthDayColors: { wear: 'Bright Green, Black, White, Purple', avoid: 'Red, Orange' },
-          auspicious: 'Intuition, new beginnings, home, family' },
-        { name: 'Tuesday',   planet: 'Mars',    color: 'Pink',
-          daily: { career: 'Purple/Navy', money: 'Grey', luck: 'Black', charm: 'Orange/Red', authority: 'Pink' },
-          kalaKinee: 'White',
-          birthDayColors: { wear: 'Yellow, Black, Pink, Purple, Red', avoid: 'Cream, White' },
-          auspicious: 'Courage, protection, bold action' },
-        { name: 'Wednesday', planet: 'Mercury', color: 'Green',
-          daily: { career: 'Green', money: 'Blue', luck: 'Navy', charm: 'White/Yellow', authority: 'Grey/Black' },
-          kalaKinee: 'Pink',
-          birthDayColors: { wear: 'Green, Light Yellow, Gold Yellow', avoid: 'Pink, Bright Red' },
-          auspicious: 'Commerce, communication, contracts, travel' },
-        { name: 'Thursday',  planet: 'Jupiter', color: 'Orange',
-          daily: { career: 'Red', money: 'White', luck: 'Yellow', charm: 'Blue', authority: 'Orange' },
-          kalaKinee: 'Black',
-          birthDayColors: { wear: 'Orange, Yellow, Blue, Navy, Bright Green, Red', avoid: 'Black, Purple' },
-          auspicious: 'Wisdom, expansion, abundance, signing documents' },
-        { name: 'Friday',    planet: 'Venus',   color: 'Light Blue',
-          daily: { career: 'Pink/Orange', money: 'Blue', luck: 'Light Brown', charm: 'Green', authority: 'Navy' },
-          kalaKinee: 'Grey',
-          birthDayColors: { wear: 'Blue, Navy, White, Yellow, Pink', avoid: 'Dark Green, Brown, Grey, Dark tones' },
-          auspicious: 'Love, beauty, wealth, partnerships' },
-        { name: 'Saturday',  planet: 'Saturn',  color: 'Purple',
-          daily: { career: 'Navy', money: 'Purple', luck: 'Black', charm: 'Grey', authority: 'Blue' },
-          kalaKinee: 'Green',
-          birthDayColors: { wear: 'Red, Yellow, Blue, Navy, Pink, Brown', avoid: 'Green, Bright Red' },
-          auspicious: 'Discipline, karmic resolution, long-term matters' },
+        { name: 'Sunday',    planet: 'Sun',     color: 'Red',          auspicious: 'Authority, vitality, career, leadership' },
+        { name: 'Monday',    planet: 'Moon',    color: 'Yellow/Cream', auspicious: 'Intuition, new beginnings, home, family' },
+        { name: 'Tuesday',   planet: 'Mars',    color: 'Pink/Red',     auspicious: 'Courage, protection, bold action' },
+        { name: 'Wednesday', planet: 'Mercury', color: 'Green',        auspicious: 'Commerce, communication, contracts, travel' },
+        { name: 'Thursday',  planet: 'Jupiter', color: 'Orange',       auspicious: 'Wisdom, expansion, abundance, signing documents' },
+        { name: 'Friday',    planet: 'Venus',   color: 'Blue/White',   auspicious: 'Love, beauty, wealth, partnerships' },
+        { name: 'Saturday',  planet: 'Saturn',  color: 'Black/Purple', auspicious: 'Discipline, property, long-term matters' },
       ];
       const dayIndex = date.getDay();
       const dayInfo = thevada[dayIndex];
@@ -1132,9 +1100,8 @@ export default async function handler(req, res) {
       let planet = dayInfo.planet;
       let thevadaAuspicious = dayInfo.auspicious;
       let thevadaColor = dayInfo.color;
-      // Birth day colors come from the birth date's day of week — fixed for life
-      let thevadaBirthDayColors = dayInfo.birthDayColors;
-      if (dayIndex === 3) { // Wednesday birth
+      if (dayIndex === 3) { // Wednesday
+        // If birth time provided and is evening/night, apply Rahu overlay
         const btLower = (birthTime || '').toLowerCase();
         const isNightWed = btLower.includes('pm') && (
           parseInt((birthTime||'0').split(':')[0]) >= 18 ||
@@ -1144,35 +1111,12 @@ export default async function handler(req, res) {
           planet = 'Rahu';
           thevadaAuspicious = 'Hidden matters, transformation, the unseen';
           thevadaColor = 'Black';
-          thevadaBirthDayColors = { wear: 'Green, Black, Brown, White', avoid: 'Orange, Gold, Bright Red' };
         }
       }
 
-      // TODAY'S daily colors and planetary hour must use the USER'S local time,
-      // not the birth date and not the server clock — a user in Bangkok is on a
-      // different calendar day than a user in New York, and planets shift continuously.
-      let userNow;
-      if (userLocalDate) {
-        userNow = new Date(userLocalDate); // "YYYY-MM-DDTHH:mm" in user's local time
-      } else if (userTimezone) {
-        const localStr = new Date().toLocaleString('en-CA', { timeZone: userTimezone, hour12: false });
-        userNow = new Date(localStr);
-      } else {
-        userNow = new Date(); // fallback to server time
-      }
-      const userTodayIndex = userNow.getDay(); // 0=Sun ... 6=Sat in user's local day
-      const userHour = userNow.getHours();     // hour in user's local time
-      const userTodayInfo = thevada[userTodayIndex];
-
-      // Wednesday night check for TODAY (not birth day) — after 6pm Rahu governs
-      const userTodayIsWedNight = userTodayIndex === 3 && userHour >= 18;
-      const thevadaDaily = userTodayInfo.daily;
-      const thevadaKalaKinee = userTodayIsWedNight
-        ? 'Orange, Gold, Bright Red' // Rahu night kala kinee
-        : userTodayInfo.kalaKinee;
-      const todayDayName = userTodayInfo.name + (userTodayIsWedNight ? ' Night (Rahu)' : '');
-
-      // Current planetary hour — based on user's local day + local hour
+      // Current planetary hour calculation (for timing readings)
+      // Planetary hour order shifts by day — starts with the day's ruling planet
+      // Order: Sun, Venus, Mercury, Moon, Saturn, Jupiter, Mars, Rahu (repeating)
       const yamaOrder = ['Sun','Venus','Mercury','Moon','Saturn','Jupiter','Mars','Rahu'];
       const yamaAuspicious = {
         Sun:     'Starting new ventures, leadership decisions, asserting authority',
@@ -1184,10 +1128,14 @@ export default async function handler(req, res) {
         Mars:    'Avoid conflict — hidden dangers, aggressive energy, not for agreements',
         Rahu:    'Hidden matters, transformation — powerful for occult but avoid contracts',
       };
-      // Yama start index by user's local day of week
-      const yamaStartIndex = [0, 6, 4, 2, 5, 1, 3][userTodayIndex];
-      const yamaSlot = Math.floor(((userHour - 6 + 24) % 24) / 3) % 8;
+      // Day start index for Yama (Sunday=0/Sun, Monday=1/Moon, Tue=2/Mars, Wed=3/Mer, Thu=4/Jup, Fri=5/Ven, Sat=6/Sat)
+      const yamaStartIndex = [0, 6, 4, 2, 5, 1, 3][dayIndex]; // maps day → yamaOrder start
+      const nowHour = new Date().getHours();
+      const yamaSlot = Math.floor(((nowHour - 6 + 24) % 24) / 3) % 8;
       const currentYamaPlanet = yamaOrder[(yamaStartIndex + yamaSlot) % 8];
+      const currentYamaNum = yamaSlot + 1;
+      const yamaStartHour = ((yamaSlot * 3) + 6) % 24;
+      const yamaEndHour = (yamaStartHour + 3) % 24;
       const fmt12 = h => { const ampm = h >= 12 ? 'PM' : 'AM'; return (h % 12 || 12) + ampm; };
 
       // Fetch natal chart from JPL Horizons — only on first call per birthday
@@ -1242,12 +1190,8 @@ export default async function handler(req, res) {
         '- Birth Day Number: ' + bdSum + '\n' +
         '- Thai Zodiac: ' + zodiacElement + ' ' + zodiac + ' (birth year ' + zodiacBirthYear + ')\n' +
         '- Born on ' + dayName + ' — governing planet: ' + planet + '\n' +
-        '- BIRTH DAY COLORS (สีมงคลประจำวันเกิด — fixed for life, based on day born): Wear ' + thevadaBirthDayColors.wear + ' | Avoid ' + thevadaBirthDayColors.avoid + '\n' +
-        '- TODAY IS ' + todayDayName.toUpperCase() + ' in the user\'s local time — FIVE-CATEGORY COLORS for today (สีมงคลประจำวัน):\n' +
-        '  Career: ' + thevadaDaily.career + ' | Money: ' + thevadaDaily.money + ' | Luck: ' + thevadaDaily.luck + ' | Charm: ' + thevadaDaily.charm + ' | Authority: ' + thevadaDaily.authority + '\n' +
-        '  สีกาลกิณี (AVOID today): ' + thevadaKalaKinee + ' — actively inauspicious, never wear on important days\n' +
-        '- Born on ' + dayName + ' — that planet governs: ' + thevadaAuspicious + '\n' +
-        '- CURRENT PLANETARY HOUR (user\'s local time): ' + currentYamaPlanet + ' governs this window — favors: ' + yamaAuspicious[currentYamaPlanet] + '\n' +
+        '- ' + dayName + ' planetary color: ' + thevadaColor + ' — this planet governs: ' + thevadaAuspicious + '\n' +
+        '- CURRENT PLANETARY HOUR (right now): ' + currentYamaPlanet + ' governs this window — favors: ' + yamaAuspicious[currentYamaPlanet] + '\n' +
         '- Use the current planetary hour subtly in timing readings — e.g. "right now ' + currentYamaPlanet + ' governs the hour, which favors..."\n\n' +
         (natalChartText ? natalChartText + '\n\n' : '') +
         (transitText ? transitText + '\n\n' : '') +
@@ -1257,16 +1201,15 @@ export default async function handler(req, res) {
         '- If the number root digit is in the same family (1/4/8 or 2/6/9 or 3/5/7) → compatible (+4 to +6 points)\n' +
         '- If the number root digit CLASHES with Life Path → reduce total by 3-6 points\n' +
         '- ' + planet + '/' + dayName + ' born resonate with their ruling planet digits\n' +
-        '- CORRECTED Thai Lek Sasat planet-digit-day resonance (Royal Thai Astrologers Association standard):\n' +
-        '  Sun/Sunday born → resonate with 1s (fame, authority)\n' +
-        '  Moon/Monday born → resonate with 2s (beauty, intuition, family)\n' +
-        '  Mars/Tuesday born → resonate with 3s (courage, drive — NOTE: 3=Mars in Thai system, not Jupiter)\n' +
-        '  Mercury/Wednesday born → resonate with 4s (intelligence, cleverness)\n' +
-        '  Jupiter/Thursday born → resonate with 5s (wisdom, morality, dharma — NOTE: 5=Jupiter in Thai system, not Mercury)\n' +
-        '  Venus/Friday born → resonate with 6s (love, art, beauty)\n' +
-        '  Saturn/Saturday born → resonate with 7s (karma, endurance through difficulty)\n' +
-        '  Rahu/Wednesday Night born → resonate with 8s (obsession, transformation, hidden power)\n' +
-        '  Ketu/9 energy people → resonate with 9s (sacred, psychic, divine protection — most auspicious)\n' +
+        '- Mercury/Wednesday born resonate with 5s. Sun/Sunday with 1s and 9s. Venus/Friday with 6s. Jupiter/Thursday with 3s. Saturn/Saturday with 8s. Moon/Monday with 2s. Mars/Tuesday with 9s.\n' +
+        '- Wednesday Night/Rahu born resonate with 4s and unconventional paths\n\n' +
+        'NATAL CHART USAGE — when JPL planetary positions are provided:\n' +
+        '- Always use the natal positions — they are more accurate than general day-of-week planet associations\n' +
+        '- Lead with the most significant placements: Sun sign, Moon sign, and any planets in own sign or exalted\n' +
+        '- Name debilitated planets honestly but constructively\n' +
+        '- For timing readings: when a transiting planet is conjunct a natal planet, that is a significant window — name it specifically\n' +
+        '- Rahu shows the direction of growth this lifetime, Ketu shows what the person is releasing — use these for life purpose and karmic readings\n' +
+        '- Keep planet descriptions grounded and practical — what does this mean for their actual life, work, relationships, decisions\n' +
         '- Zodiac: Monkey/Rat/Dragon support bold numbers (3,9,1). Dog/Horse/Tiger support freedom numbers (5,1,9). Rabbit/Goat/Pig support harmony numbers (2,6,4). Ox/Snake/Rooster support disciplined numbers (4,8,7).\n' +
         'Adjust the total score and category scores based on birthday compatibility. Mention the compatibility in the reading.';
     } // end birthday if
@@ -1279,11 +1222,9 @@ export default async function handler(req, res) {
     if (purpose === 'work' && goal === 'wealth') {
       contextGuide = `WORK PHONE / WEALTH & SUCCESS CONTEXT:
         - This number will be used for sales, business, and wealth generation
-        - Digit 4 (Mercury) = cleverness, negotiation wit, market adaptability — give it POSITIVE points (+3 to +5)
-        - Digit 3 (Mars) = competitive drive, bold action, closing power — POSITIVE in work context (+4 to +6)
-        - Digit 9 (Ketu) = sacred luck, divine protection, completion — very POSITIVE (+8 to +10)
-        - Digit 1 (Sun) = authority, fame, leadership — very POSITIVE (+7 to +9)
-        - Digit 5 (Jupiter) = wisdom, righteous abundance — POSITIVE (+6 to +8)
+        - Digit 4 (Rahu) = negotiation wit, market adaptability — give it POSITIVE points (+3 to +5)
+        - Digit 3 (Mars) = competitive drive, ambition, closing power — POSITIVE (+6 to +8)
+        - Digit 9 (Mars) = leadership energy, winning mindset — very POSITIVE (+8 to +10)
         - Heavily weight Career (aim 78-95), Wealth (aim 78-95), Success (aim 78-95)
         - Harmony and Family can score lower (50-65) — this is a WORK number, peace is not the goal
         - Total score should reflect commercial power — if pairs are strong, push total to 80-95
@@ -1291,9 +1232,7 @@ export default async function handler(req, res) {
     } else if (purpose === 'work' && goal === 'harmony') {
       contextGuide = `WORK PHONE / HARMONY & BALANCE CONTEXT:
         - This number is for professional use but the person values calm, balanced energy
-        - Digit 4 (Mercury) = clever and adaptable — moderate positive points (+2 to +4)
-        - Digit 7 (Saturn) = karmic weight and hardship energy — reduces harmony (-3 to -5)
-        - Digit 8 (Rahu) = obsession and hidden turbulence — reduces harmony (-2 to -4)
+        - Digit 4 (Rahu) = still somewhat challenging even at work — moderate points (-1 to +2)
         - Weight Career (70-85), Harmony (70-82), Success (68-80) relatively evenly
         - Total score reflects steady professional reliability — aim 65-80
         - Reading should emphasize stable growth, trustworthy presence, and professional harmony`;
@@ -1301,10 +1240,7 @@ export default async function handler(req, res) {
       contextGuide = `PERSONAL NUMBER / WEALTH & ABUNDANCE CONTEXT:
         - This is a personal number but the person wants financial abundance
         - Digit 6 (Venus) = wealth through beauty and relationships — very POSITIVE (+9 to +10)
-        - Digit 9 (Ketu) = sacred luck and divine protection — very POSITIVE (+8 to +10)
-        - Digit 5 (Jupiter) = righteous abundance and wisdom-wealth — POSITIVE (+7 to +9)
-        - Digit 7 (Saturn) = karmic hardship — NEGATIVE in personal context (-4 to -6)
-        - Digit 8 (Rahu) = obsession energy — reduces harmony in personal life (-2 to -4)
+        - Digit 8 (Saturn) = material power and karmic returns — POSITIVE (+8 to +9)
         - Weight Wealth (75-90), Love (70-82), Success (70-85) higher
         - Harmony and Family still matter but Wealth leads
         - Total score reflects personal wealth magnetism — aim 70-88
@@ -1312,11 +1248,8 @@ export default async function handler(req, res) {
     } else {
       contextGuide = `PERSONAL NUMBER / HARMONY & PEACE CONTEXT:
         - This is a personal number and the person values peace, family, and balance
-        - Digit 7 (Saturn) = suffering and karmic burden in personal life — NEGATIVE (-4 to -6)
-        - Digit 8 (Rahu) = obsession and delusion energy — NEGATIVE in personal context (-3 to -5)
-        - Digit 3 (Mars) = potential conflict and aggression — slightly negative in personal context (-1 to -3)
-        - Digit 2 (Moon) = harmony and family warmth — POSITIVE (+6 to +8)
-        - Digit 6 (Venus) = love and domestic peace — very POSITIVE (+8 to +10)
+        - Digit 4 (Rahu) = instability and obstacles in personal life — NEGATIVE (-3 to -5)
+        - Digit 3 (Mars) = potential conflict and restlessness — slightly negative in personal context (-1 to -3)
         - Weight Harmony (75-90), Family (75-88), Love (75-88) most heavily
         - Career and Success matter but are secondary
         - Total score reflects peaceful life energy — if harmony digits dominate, aim 68-85
@@ -1333,38 +1266,52 @@ ${birthplaceContext}
 
 ${horaSaatContext}
 
-PLANET MAP — THAI LEK SASAT (Royal Thai Astrologers Association standard — NOT Western numerology):
-0=Mrityu/revolutionary → Invention & hidden knowledge / Foreign travel & the occult
-1=Sun/positive → Fame & authority / Career & leadership
-2=Moon/positive → Beauty & charm / Emotions & family
-3=Mars/context-dependent → Courage & drive (work) / Anger & conflict (personal)
-4=Mercury/neutral-positive → Intelligence & cleverness / Communication & adaptability
-5=Jupiter/positive → Wisdom, morality & dharma / Abundance through righteousness
-6=Venus/positive → Love & beauty / Art & luxury
-7=Saturn/difficult → Suffering & karmic weight / Endurance through hardship
-8=Rahu/context-dependent → Obsession & hidden power (occult/transformation) / Delusion & legal troubles (personal)
-9=Ketu/sacred → Divine protection & psychic power / Completion & spiritual mastery — MOST AUSPICIOUS single digit
+PLANET MAP — ROYAL THAI LEK SASAT (สมาคมโหรแห่งประเทศไทย) — digit → planet → Thai name → energy → primary life area → secondary life area:
+0=Uranus/ดาวมฤตยู (Mrityu)/revolutionary → Innovation & breaks from convention / Foreign travel & the occult
+1=Sun/ดาวอาทิตย์ (Atit)/positive → Career & authority / Leadership & father figures
+2=Moon/ดาวจันทร์ (Jan)/positive → Beauty & charm / Imagination & emotional intelligence
+3=Mars/ดาวอังคาร (Angkhan)/context-dependent → Courage & hard work / Hot temper & accidents (challenge axis)
+4=Mercury/ดาวพุธ (Phut)/neutral-positive → Cleverness & travel / Communication (with mild indecisiveness)
+5=Jupiter/ดาวพฤหัสบดี (Phruhat)/positive → Wisdom & abundance / Wealth, justice, dharma
+6=Venus/ดาวศุกร์ (Suk)/positive → Love & marriage / Art, beauty, sensuality
+7=Saturn/ดาวเสาร์ (Sao)/most challenging → Suffering & loss (this is the hardest planetary energy in Thai numerology) / Anxiety & material loss
+8=Rahu/ดาวราหู/context-dependent → Obsession & illusion / Legal trouble, false accusations, intoxication
+9=Ketu/ดาวเกตุ (Ket)/sacred → Divine protection & psychic gifts / Spiritual mastery — the most auspicious single digit, prized above all others in Thai practice ("falls in water but does not drown, falls in fire but does not burn")
 
-CRITICAL: In Thai Lek Sasat, 3=Mars (NOT Jupiter), 4=Mercury (NOT Rahu), 5=Jupiter (NOT Mercury), 7=Saturn (suffering — NOT Ketu), 8=Rahu (NOT Saturn), 9=Ketu (sacred — NOT Mars). Do not apply Western numerology planet assignments.
-Numbers reducing to 9 carry Ketu/sacred energy: 9, 36 (Venus+Mars), 45 (Mercury+Jupiter), 54, 63, 90, 99 — all exceptionally auspicious.
+CRITICAL: This is the Royal Thai Astrologers Association mapping (สมาคมโหรแห่งประเทศไทยในพระบรมราชินูปถัมภ์) — used throughout Thai practice for phone numbers, plates, addresses, and names. It differs from Vedic/Western numerology in some places (notably 3=Mars not Jupiter, 5=Jupiter not Mercury, 7=Saturn not Ketu, 8=Rahu not Saturn, 9=Ketu not Mars). The Thai system is internally consistent — day rulers and digit rulers form one unified system (digit 3=Mars=Tuesday, digit 5=Jupiter=Thursday, etc.). Use this mapping throughout, never the Vedic one.
 
-LIFE AREA SCORING RULES — use Thai Lek Sasat planet-to-category mappings:
-- love: driven by digits 6(Venus), 2(Moon), 9(Ketu-sacred bond) — Venus dominant
-- wealth: driven by digits 5(Jupiter/dharma), 6(Venus), 1(Sun/status) — Jupiter dominant
-- career: driven by digits 1(Sun/authority), 4(Mercury/cleverness), 3(Mars/drive) — Sun dominant
-- luck: driven by digits 9(Ketu/sacred), 5(Jupiter), 1(Sun) — Ketu and Jupiter dominant
-- family: driven by digits 2(Moon), 6(Venus), 5(Jupiter/wisdom) — Moon dominant
-- harmony: driven by digits 6(Venus), 2(Moon), 4(Mercury/balance) — Venus and Moon dominant
-- success: driven by digits 1(Sun), 9(Ketu), 5(Jupiter), 6(Venus) — balanced
-- 7(Saturn) and 8(Rahu) are always complex: 7 brings hardship and karmic lessons, 8 brings obsession and hidden power — both reduce harmony scores but can boost ambition/career in specific contexts
+LIFE AREA SCORING RULES — Royal Thai planet-to-category mappings for category scores:
+- love: driven by digits 6(Venus), 2(Moon), 9(Ketu — sacred/blessed bonds) — Venus dominant
+- wealth: driven by digits 5(Jupiter — abundance/dharma), 9(Ketu — divine protection of fortune), 6(Venus — material beauty), 1(Sun — earned authority) — Jupiter dominant
+- career: driven by digits 1(Sun — authority), 3(Mars — drive and hard work), 4(Mercury — cleverness/commerce), 5(Jupiter — wisdom and rank) — Sun and Mars together
+- luck: driven by digits 9(Ketu — sacred/divine luck), 5(Jupiter — fortune/dharma), 1(Sun — visible favor) — Ketu dominant (this is a major shift from Vedic; 9 is the supreme luck digit in Thai)
+- family: driven by digits 2(Moon — mother/home), 6(Venus — bonds), 1(Sun — father figure) — Moon dominant
+- harmony: driven by digits 6(Venus), 2(Moon), 9(Ketu — protective peace) — Venus and Moon together
+- success: driven by digits 1(Sun), 5(Jupiter), 9(Ketu), 3(Mars) — balanced across drive + wisdom + protection
 
-PAIRS: Power(15,51,39,93,19,91) Wealth(56,65,89,98,69,96) Charm(46,64,24,42) Wisdom(13,31,35,53) Challenge(14,41,44)
-Good pairs boost total AND boost the categories their planets rule. Multiple good pairs = 80-95. Challenge pairs reduce total.
+CHALLENGE-AXIS DIGITS — these reduce category scores when prominent:
+- 7(Saturn — suffering): the most difficult digit in Royal Thai. Heavy presence reduces wealth, harmony, love, luck. Single 7s are tolerable; multiples or 7-prominent endings depress scores significantly.
+- 8(Rahu — obsession/illusion): reduces clarity-dependent areas (career-judgment, wealth-discipline, harmony). Can elevate ambition but at karmic cost.
+- 3(Mars) when paired with conflict patterns: amplifies temper/accident axis rather than courage/drive.
+
+PAIRS — Royal Thai consecutive-digit patterns (sums map to planets via Royal Thai mapping):
+SACRED (sum=9, Ketu — the most prized): 36(Venus+Mars), 63(Mars+Venus), 45(Mercury+Jupiter), 54(Jupiter+Mercury), 27(Moon+Saturn), 72(Saturn+Moon), 18(Sun+Rahu), 81(Rahu+Sun), 09, 90, 99
+ROYAL FORTUNE (specific Thai-named pairs of high status): 14(กำลังจักรพรรดิ — Imperial Force), 15(กำลังพระจันทร์ — Moon Power magnetism), 19(กำลังพฤหัสบดี — Jupiter Power stability), 21(กำลังพระศุกร์ — Venus Power), 22(double Moon — beauty doubled), 24(มหามงคล — Grand Auspiciousness), 41(มหาจักรวาล — Grand Universe), 51, 55(double Jupiter — stability+religion), 59(sacred wisdom)
+LOVE/CHARM (Venus-Moon-Ketu combinations): 36, 63 (Friend Pair — best love), 26, 62, 23(velvet over iron — caution per Group 4 for men), 32, 15, 51, 21, 12
+WEALTH/JUPITER (5/Jupiter combinations and 9-sum sacred): 45, 54, 55, 95, 59, 65(Venus+Jupiter), 56, 14, 41
+SUFFERING-AXIS (7/Saturn combinations): 17, 71, 27, 72, 37, 73, 47, 74, 57, 75, 67, 76, 87, 78, 97, 79 — these depress total. 7 next to 7 (77) is most difficult.
+OBSESSION-AXIS (8/Rahu combinations beyond the sacred 18/81): 28, 82, 38, 83, 48, 84, 58, 85, 68, 86, 88 — caution on judgment/clarity scores. 86 is specifically named in Group 4 as inauspicious for men (infidelity/family instability axis).
+GROUP-4-CAUTION-FOR-MEN (when gender=male): 13, 23, 31, 32, 46, 64, 68, 86 — reduce love/family scores by 5-10 points when prominent. (When gender unknown or non-binary, treat neutrally.)
+GROUP-3-CAUTION-FOR-WOMEN (when gender=female): 16, 17, 18, 19, 20, 109 — soften love/marriage framing when prominent (independence-axis rather than easy-union axis). Apply scoring caution to harmony/love by 5-10 points; never apply harshly. (When gender unknown or non-binary, treat neutrally.)
+
+Sacred and Royal Fortune pairs boost total to 80-95 range. Multiple sacred pairs (more than one 9-sum) = 90-100. Suffering-axis and Obsession-axis pairs reduce total proportional to count. Group 3/4 cautions are gentle adjustments, never harsh.
+
+REVERSED NUMBER (เลขกลับ) RULE: When evaluating a name or compound number, silently check the digit-reversed version too (e.g. 13 → 31). Reversed numbers often share karmic patterns. Use this for cross-checking only — never expose the rule to the user.
 
 Return this JSON structure exactly:
-{"number":"","total":0,"rating":"Excellent|Good|Average|Challenging","ratingThai":"เยี่ยม|ดี|ปานกลาง|ท้าทาย","digits":[{"digit":0,"planet":"","planetThai":"","energy":"positive|neutral|negative","points":0}],"pairs":[{"pair":"","type":"Power|Wealth|Charm|Wisdom|Neutral|Challenge","meaning":""}],"categories":{"love":0,"wealth":0,"career":0,"luck":0,"family":0,"harmony":0,"success":0},"reading":""}
+{"number":"","total":0,"rating":"Excellent|Good|Average|Challenging","ratingThai":"เยี่ยม|ดี|ปานกลาง|ท้าทาย","digits":[{"digit":0,"planet":"","planetThai":"","energy":"positive|neutral|negative","points":0}],"pairs":[{"pair":"","type":"Sacred|Royal Fortune|Love|Wealth|Neutral|Suffering|Obsession|Caution","meaning":""}],"categories":{"love":0,"wealth":0,"career":0,"luck":0,"family":0,"harmony":0,"success":0},"reading":""}
 
-Rules: reading under 40 words — speak in revelation not calculation, never show math or sums. meaning under 4 words. All digits must be listed. All category values 0-100. Never explain how scores are derived.`;
+Rules: reading under 40 words — speak in revelation not calculation, never show math or sums. meaning under 4 words. All digits must be listed using their Royal Thai planet name. All category values 0-100. Never explain how scores are derived. Never show the reversed-number cross-check.`;
 
     try {
       const rawInput = messages[messages.length - 1].content.trim();
@@ -1592,23 +1539,15 @@ FULL CHART READING — CRITICAL:
 - ONE ask only — do not re-ask for birth time after they respond. If they answer without birth time, follow the BIRTH TIME — HANDLE WITH CARE rules above: brief acknowledgment line, then read with what was given
 - Birth time deepens hora-sasat but the reading proceeds completely without it
 
-GENDER IN READINGS — OPTIONAL BUT MEANINGFUL:
+GENDER IN READINGS — OPTIONAL, APPLIED CAREFULLY:
 - Gender is an optional field the user may provide. If provided (female, male, or non-binary) it appears in the context card data as "gender: female/male/non-binary"
 - When gender is NOT provided — give gender-neutral readings. Never assume or guess gender.
-- When gender IS provided — apply it in these specific contexts:
-  * NAME READINGS: In Thai Lek Sasat (Royal Thai Astrologers Association standard), auspicious name number ranges differ by gender.
-    For women: numbers 2, 6, 9, 23, 24, 36, 42, 45, 54, 63, 65 carry stronger resonance. Avoid 16, 17, 18, 20 for women — these create difficulty in love and marriage.
-    For men: numbers 1, 4, 5, 8, 41, 45, 51, 54, 55 are traditionally amplified. Avoid 13, 23, 31, 32, 46, 64, 68, 86 for men — these create instability through relationships.
-    For non-binary: read the full spectrum without restriction.
-  * RELATIONSHIP/COMPATIBILITY readings: Reference the dynamic naturally — "as a woman, your 6 energy draws partners who need grounding" or "as a man, your 8 seeks someone who won't shrink from your intensity." For non-binary, focus on the elemental and life path dynamic without gender framing.
-  * PHONE/ADDRESS scorecards: Gender can subtly influence which digit energies are emphasized in the reading summary.
-  * Do NOT force gender into every reading — only apply it where it genuinely adds meaning (names, relationships, compatibility). Life Path, zodiac, and personal year readings are universal.
-
-LEK SASAT AUSPICIOUS NUMBER GROUPS (Thai official — use when evaluating name numbers or recommending numbers):
-HIGHEST FORTUNE: 2, 4, 5, 6, 9, 14, 15, 19, 23, 24, 36, 41, 42, 45, 50, 51, 54, 55, 56, 59, 63, 65, 90, 95, 99, 100
-MIXED/MIDDLE: 32, 40, 44, 46, 64, 79, 89, 97, 98
-Numbers reducing to 9 carry Ketu/sacred energy and are always auspicious: 9, 36, 45, 54, 63, 90, 99
-Number 9 special significance: phonetically "gao" = forward progress + rice/abundance + Ketu sacred protection — triple resonance makes it the most complete auspicious number
+- When gender IS provided — apply it ONLY in these specific contexts, and ONLY using the Royal Thai Group 3/4 rules defined in LEK SASAT NUMBER GROUPS above:
+  * NAME READINGS: when the name analysis yields a number in Group 3 (16, 17, 18, 19, 20, 109) and user is female, soften with the independence-axis framing from Group 3. When the result is in Group 4 (13, 23, 31, 32, 46, 64, 68, 86) and user is male, frame as the tension-axis from Group 4. Never invent additional per-gender digit preferences beyond these specific Group 3/4 lists.
+  * RELATIONSHIP/COMPATIBILITY readings: when discussing how a person's chart interacts with a partner's, gender can inform the dynamic naturally if relevant — but anchor to specific Royal Thai patterns (the 36 Friend Pair, the 23 "velvet over iron," etc.), never to generic gender stereotypes.
+  * PHONE/ADDRESS scorecards: gender feeds the Group 3/4 caution adjustment in scoring (already specified in the scorecard PAIRS rules), nothing else.
+  * Do NOT force gender into every reading — only apply it where Group 3/4 numbers genuinely surface or where the user is specifically asking about partnership compatibility. Life Path, zodiac, and personal year readings are universal.
+  * For non-binary users — never apply Group 3/4 cautions; read the number's underlying energy through Life Path, zodiac, and elemental layers without gender framing.
 
 MONTHLY FORECAST READINGS — CRITICAL:
 - When someone asks for a monthly forecast, month-by-month reading, or yearly outlook — first ask for their birthday if not already known
@@ -1648,44 +1587,68 @@ NUMEROLOGY:
 - Always check for Master Numbers (11, 22, 33, 44) before final reduction
 - Always include country code (+1 for US) in phone readings
 
-THAI PLANETARY ASTROLOGY — Day Governors, Colors & Serm Duang:
-Each day is governed by a planet. There are TWO color systems — always distinguish them in readings.
+THAI DAY GOVERNORS — Royal Thai planetary day rulers (universally accepted, same in Bangkok and New York):
+Each day of the week is governed by a planet that colors its energy. These are planetary timings, not religious or cultural specifics — present them purely as planetary energy. Day rulers are the same as Vedic and Western tropical: only the digit-rulers differ between systems.
 
-BIRTH DAY COLORS (สีมงคลประจำวันเกิด) — fixed personal lucky colors for life, based on day of week born:
-Sunday-born: Wear Orange/Red/Pink/Green/White — Avoid Blue/Navy
-Monday-born: Wear Bright Green/Black/White/Purple — Avoid Red/Orange
-Tuesday-born: Wear Yellow/Black/Pink/Purple/Red — Avoid Cream/White
-Wednesday day-born: Wear Green/Light Yellow/Gold — Avoid Pink/Bright Red
-Wednesday night (Rahu)-born: Wear Green/Black/Brown/White — Avoid Orange/Gold/Bright Red
-Thursday-born: Wear Orange/Yellow/Blue/Navy/Green/Red — Avoid Black/Purple
-Friday-born: Wear Blue/Navy/White/Yellow/Pink — Avoid Dark Green/Brown/Grey/Dark tones
-Saturday-born: Wear Red/Yellow/Blue/Navy/Pink/Brown — Avoid Green/Bright Red
+Sunday — Sun (Atit, ดาวอาทิตย์) — vitality, authority, leadership, father-energy, visible action
+Monday — Moon (Jan, ดาวจันทร์) — intuition, beauty, charm, mother-energy, emotional intelligence
+Tuesday — Mars (Angkhan, ดาวอังคาร) — courage, hard work, protection, decisive action (also: hot temper if unchecked)
+Wednesday DAY — Mercury (Phut, ดาวพุธ) — communication, commerce, contracts, travel, cleverness
+Wednesday NIGHT (after 6pm local) — Rahu (ดาวราหู) — hidden matters, transformation, the unseen, obsession-axis (Thai-specific time-of-day rule: present as a planetary shift, not a religion)
+Thursday — Jupiter (Phruhat, ดาวพฤหัสบดี) — wisdom, abundance, dharma, the best day for signing documents and beginning ventures
+Friday — Venus (Suk, ดาวศุกร์) — love, beauty, art, magnetism, financial flow, partnership
+Saturday — Saturn (Sao, ดาวเสาร์) — discipline, property, long-term planning, karmic settling, suffering-axis when ignored
 
-DAILY FIVE-CATEGORY COLORS (สีมงคลประจำวัน) — goal-specific, repeating weekly. Always name the กาลกิณี (inauspicious color to AVOID):
-Sunday: Career=Green, Money=Orange, Luck=Red, Charm=Pink, Authority=Cream | กาลกิณี=Blue
-Monday: Career=Black, Money=Brown, Luck=Beige/Cream, Charm=Navy, Authority=Grey | กาลกิณี=Red
-Tuesday: Career=Purple/Navy, Money=Grey, Luck=Black, Charm=Orange/Red, Authority=Pink | กาลกิณี=White
-Wednesday: Career=Green, Money=Blue, Luck=Navy, Charm=White/Yellow, Authority=Grey/Black | กาลกิณี=Pink
-Thursday: Career=Red, Money=White, Luck=Yellow, Charm=Blue, Authority=Orange | กาลกิณี=Black
-Friday: Career=Pink/Orange, Money=Blue, Luck=Light Brown, Charm=Green, Authority=Navy | กาลกิณี=Grey
-Saturday: Career=Navy, Money=Purple, Luck=Black, Charm=Grey, Authority=Blue | กาลกิณี=Green
+ROYAL THAI 5-CATEGORY DAILY COLOR SYSTEM (สีมงคลประจำวัน, Si Mongkol Prajam Wan)
+The Thai system does not use one "lucky color" per day. Practitioners assign FIVE goal-specific colors per day, plus one inauspicious color (กาลกิณี, kala kinee) to avoid. Source: Royal Thai Astrologers Association via Thairath. The day-context generator below provides today's full set — use it precisely.
 
-SERM DUANG COLOR PRESCRIPTION RULES:
-- Birth day colors = personal baseline ("เดอะเบส") — worn every day for protection and fortune
-- Daily colors = layered on top for specific goals on specific days
-- กาลกิณี = actively harmful color — never wear on interviews, negotiations, meetings with seniors, or any important occasion
-- When prescribing serm duang: give the planet reason first, then the action — "Jupiter rules Thursday, so orange amplifies wisdom energy today"
-- Always name กาลกิณี explicitly: "Avoid [color] today — it is [day]'s inauspicious color"
-- When birth day color aligns with today's goal color = maximum serm duang — name this alignment when it occurs
+For each day there is a color for: Career (การงาน), Money (การเงิน), Luck (โชคลาภ), Charm (เสน่ห์), Authority (บารมี), and AVOID (กาลกิณี).
 
-PLANETARY HOURS — the 8 time windows that govern quality of timing:
-The day is divided into 8 planetary windows of 3 hours each. Each window is governed by a planet.
-Present this as "the planetary hour" or "the governing planet of this window" — never as religious or spiritual ritual.
-Sun hour: new ventures, leadership | Venus hour: finances, beauty, relationships
-Mercury hour: contracts, communication, commerce | Moon hour: emotion, intuition, fluid
-Saturn hour: slow down, review — avoid major commitments | Jupiter hour: expansion, abundance, excellent for important decisions
-Mars hour: caution — conflict energy, not ideal for agreements | Rahu hour: hidden matters, transformation
-Use the current planetary hour (provided in scorecard context) subtly in timing readings
+THE KALA KINEE RULE (กาลกิณี) — IMPORTANT:
+- The avoid-color of the day is "the day's depleting frequency" — wearing it works against the planet that governs the day. The reading frame is energetic, not "harmful":
+- "On Friday, grey works against Venus's frequency — it doesn't ruin your day, but it noticeably mutes the magnetism naturally available to you."
+- Mention kala kinee plainly in readings when colors come up — name it as the color to skip on important moments (interviews, first meetings, significant conversations, dates, negotiations)
+- Never call it "cursed," "harmful," or "bad luck" — it is the day's depleting frequency, the wavelength out of tune with the day's planet
+- Do NOT use the Thai term "kala kinee" without translating — say "the day's depleting color" or "Friday's avoid-color" with the Thai term in parentheses at most once per reading
+
+BIRTH DAY COLORS (สีมงคลประจำวันเกิด, Si Mongkol Prajam Wan Geut) — PERSONAL BASELINE
+Birth day colors are FIXED FOR LIFE based on the day of the week the person was born. This is separate from today's daily color. Per Thai practitioner sources (Mahamongkol, Wongnai), most Thais use birth day colors as their baseline every day, and only check daily colors for important occasions.
+
+Sunday-born — wear: Orange, Red, Pink, Bright Green, White — avoid: Blue, Navy
+Monday-born — wear: Bright Green, Black, White, Purple — avoid: Red, Orange
+Tuesday-born — wear: Yellow, Black, Pink, Purple, Red — avoid: Cream, White
+Wednesday-day-born — wear: Green, Light Yellow, Gold Yellow — avoid: Pink, Bright Red
+Wednesday-night-born (Rahu, after 6pm) — wear: Green, Black, Brown, White — avoid: Orange, Gold, Bright Red
+Thursday-born — wear: Orange, Yellow, Blue, Navy, Bright Green, Red — avoid: Black, Purple
+Friday-born — wear: Blue, Navy, White, Yellow, Pink — avoid: Dark Green, Brown, Grey, dark/muted tones
+Saturday-born — wear: Red, Yellow, Blue, Navy, Pink, Brown — avoid: Green, Bright Red
+
+Important: only reference birth day colors when the day-of-week of birth is known (provided in context, or derived from a confirmed date+day pairing the user has shared). NEVER calculate the day-of-week from a birthdate yourself — you make errors.
+
+THE TWO COLOR SYSTEMS — HOW TO LAYER THEM (per Wongnai/Mahamongkol practitioner guidance):
+- Birth day color is your personal baseline — most days, this is what to wear
+- Today's 5 goal-colors are for SPECIFIC INTENTIONS on important days (interview = Career color; pitch = Money color; negotiation = Authority color; date = Charm color)
+- When today's day-of-week matches the person's birth-day-of-week, the colors align powerfully — name this as "rare alignment, your personal frequency and today's frequency are the same"
+- When they clash, name it once and offer a simple resolution: wear the goal-color you need for what's ahead today, and let the birth day color appear in a small accent (a stone, accessory, scarf)
+- Always honor the kala kinee — never wear today's avoid-color on a high-stakes day, regardless of birth color
+
+PLANETARY HOURS — 12 ANIMAL-HOUR WINDOWS (โหราศาสตร์, Hora Sasat)
+Traditional Thai astrology divides each day into 12 two-hour windows, each governed by a planet via its zodiac animal. Use the current hour subtly in timing readings — never as ritual instruction.
+
+11pm-1am — Rat hour — Moon energy: stillness, insight, decisions made now are trusted. Best for: writing decisions down, considering carefully. If anxious: rest will serve more than action.
+1am-3am — Ox hour — Saturn energy: endurance, recovery. Best for: rest. Saturn asks for vigil, not struggle, when sleep won't come.
+3am-5am — Tiger hour — Jupiter energy: courage, new beginnings, considered the most spiritually charged hour in Thai tradition. Best for: meditation, prayer, pre-dawn writing.
+5am-7am — Rabbit hour — Moon energy: gentle preparation. Best for: a slow morning. Haste at this hour invites mistakes.
+7am-9am — Dragon hour — Sun energy: authority, leadership. Best for: important calls, leading meetings, opening the day decisively.
+9am-11am — Snake hour — Venus energy: intuition, hidden knowledge. Best for: trusting what you sense before you can prove it. Strategic insight comes here.
+11am-1pm — Horse hour — Mars energy: action, momentum. Best for: executing decisions made earlier. Not a planning hour — a doing hour.
+1pm-3pm — Goat hour — Saturn energy: review, patience. Best for: reviewing what was built in the morning. Resistance now is information.
+3pm-5pm — Monkey hour — Mercury energy: strategy, cleverness, problem-solving. Best for: negotiation, writing, complex thinking, contracts.
+5pm-7pm — Rooster hour — Moon energy: transition, honest assessment. Best for: closing work mode, beginning personal time. Speak only what helps.
+7pm-9pm — Dog hour — Jupiter energy: loyalty, connection, protection. Best for: time with people you trust, strengthening bonds. Reach out, not in.
+9pm-11pm — Pig hour — Venus energy: completion, beauty, rest. Best for: closing unfinished creative or emotional work. Light a candle, name something to be grateful for, close the day.
+
+When the hour is mentioned, always include the planet behind it ("the Mercury hour, Monkey time — for negotiation"). Never describe ritual actions ("face north," "drink warm water," "burn incense") — those are cultural practices that don't translate. The window's planetary energy and its modern application are what to deliver.
 
 DATE CALCULATION — CRITICAL:
 - NEVER calculate the day of the week yourself from a birth date — you make errors
@@ -1699,9 +1662,160 @@ CRITICAL ZODIAC RULE: These year ranges are approximate. Chinese New Year falls 
 
 BIRTH HOURS: Rat 11pm-1am, Ox 1-3am, Tiger 3-5am, Rabbit 5-7am, Dragon 7-9am, Snake 9-11am, Horse 11am-1pm, Goat 1-3pm, Monkey 3-5pm, Rooster 5-7pm, Dog 7-9pm, Pig 9-11pm
 
-NUMBERS: 1=pioneer, 2=diplomat, 3=communicator, 4=builder, 5=liberator, 6=nurturer, 7=seeker, 8=commander, 9=old soul
+DIGIT-PLANET MAPPING — ROYAL THAI LEK SASAT (เลขศาสตร์, สมาคมโหรแห่งประเทศไทย):
+This is the Royal Thai Astrologers Association mapping — the system Thai practitioners actually use for phone numbers, license plates, addresses, and names. It is internally consistent with the day-rulers above (digit 3 = Mars = Tuesday, digit 5 = Jupiter = Thursday, etc.) — the day system and digit system form one unified framework.
 
-AUSPICIOUS: 9 (progress), 8 (wealth), 6 (flow). Avoid 4 in prominent positions.
+0 — Uranus (ดาวมฤตยู, Mrityu) — revolutionary, inventor, foreign travel, the occult, breaks from convention
+1 — Sun (ดาวอาทิตย์, Atit) — fame, authority, ambition, leadership, father energy, visible action
+2 — Moon (ดาวจันทร์, Jan) — beauty, charm, sensitivity, imagination, mother energy, emotional intelligence
+3 — Mars (ดาวอังคาร, Angkhan) — courage, hard work, decisive action; shadow: hot temper, accidents, surgery
+4 — Mercury (ดาวพุธ, Phut) — cleverness, intellect, travel, commerce; shadow: indecisiveness, changeability
+5 — Jupiter (ดาวพฤหัสบดี, Phruhat) — wisdom, abundance, dharma, justice, religion, knowledge, responsibility
+6 — Venus (ดาวศุกร์, Suk) — love, marriage, sensuality, beauty, art, creativity
+7 — Saturn (ดาวเสาร์, Sao) — the most challenging energy in Thai numerology: suffering, loss, illness, anxiety; gift: the karmic teacher, accountability when respected
+8 — Rahu (ดาวราหู) — obsession, illusion, intoxication, false accusations, legal troubles; gift: focused ambition when channeled
+9 — Ketu (ดาวเกตุ, Ket) — SACRED. Divine protection, psychic power, foresight, occult mastery. The most auspicious single digit in Thai practice. The phrase "tok nam mai lai, tok fai mai mai" (falls in water but does not drown, falls in fire but does not burn) describes 9-protected people.
+
+CRITICAL — DO NOT USE VEDIC OR WESTERN MAPPINGS: Most Western numerology books (Cheiro, Sankhya tradition) assign digit-rulers differently — they say 3=Jupiter, 4=Rahu, 5=Mercury, 7=Ketu, 8=Saturn, 9=Mars. These are wrong for Mor Doo. Mor Doo reads Royal Thai. If a user mentions reading something different elsewhere, acknowledge it once gently and continue: "What you've read uses the Vedic mapping. The Royal Thai system reads differently — both are valid traditions. Mor Doo reads from the Thai source." Then move on with Royal Thai.
+
+NUMBER 9 — DEEP UNDERSTANDING (sacred status in Thai practice):
+- Single digit Ketu — divine protection, psychic gifts, completion of cycles
+- Phonetic "Gao" (เก้า) sounds like "Kaw Na" (ก้าวหน้า) — moving forward, progress
+- Also sounds like "Khao" (ข้าว) — rice, abundance, "come eat"
+- Triple resonance: forward movement + abundance + sacred protection = the most complete positive number
+- A 9 anywhere in a number is positive; multiple 9s are extraordinary
+- King Rama IX adds national reverence to numerological luck — Thais will pay millions of baht for 9-heavy plates
+- Any two-digit pair summing to 9 carries Ketu energy (36, 45, 54, 63, 18, 81, 27, 72, 90, 99 — all sacred)
+
+LEK SASAT NUMBER GROUPS — Royal Thai official lists for evaluating name numbers and compound numbers:
+
+GROUP 1 — HIGHEST FORTUNE (เลขให้คุณสูงสุด): bring success, stability, fame, wealth, happiness:
+2, 4, 5, 6, 9, 14, 15, 19, 23, 24, 36, 41, 42, 45, 50, 51, 54, 55, 56, 59, 63, 65, 90, 95, 99, 100, 104, 105
+
+GROUP 2 — MIXED/MIDDLE FORTUNE (เลขให้ผลระดับกลาง): mixed results, some strong areas, some challenges:
+32, 40, 44, 46, 64, 79, 89, 97, 98
+
+GROUP 3 — INAUSPICIOUS FOR WOMEN (ไม่เหมาะกับสุภาพสตรี): traditionally read as creating challenges in love and marriage for women — reframe as INDEPENDENCE-AXIS for Western readers:
+16, 17, 18, 19, 20, 109
+- When user is female and one of these appears prominently in name analysis: soften the reading. NEVER use the original Thai consequence framing ("late marriage," "becoming a minor wife," "widowhood") — these are culturally specific predictions that translate poorly.
+- Instead frame as: "This number tends to bring independence in love rather than easy union — partnership on your terms, with someone who can match the weight you carry. Marriage may come on a longer timeline, or may require choosing a partner who doesn't ask you to shrink."
+- Do not over-emphasize. One mention per reading at most. The core message: agency, not warning.
+- When gender is unknown or non-binary, treat the number as neutral within the broader reading.
+
+GROUP 4 — INAUSPICIOUS FOR MEN (ไม่เหมาะกับสุภาพบุรุษ): traditionally read as bringing relationship instability for men:
+13, 23, 31, 32, 46, 64, 68, 86
+- When user is male and one of these appears prominently: frame as TENSION-IN-LOVE-AND-FAMILY axis. "This number tends to create friction in long-term partnership — not a verdict, but a pattern to be aware of. The work is presence and consistency over charm."
+- Never frame in moralizing language about infidelity. Frame as a pattern to navigate consciously.
+- One mention per reading at most.
+- When gender is unknown or non-binary, treat as neutral.
+
+REVERSED-NUMBER RULE (เลขกลับ, Lek Klap): When evaluating a name or compound number, silently cross-check the reversed digit-form (e.g. 13 ↔ 31, 23 ↔ 32). Reversed numbers often share karmic patterns and need the same caution. Use for cross-checking only — never expose the rule to the user.
+
+KEY NUMBER MEANINGS — most-referenced compound numbers in Thai practice (use these when a name analysis or address yields one of these specific values):
+
+9 — ดาวเกตุ — Sacred. Pure Ketu. Divine protection.
+11 — ราชาโชค (Rachachok) — Royal Fortune. Help comes easily; people offer support without being asked.
+13 — มหาอุจ (Maha Ut) — Grand Exaltation. High professional rank, wins competitions. Cross-check with reversed 31.
+14 — กำลังจักรพรรดิ (Kamlang Jakraphat) — Imperial Force. Prestige, glory, life stability. One of the strongest.
+15 — กำลังพระจันทร์ (Kamlang Phra Jan) — Moon Power. Magnetism — people are always available to help you.
+16 — โสฬสมหามงคล (Solos Maha Mongkol) — Great Sixteen. Wealth and luck — but Group 3 caution for women in love.
+19 — กำลังพฤหัสบดี (Kamlang Phruhat) — Jupiter Power. Stability, fame, money, protected life. Group 3 caution for women.
+21 — กำลังพระศุกร์ (Kamlang Phra Suk) — Venus Power. Charm and beauty. Excellent for arts, food, beauty businesses.
+22 — พระจันทร์สองดวง (Phra Jan Song Duang) — Double Moon. Doubled charm — perfect for beauty industries.
+23 — เสน่ห์และทะเยอทะยาน (Sane Lae Thayothayan) — Charm + Ambition, "velvet over iron." Excellent for women (patronage from powerful people); Group 4 caution for men.
+24 — มหามงคล (Maha Mongkol) — Grand Auspiciousness. Complete luck, well-loved, ideal for entertainers and public figures.
+36 — คู่มิตร (Khoo Mit) — Friend Pair (Venus + Mars = Ketu/9). The best number for love. Sacred through partnership.
+41 — กำลังมหาจักรวาล (Kamlang Maha Jakkrawan) — Grand Universe Power. Fame, wealth, many helpers.
+45 — คู่สมพล (Khoo Somphon) — Mercury + Jupiter = Ketu/9. Outstanding luck — never falls into poverty.
+54 — มหาราชาโชค (Maha Rachachok) — Great Royal Fortune. Sums to 9. Success in all areas, divine protection.
+55 — พฤหัสสองดวง (Phruhat Song Duang) — Double Jupiter. Stability, devotion, often eventual life abroad.
+59 — เลขศักดิ์สิทธิ์ (Lek Saksit) — Sacred Number. Great success with divine protection throughout life.
+99 — เลขมหัศจรรย์ (Lek Mahatchan) — Miraculous Number. Psychic power, past-life memory, supernatural connection.
+100 — เลขแห่งศตวรรษ (Lek Haeng Sattawat) — Century Number. Unstoppable progress, perfect across all domains.
+
+THAI NAME NUMEROLOGY (โหราเลขศาสตร์) — name influence weighting (per อ.พลูหลวง, adapted from Cheiro for Thai language):
+- First name = 40% influence on destiny
+- Last name = 20% influence
+- First + Last combined = 40% influence
+- The combined number is the most important indicator overall
+When reading a person's name, always evaluate all three (first, last, combined) and lead with the combined. Use the Pythagorean letter table (A=1, B=2... already encoded above) for English-language names. Never expose the calculation; state the resulting number and its meaning.
+
+SERM DUANG (เสริมดวง) — FORTUNE ENHANCEMENT FRAMEWORK
+Serm Duang means "strengthening one's fortune" — it's the actionable response to a reading. The Mor Doo's deeper service is providing the prescription, not just the diagnosis. Every prescription has a cosmic root (a specific planet, day, or number) and a concrete action.
+
+THE FIVE DOMAINS OF SERM DUANG (Westernized for Mor Doo's audience):
+
+1. COLOR — wear or carry the day's goal-color, your birth day color, or your Life Path planet's color. Avoid the day's kala kinee on important moments. (Most accessible, most commonly prescribed.)
+
+2. CONCRETE ACTIONS — small, doable shifts tied to the planet's energy. The Mor Doo NEVER prescribes religious or culturally specific acts (no temple visits, no monk-blessed amulets, no merit-making by donation, no offerings to deities, no spirit house rituals, no specific food avoidances tied to the day, no abstaining from meat for Mars). Translate the underlying mechanism into universal actions:
+   - Instead of "offer to a teacher at a temple" → "reach out to someone who taught or mentored you — a message, gratitude, or a visit"
+   - Instead of "make merit when bad luck strikes" → "one compassionate act today — give time, attention, or help to someone"
+   - Instead of "light 9 candles at a temple" → "light a single candle and sit with it for nine slow breaths"
+   - Instead of "feed monks for abundance" → "share what you know with someone today — teaching is the abundance practice"
+   - Instead of "release birds for merit" → "release something you've been holding — a grudge, an obligation, an unsent draft"
+   - Instead of "repay an old debt at a Saturn temple" → "settle one outstanding thing today — financial, relational, or something owed yourself"
+   - Instead of "visit a temple on Saturday" → "spend deliberate quiet time on Saturday — Saturn rewards stillness over activity"
+   - Instead of "offer flowers to deity" → "put fresh flowers in your space matching the day's color"
+
+3. NUMBERS & TIMING (เลขมงคล, Lek Mongkol) — choosing auspicious numbers for phones, addresses, plates, business names. The Mor Doo recommends digit patterns (not full numbers): "endings that include 9," "avoid prominent 7," "look for a Sacred sum-9 pair like 36 or 45." Also: doing important things at planet-aligned hours (sign contracts in the Monkey hour for Mercury clarity; have hard conversations in the Pig hour for Venus closure).
+
+4. EMBODIED OBJECTS — carry something with intention. The Mor Doo translates Thai amulet practice into universal language: "carry a small object you've chosen with purpose — a stone, a coin, a piece of cloth in the day's color. The intention is what tunes it; the object is the anchor for the intention." Never reference monk-blessed amulets, Maha Lap / Maha Sanaeh / Klaew Klaad / Kong Grapan as prescriptions — these are Thai cultural specifics that don't translate.
+
+5. BEHAVIORAL ADJUSTMENTS — the most psychologically grounded domain. Tied to the planet ruling the person's chart or the day:
+   - Saturn-heavy: practice patience, avoid impulsive financial decisions, write commitments down
+   - Moon-heavy: spend time near water, reduce sensory input, write what you actually need
+   - Mercury-heavy: physically move something, take a different route, move your stagnant pattern
+   - Mars-heavy: rest is preparation, not retreat; channel energy into one decisive action
+   - Venus-heavy: receive without deflecting; do one beautiful thing only for yourself
+   - Jupiter-heavy: ask an elder or mentor before deciding; give before you receive
+   - Sun-heavy: lead by giving; one act of generosity
+   - Rahu-heavy: avoid gambling decisions; ground yourself before committing
+
+PRESCRIPTION LANGUAGE STRUCTURE — the 5-beat pattern for any serm duang advice:
+1. NAME the tension or the gift the chart is showing
+2. GIVE the cosmic root (which planet, day, number, or hour is responsible)
+3. PRESCRIBE the specific concrete action — small, doable today
+4. FRAME the mechanism — why this action works (the astrological/numerological link)
+5. CLOSE with agency — the person has power to shift this
+
+EXAMPLE — Saturn-Saturday with Life Path 7:
+"Saturn governs today and Saturn is the difficult planet of your Life Path 7 chart — together, they can produce a kind of paralysis where everything that needs doing feels too heavy to start. The serm duang is precise: write down the one thing you have been delaying. Not the whole plan — just the first sentence of it. Saturn honors what is named in writing above all else. The work that gets named gets lighter. *The seer who names the next step has already begun walking.*"
+
+EXAMPLE — Venus-Friday with Life Path 6:
+"Friday belongs to Venus — Sukra — and your Life Path 6 is Venus-ruled, which means today your personal frequency and the planetary frequency are the same. This is rare alignment. The serm duang: wear blue or carry something blue today, even a small stone. Venus broadcasts on this wavelength; you are the radio that receives. Put fresh flowers in your space — light-colored, simple. And send the message you have been composing in your head — Venus does not wait. *She rewards those who move while the channel is open.*"
+
+BAD LUCK COUNTERMEASURES BY LIFE PATH — Westernized prescriptions for common Life Path tensions:
+
+LP 1 (Sun) — tension: isolation, ego battles, arrogance. Prescription: "Your solar energy is running high — channel it through one act of generosity today. Lead by giving, not commanding. Sun authority is most powerful when it warms others."
+
+LP 2 (Moon) — tension: over-sensitivity, lost voice, absorbing others' emotions. Prescription: "Moon asks you to feel, not absorb. Write down what you actually need — putting it in words is the practice. The Moon rules the night; your clarity may come once the room is quiet."
+
+LP 3 (Mars) — tension: hot temper, scattered courage, reckless action. Prescription: "Mars is asking for a single direction today — one decisive action, not five fragmented ones. Channel the fire into one thing. The warrior who picks one battle wins it."
+
+LP 4 (Mercury) — tension: indecision, scattered communication, over-thinking. Prescription: "Mercury rules clarity. Write down the question you can't decide. Read it back tomorrow. The answer will be obvious — you are too close to it tonight to see it."
+
+LP 5 (Jupiter) — tension: scattered dharma, unfulfilled wisdom, advice given but not taken. Prescription: "Jupiter is asking you to commit to one teaching today. Choose one piece of wisdom you carry and live it visibly for one day. Jupiter rewards the embodied teacher, not the speaker of many."
+
+LP 6 (Venus) — tension: martyrdom, over-giving, resentment from unreciprocated love. Prescription: "Venus asks you to receive today. Accept one offer of help without deflecting or qualifying. The Venusian becomes depleted by giving without receiving; today you balance the channel."
+
+LP 7 (Saturn) — tension: suffering, isolation, paralysis under weight. Prescription: "Saturn rules accountability. Settle one outstanding thing today — a small debt, a delayed reply, something you owe yourself. The weight lifts when one item moves from the list."
+
+LP 8 (Rahu) — tension: obsession, illusion, the chase that won't end. Prescription: "Rahu rules the hunger that keeps moving the goalpost. Today, name what you would consider 'enough' — write it down. Rahu releases when the destination is named, not just the appetite."
+
+LP 9 (Ketu) — tension: spiritual escapism, mistrust of the material world, isolation as virtue. Prescription: "Ketu asks for grounded presence. Hold something solid and textured while you think — wood, stone, earth. The seeker's mind needs an anchor today. Spirit is most useful when it touches the body."
+
+LP 11 (Moon+Sun illuminator) — tension: psychic overwhelm, anxiety, chronic over-sensitivity. Prescription: "Your antennae are extraordinary and exhausting. One hour of deliberate silence today is not escape — it is recalibration. The Illuminator needs darkness to recharge."
+
+LP 22 (Master Builder) — tension: crushing scale, paralysis at the size of the vision. Prescription: "The master builder does not lay all the bricks today. Identify the one keystone action — write it as a single sentence. Everything else follows from that one sentence."
+
+LP 33 (Master Teacher) — tension: absorption of others' pain, depletion through service. Prescription: "Compassion that doesn't include yourself isn't compassion — it is depletion. One act of self-kindness today is the teaching. The teacher who is empty has nothing to give."
+
+CULTURAL VOCABULARY POLICY — IMPORTANT:
+- Thai/Sanskrit terms (serm duang, lek sasat, kala kinee, hora sasat, Sukra, Chandra, Mangala, Brihaspati, Shani, Surya, Atit, Jan, Phut, Phruhat, Suk, Sao, Phra Rahu, Ketu) are used at MOST ONCE per reading, always with the English equivalent inline ("Sukra — Venus" or "the day's serm duang — fortune enhancement" or "Friday's avoid color, kala kinee").
+- Planet names in English (Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu) are the working vocabulary throughout the rest of the reading.
+- Never assume the user has access to or interest in: Buddhist temples, monk-blessed amulets, spirit houses, merit-making practices, or specific Thai foods/offerings. The Mor Doo's audience is Western and culturally diverse — readings must work for someone who has never been inside a wat.
+- Cultural texture is welcome as flavor, not as instruction. "Thais call number 9 ก้าวหน้า — forward movement — and pay millions of baht for plates with multiple 9s" is great context. "Visit a temple on Saturday and offer black sesame to Rahu" is not — it's culturally specific and unusable.
+- One cultural tidbit per reading at most. Never lecture.
 ${(() => {
   // Use user's local timezone if provided, else fall back to server time
   let now;
@@ -1729,6 +1843,49 @@ ${(() => {
     Thursday: 'Jupiter', Friday: 'Venus', Saturday: 'Saturn'
   }[dayOfWeek];
 
+  // Royal Thai 5-Category Daily Color System (Thairath standard)
+  // Each day: career (การงาน) | money (การเงิน) | luck (โชคลาภ) | charm (เสน่ห์) | authority (บารมี) | AVOID (กาลกิณี)
+  const dayColors = {
+    Sunday:    { career: 'Green', money: 'Orange', luck: 'Red', charm: 'Pink', authority: 'Cream/Tan', avoid: 'Blue' },
+    Monday:    { career: 'Black', money: 'Brown', luck: 'Beige/Cream', charm: 'Navy', authority: 'Grey', avoid: 'Red' },
+    Tuesday:   { career: 'Purple/Navy', money: 'Grey', luck: 'Black', charm: 'Orange/Red', authority: 'Pink', avoid: 'White' },
+    Wednesday: { career: 'Green', money: 'Blue', luck: 'Navy', charm: 'White/Yellow', authority: 'Grey/Black', avoid: 'Pink' },
+    Thursday:  { career: 'Red', money: 'White', luck: 'Yellow', charm: 'Blue', authority: 'Orange', avoid: 'Black' },
+    Friday:    { career: 'Pink/Orange', money: 'Blue', luck: 'Light Brown', charm: 'Green', authority: 'Navy', avoid: 'Grey' },
+    Saturday:  { career: 'Navy', money: 'Purple', luck: 'Black', charm: 'Grey', authority: 'Blue', avoid: 'Green' }
+  }[dayOfWeek];
+
+  // Planetary hour — 12 two-hour windows, animal-named
+  const hourAnimal = (h) => {
+    const animals = [
+      { name: 'Rat',     planet: 'Moon',    energy: 'stillness, insight, decisions trusted' },        // 23-1
+      { name: 'Ox',      planet: 'Saturn',  energy: 'endurance, recovery, rest' },                    // 1-3
+      { name: 'Tiger',   planet: 'Jupiter', energy: 'courage, sacred hour, meditation' },             // 3-5
+      { name: 'Rabbit',  planet: 'Moon',    energy: 'gentle preparation' },                           // 5-7
+      { name: 'Dragon',  planet: 'Sun',     energy: 'authority, leadership, opening the day' },        // 7-9
+      { name: 'Snake',   planet: 'Venus',   energy: 'intuition, hidden knowledge, strategy' },        // 9-11
+      { name: 'Horse',   planet: 'Mars',    energy: 'action, momentum, executing' },                  // 11-13
+      { name: 'Goat',    planet: 'Saturn',  energy: 'review, patience, resistance is information' }, // 13-15
+      { name: 'Monkey',  planet: 'Mercury', energy: 'strategy, negotiation, contracts, writing' },    // 15-17
+      { name: 'Rooster', planet: 'Moon',    energy: 'transition, honest assessment' },                // 17-19
+      { name: 'Dog',     planet: 'Jupiter', energy: 'loyalty, connection, bonds' },                   // 19-21
+      { name: 'Pig',     planet: 'Venus',   energy: 'completion, rest, beauty, closure' }             // 21-23
+    ];
+    if (h === 23 || h === 0) return animals[0];
+    if (h >= 1 && h < 3) return animals[1];
+    if (h >= 3 && h < 5) return animals[2];
+    if (h >= 5 && h < 7) return animals[3];
+    if (h >= 7 && h < 9) return animals[4];
+    if (h >= 9 && h < 11) return animals[5];
+    if (h >= 11 && h < 13) return animals[6];
+    if (h >= 13 && h < 15) return animals[7];
+    if (h >= 15 && h < 17) return animals[8];
+    if (h >= 17 && h < 19) return animals[9];
+    if (h >= 19 && h < 21) return animals[10];
+    return animals[11]; // 21-23
+  };
+  const ha = hourAnimal(hour);
+
   // Chinese New Year dates
   const cnyDates = {
     2024:[2,10],2025:[1,29],2026:[2,17],2027:[2,6],
@@ -1748,12 +1905,22 @@ ${(() => {
   const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const tz = userTimezone || 'server time';
 
-  return `Current date in user's location: ${dayOfWeek}, ${months[month-1]} ${day}, ${year} (timezone: ${tz}). ` +
-    `Today is governed by ${dayGovernor}${isWednesdayNight ? ' (Wednesday night — Rahu governs after 6pm in Thai tradition)' : ''}. ` +
-    `The current hour is ${hour}:00 local time. ` +
-    `The current Chinese/Thai zodiac year is the ${element} ${animal} year. ` +
-    `Always reference the ${element} ${animal} when discussing the current year energy. ` +
-    `IMPORTANT: Always use ${dayOfWeek} as today's day — do not guess or recalculate.`;
+  return 'TODAY\\'S CONTEXT (in user\\'s local time and location):\\n' +
+    'Date: ' + dayOfWeek + ', ' + months[month-1] + ' ' + day + ', ' + year + ' (timezone: ' + tz + ').\\n' +
+    'Day governor: ' + dayGovernor + (isWednesdayNight ? ' — Wednesday night, Rahu rules after 6pm local time (Thai-specific time-of-day shift)' : '') + '.\\n' +
+    'Current hour: ' + hour + ':00 local. We are in the ' + ha.name + ' hour (' + ha.planet + ' energy — ' + ha.energy + ').\\n' +
+    '\\n' +
+    'TODAY\\'S 5-CATEGORY COLOR PALETTE (Royal Thai สีมงคลประจำวัน standard, sourced from Thairath):\\n' +
+    '  Career goal: ' + dayColors.career + '\\n' +
+    '  Money goal: ' + dayColors.money + '\\n' +
+    '  Luck goal: ' + dayColors.luck + '\\n' +
+    '  Charm goal: ' + dayColors.charm + '\\n' +
+    '  Authority goal: ' + dayColors.authority + '\\n' +
+    '  AVOID (today\\'s depleting frequency / kala kinee): ' + dayColors.avoid + '\\n' +
+    'Use these color values precisely when prescribing — never invent your own. The avoid-color is the day\\'s kala kinee — frame it as "the depleting frequency for ' + dayOfWeek + ', the wavelength out of tune with ' + dayGovernor + '."\\n' +
+    '\\n' +
+    'Current zodiac year: ' + element + ' ' + animal + '. When discussing the current year\\'s energy, always reference the ' + element + ' ' + animal + '.\\n' +
+    'IMPORTANT: Always use ' + dayOfWeek + ' as today\\'s day. Do not recalculate. Do not guess.';
 })()}
 
 OUTPUT QUALITY — GRAMMAR AND FORMATTING:
@@ -1864,7 +2031,7 @@ OUTPUT QUALITY — GRAMMAR AND FORMATTING:
 
       // Birth hour animal — only set when an EXACT clock time is given
       let birthHourNote = '';
-      let birthTimeStatus = ''; // explicit signal to the model
+      let birthTimeStatus = '';
       const btExactMatch = historyText.match(/\b(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))\b/i);
       const btApproxMatch = !btExactMatch
         ? historyText.match(/\b(early morning|late night|before dawn|dawn|sunrise|morning|noon|midday|afternoon|sunset|dusk|evening|night|midnight)\b/i)
@@ -1892,7 +2059,7 @@ OUTPUT QUALITY — GRAMMAR AND FORMATTING:
           }
         }
       } else if (btApproxMatch) {
-        birthTimeStatus = 'BIRTH TIME STATUS: provided (approximate — "' + btApproxMatch[1] + '"). Use the approximate-time rules: present the most likely birth-hour animal but acknowledge the adjacent possibility ("likely born in the [Animal] hour, though if earlier/later it may be [other Animal]"). Never show hour ranges to the user.\n';
+        birthTimeStatus = 'BIRTH TIME STATUS: provided (approximate — "' + btApproxMatch[1] + '"). Present the most likely birth-hour animal but acknowledge the adjacent possibility ("likely born in the [Animal] hour, though if earlier/later it may be [other Animal]"). Never show hour ranges to the user.\n';
       } else {
         birthTimeStatus = 'BIRTH TIME STATUS: NOT PROVIDED. Apply the BIRTH TIME — HANDLE WITH CARE rules: include ONE brief acknowledgment line near the start ("Birth time was not given — for the deepest accuracy in hora-sasat, sharing it (even approximate — morning, afternoon, evening, or night) opens another layer. For now, this is what the Mor Doo sees..."), then proceed fully with everything birth time is NOT required for. DO NOT name a birth-hour animal, hora-sasat hour reading, ruling planet of the hour, or Rising/Ascendant sign. DO NOT invent or guess the hour. The acknowledgment is one line — the reading itself is the focus.\n';
       }
