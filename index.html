@@ -367,6 +367,30 @@
   .ndark .natal-nasa { color: rgba(212,168,67,0.42); }
   .nlight .natal-nasa { color: rgba(184,134,11,0.38); }
 
+  /* Partial-fetch notice — appears when JPL Horizons returned data for some
+     but not all planets. Subtle warning tone so it doesn't dominate the
+     talisman aesthetic, but visible enough that the user knows the chart is
+     incomplete. The user retries by sending another message; the second fetch
+     usually succeeds since JPL stalls are transient. */
+  .natal-partial {
+    margin-top: 10px; padding: 8px 12px;
+    border-radius: 6px; text-align: center;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 10px; line-height: 1.5;
+    letter-spacing: 0.04em;
+    transition: background 0.3s, border-color 0.3s, color 0.3s;
+  }
+  .ndark .natal-partial {
+    background: rgba(184,80,40,0.10);
+    border: 1px solid rgba(212,140,80,0.32);
+    color: rgba(232,180,140,0.85);
+  }
+  .nlight .natal-partial {
+    background: rgba(184,80,40,0.06);
+    border: 1px solid rgba(184,80,40,0.22);
+    color: rgba(120,60,30,0.85);
+  }
+
   /* Talisman reconciliation footer — appears when Thai sun sign differs from
      Western. Travels with the chart in screenshots. Two-line block: a sign
      statement + a one-line explanation. Both modes use lighter values in
@@ -1098,6 +1122,15 @@ function showNatalChart(cacheText, personName, birthDateStr, birthdayRaw) {
   const { planets, nodes, ascendant } = parseNatalCache(cacheText);
   if (!planets || Object.keys(planets).length === 0) return;
 
+  // Detect a partial-fetch notice — when JPL Horizons returned data for some
+  // but not all planets. Without this, a half-rendered chart looks identical
+  // to a complete one and the user can't tell that something went wrong.
+  let partialFetch = null;
+  const partialMatch = cacheText.match(/^PARTIAL_FETCH:\s*([^\n—]+?)\s*—/m);
+  if (partialMatch) {
+    partialFetch = partialMatch[1].trim();
+  }
+
   const chat = document.getElementById('chat');
   const wrap = document.createElement('div');
   wrap.className = 'message message-mordoo';
@@ -1120,12 +1153,32 @@ function showNatalChart(cacheText, personName, birthDateStr, birthdayRaw) {
       <span class="natal-p-sign">${sign} ${degree}°${digLabel ? ` <span class="natal-p-dig">${digLabel}</span>` : ''}</span>
     </div>`;
   }).join('');
-  // Add Ascendant if available
+  // Add Ascendant if available. When the lagna is within 1° of either end of
+  // a sign, render a "near X cusp" hint — these placements are genuinely
+  // ambiguous because tropical-to-sidereal conversion via any ayanamsa source
+  // (linear, polynomial, Swiss Ephem, Indian govt tables) disagrees by up to
+  // ~0.05°, which is enough to flip the sign assignment within ~3 minutes of a
+  // cusp. Welmanee's lagna at Libra 28°53' is exactly this case: different
+  // engines may render it as Libra 28° or Scorpio 0° depending on rounding.
+  // Better to acknowledge the borderline than have the user see two answers.
   if (ascendant) {
+    const ascIdx = ZODIAC_NAMES_N.indexOf(ascendant.sign);
+    let cuspNote = '';
+    if (ascIdx !== -1) {
+      if (ascendant.degree === 0) {
+        // Just crossed into this sign — flag the previous sign as cusp neighbor
+        const prev = ZODIAC_NAMES_N[(ascIdx + 11) % 12];
+        cuspNote = ` <span class="natal-p-dig">near ${prev} cusp</span>`;
+      } else if (ascendant.degree === 29) {
+        // Last degree of this sign — flag the next sign
+        const next = ZODIAC_NAMES_N[(ascIdx + 1) % 12];
+        cuspNote = ` <span class="natal-p-dig">near ${next} cusp</span>`;
+      }
+    }
     pHTML += `<div class="natal-p-row">
       <span class="natal-p-sym" style="color:var(--gold)">AC</span>
       <span class="natal-p-name">Rising</span>
-      <span class="natal-p-sign">${ascendant.sign} ${ascendant.degree}°</span>
+      <span class="natal-p-sign">${ascendant.sign} ${ascendant.degree}°${cuspNote}</span>
     </div>`;
   }
 
@@ -1173,6 +1226,7 @@ function showNatalChart(cacheText, personName, birthDateStr, birthdayRaw) {
           <div class="natal-planets">${pHTML}</div>
           ${nodesHTML ? `<div class="natal-divider"></div><div class="natal-nodes">${nodesHTML}</div>` : ''}
           ${reconcileHTML}
+          ${partialFetch ? `<div class="natal-partial">⚠ Partial reading — ${partialFetch} did not return. Send another message to retry.</div>` : ''}
           <div class="natal-footer">หมอดู · Mor Doo with Bee</div>
           <div class="natal-nasa">Planetary positions sourced from NASA astronomical data</div>
         </div>
@@ -2179,6 +2233,15 @@ async function fetchNatalChart(birthday, birthplace, birthtime) {
     }
     if (!hasBirthTime) {
       lines.push('NOTE: Birth time was not provided — Ascendant/Rising sign is unavailable and birth-hour animal cannot be determined. Do not invent these. See BIRTH TIME — HANDLE WITH CARE rules.');
+    }
+    // If JPL Horizons returned partial data, surface that fact. Without this,
+    // a half-rendered chart looks identical to a complete one — the user just
+    // sees fewer rows and can't tell whether their chart is correct or just
+    // had a bad fetch. The line is read by showNatalChart and rendered as a
+    // small footer notice; it also goes into the system-prompt cache so the
+    // model knows not to invent placements for the missing planets.
+    if (Array.isArray(data.failedPlanets) && data.failedPlanets.length > 0) {
+      lines.push('PARTIAL_FETCH: ' + data.failedPlanets.join(', ') + ' — JPL Horizons did not return data for these planets on this request. Refresh to retry. Do not invent placements for missing planets.');
     }
     const cacheText = lines.join('\n');
 
