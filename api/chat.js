@@ -1,6 +1,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // PLANETARY POSITION ENGINE — JPL Horizons + Geocoding
 // ─────────────────────────────────────────────────────────────────────────────
+// THAI SIDEREAL ZODIAC: JPL Horizons returns tropical (geocentric ecliptic)
+// coordinates. Thai horasaat uses sidereal — the Lahiri ayanamsa correction
+// is applied in lonToSign(). All sign assignments downstream are Thai sidereal.
 
 // Planet IDs for JPL Horizons
 const JPL_PLANETS = {
@@ -20,6 +23,78 @@ const ZODIAC_SIGNS = [
   'Aries','Taurus','Gemini','Cancer','Leo','Virgo',
   'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'
 ];
+
+// Lahiri ayanamsa — angular offset between tropical and Thai sidereal zodiacs.
+// Reference values (Swiss Ephemeris official Lahiri):
+//   1992-02-26: 23.6938°  (matches our test case for Welmanee within 0.05°)
+//   2000-01-01: 23.8531°
+//   2026-01-01: 24.2188°
+// Linear approximation matches Swiss Ephemeris within ~0.05° in the 1900-2100
+// window. A 0.05° error cannot push a planet across a 30° sign boundary unless
+// the planet was already within 0.05° of the cusp — in which case the person
+// is a genuine borderline case regardless of which ayanamsa source is used.
+function getLahiriAyanamsa(dateStr) {
+  if (!dateStr) return 23.85; // safe default
+  try {
+    const date = new Date(dateStr + 'T12:00:00Z');
+    if (isNaN(date.getTime())) return 23.85;
+    const j2000 = new Date('2000-01-01T12:00:00Z');
+    const yearsElapsed = (date - j2000) / (365.25 * 24 * 60 * 60 * 1000);
+    return 23.85311 + (0.013964 * yearsElapsed);
+  } catch (e) {
+    return 23.85;
+  }
+}
+
+// Western tropical sun sign — date-table lookup. This is the sign the user
+// almost certainly knows themselves as from horoscope columns. Used only to
+// detect mismatch with the Thai sidereal placement so we can surface the
+// reconciliation explanation.
+function getWesternTropicalSunSign(birthdayStr) {
+  if (!birthdayStr) return null;
+  const parts = birthdayStr.split('-');
+  if (parts.length < 3) return null;
+  const m = parseInt(parts[1], 10);
+  const d = parseInt(parts[2], 10);
+  if (isNaN(m) || isNaN(d)) return null;
+  const boundaries = [
+    [1, 20,  'Capricorn'],   [1, 32,  'Aquarius'],
+    [2, 19,  'Aquarius'],    [2, 30,  'Pisces'],
+    [3, 21,  'Pisces'],      [3, 32,  'Aries'],
+    [4, 20,  'Aries'],       [4, 31,  'Taurus'],
+    [5, 21,  'Taurus'],      [5, 32,  'Gemini'],
+    [6, 21,  'Gemini'],      [6, 31,  'Cancer'],
+    [7, 23,  'Cancer'],      [7, 32,  'Leo'],
+    [8, 23,  'Leo'],         [8, 32,  'Virgo'],
+    [9, 23,  'Virgo'],       [9, 31,  'Libra'],
+    [10,23,  'Libra'],       [10,32,  'Scorpio'],
+    [11,22,  'Scorpio'],     [11,31,  'Sagittarius'],
+    [12,22,  'Sagittarius'], [12,32,  'Capricorn'],
+  ];
+  for (const [bm, bd, sign] of boundaries) {
+    if (m < bm) continue;
+    if (m === bm && d < bd) return sign;
+  }
+  return 'Capricorn';
+}
+
+// Detect when Thai sidereal sun sign differs from Western tropical expectation.
+// Returns { differs: false } when they agree (no explanation needed) or
+// { differs: true, thaiSign, westernSign, isCusp, sentence } when they don't.
+function detectSunSignMismatch(birthdayStr, thaiSunSign) {
+  if (!birthdayStr || !thaiSunSign) return { differs: false };
+  const westernSign = getWesternTropicalSunSign(birthdayStr);
+  if (!westernSign || westernSign === thaiSunSign) return { differs: false };
+  const parts = birthdayStr.split('-');
+  const m = parseInt(parts[1], 10);
+  const d = parseInt(parts[2], 10);
+  const cuspDays = { 1: [19,20], 2: [18,19], 3: [20,21], 4: [19,20], 5: [20,21],
+                     6: [20,21], 7: [22,23], 8: [22,23], 9: [22,23], 10:[22,23],
+                     11:[21,22], 12:[21,22] };
+  const isCusp = cuspDays[m] && (cuspDays[m].includes(d) || cuspDays[m].includes(d-1) || cuspDays[m].includes(d+1));
+  const sentence = `In the Thai sky you are ${thaiSunSign}. The West would call you ${westernSign} — same sun, read against a different horizon.`;
+  return { differs: true, thaiSign: thaiSunSign, westernSign, isCusp, sentence };
+}
 
 // Planet dignity — own sign = full strength, exalted = amplified, debilitated = constrained
 const PLANET_DIGNITY = {
@@ -134,12 +209,14 @@ const SIGN_PLANET_MEANING = {
   },
 };
 
-// Convert ecliptic longitude to sign and degree
-function lonToSign(lon) {
-  const normalized = ((lon % 360) + 360) % 360;
-  const idx = Math.floor(normalized / 30);
-  const degree = Math.floor(normalized % 30);
-  return { sign: ZODIAC_SIGNS[idx], degree, longitude: normalized };
+// Convert ecliptic longitude to Thai sidereal sign and degree.
+// Subtracts the Lahiri ayanamsa for the given date before binning.
+function lonToSign(lon, dateStr) {
+  const ayan = getLahiriAyanamsa(dateStr);
+  const sidereal = ((lon - ayan) % 360 + 360) % 360;
+  const idx = Math.floor(sidereal / 30);
+  const degree = Math.floor(sidereal % 30);
+  return { sign: ZODIAC_SIGNS[idx], degree, longitude: sidereal };
 }
 
 // Get planet dignity status
@@ -218,7 +295,11 @@ async function fetchPlanetPosition(jplId, dateStr) {
   return parseJPLLongitude(text);
 }
 
-// Fetch all 7 planets for a given birth date
+// Fetch all 7 planets for a given birth date.
+// Sign placements are Thai sidereal (Lahiri-corrected). When the resulting
+// Sun sign differs from what Western astrology would assign for the same
+// date, attaches non-enumerable __sunSignMismatch metadata for downstream
+// reconciliation surfacing.
 async function getBirthChart(dateStr) {
   const planets = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn'];
   const results = {};
@@ -228,7 +309,7 @@ async function getBirthChart(dateStr) {
     try {
       const lon = await fetchPlanetPosition(JPL_PLANETS[planet], dateStr);
       if (lon !== null) {
-        const { sign, degree } = lonToSign(lon);
+        const { sign, degree } = lonToSign(lon, dateStr);
         const dignity = getDignity(planet, sign);
         const meaning = (SIGN_PLANET_MEANING[planet] && SIGN_PLANET_MEANING[planet][sign]) || '';
         results[planet] = { sign, degree, dignity, meaning };
@@ -239,24 +320,41 @@ async function getBirthChart(dateStr) {
   });
 
   await Promise.allSettled(fetches);
+
+  // Attach mismatch metadata if Sun was successfully fetched.
+  // Non-enumerable so existing Object.entries/Object.keys iteration patterns
+  // are unaffected.
+  if (results.Sun) {
+    const mismatch = detectSunSignMismatch(dateStr, results.Sun.sign);
+    if (mismatch.differs) {
+      Object.defineProperty(results, '__sunSignMismatch', {
+        value: mismatch,
+        enumerable: false,
+        writable: true,
+        configurable: true,
+      });
+    }
+  }
+
   return results;
 }
 
 // Calculate Rahu and Ketu from Moon's node (mathematical derivation)
 // Rahu = mean ascending node of Moon's orbit
-// We approximate using the known cycle: Rahu moves backward ~19.35° per year
-// Reference: Rahu was at 0° Aries on Jan 1, 2000 (J2000 epoch approximation)
+// Reference: Rahu was at ~125.04° (tropical) on Jan 1, 2000 (J2000 epoch)
+// Sign placement is Thai sidereal via lonToSign()
 function getRahuKetu(dateStr) {
   try {
     const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return {};
     const j2000 = new Date('2000-01-01');
     const daysSinceJ2000 = (date - j2000) / (1000 * 60 * 60 * 24);
     const yearsElapsed = daysSinceJ2000 / 365.25;
     // Rahu moves retrograde ~19.3568° per year, starting at ~125.04° on J2000
     const rahuLon = ((125.04 - (19.3568 * yearsElapsed)) % 360 + 360) % 360;
     const ketuLon = (rahuLon + 180) % 360;
-    const rahu = lonToSign(rahuLon);
-    const ketu = lonToSign(ketuLon);
+    const rahu = lonToSign(rahuLon, dateStr);
+    const ketu = lonToSign(ketuLon, dateStr);
     return {
       Rahu: { sign: rahu.sign, degree: rahu.degree, meaning: 'Karmic direction — where growth and challenge intersect' },
       Ketu: { sign: ketu.sign, degree: ketu.degree, meaning: 'Karmic release — what the soul is moving away from' },
@@ -266,11 +364,15 @@ function getRahuKetu(dateStr) {
   }
 }
 
-// Format birth chart for system prompt injection
+// Format birth chart for system prompt injection.
+// When Thai sidereal sun differs from Western tropical expectation, emits a
+// CRITICAL ZODIAC RECONCILIATION block instructing the LLM how to surface
+// the difference inline using one validated sentence.
 function formatBirthChart(chart, rahuKetu) {
   if ((!chart || !Object.keys(chart).length) && (!rahuKetu || !Object.keys(rahuKetu).length)) return '';
-  let lines = ['NATAL PLANETARY POSITIONS (from NASA JPL Horizons):'];
+  let lines = ['NATAL PLANETARY POSITIONS (Thai sidereal — Lahiri ayanamsa applied):'];
   for (const [planet, data] of Object.entries(chart)) {
+    if (planet.startsWith('__')) continue; // skip metadata
     let line = `${planet}: ${data.sign} ${data.degree}°`;
     if (data.dignity) line += ` (${data.dignity})`;
     if (data.meaning) line += ` — ${data.meaning}`;
@@ -281,6 +383,27 @@ function formatBirthChart(chart, rahuKetu) {
       lines.push(`${node}: ${data.sign} ${data.degree}° — ${data.meaning}`);
     }
   }
+
+  // Emit reconciliation guidance if Sun differs from Western expectation
+  const mismatch = chart.__sunSignMismatch;
+  if (mismatch && mismatch.differs) {
+    lines.push('');
+    lines.push('ZODIAC RECONCILIATION (CRITICAL — read carefully):');
+    lines.push(`The Thai sun sign here (${mismatch.thaiSign}) differs from what this person likely knows themselves as in Western astrology (${mismatch.westernSign}). This is because Thai astrology uses a sidereal zodiac (fixed to the actual stars) while Western uses tropical (fixed to seasons) — the two are offset by ~24°.`);
+    lines.push('');
+    lines.push('When you first name the user\'s sun sign in a reading, append exactly this sentence (or a paraphrase that preserves the same four moves: validate / locate / honor / resolve):');
+    lines.push(`  "In the Thai sky you are ${mismatch.thaiSign}. The West would call you ${mismatch.westernSign} — same sun, read against a different horizon."`);
+    lines.push('');
+    lines.push('Voice rules for this reconciliation:');
+    lines.push('- ONE sentence inline. Never elaborate further unless the user asks.');
+    lines.push('- Never say Western astrology is "wrong" or Thai is "more accurate." Both are real.');
+    lines.push('- Never use the words "sidereal," "tropical," "ayanamsa," or "precession" in user-facing text. Those are mechanism words; the user does not need them.');
+    lines.push('- Never apologize for the difference. State it calmly and continue the reading.');
+    if (mismatch.isCusp) {
+      lines.push(`- This person was born within 1-2 days of a Western sign boundary (${mismatch.westernSign} cusp), so they may have been reading themselves as either sign their whole life. The Thai placement (${mismatch.thaiSign}) is unambiguous in our system regardless.`);
+    }
+  }
+
   lines.push('');
   lines.push('USE THESE POSITIONS IN READINGS:');
   lines.push('- State the planet and sign directly: "Venus in Taurus" not the longitude');
@@ -290,6 +413,21 @@ function formatBirthChart(chart, rahuKetu) {
   lines.push('- Do not show degrees to the user unless they ask — sign is enough');
   lines.push('- Never show longitude numbers — only sign names');
   return lines.join('\n');
+}
+
+
+// Parse reconciliation metadata back out of cached natal chart text.
+// When a chart was originally built with a sun-sign mismatch, formatBirthChart
+// inserted a structured ZODIAC RECONCILIATION block. This helper extracts the
+// Thai and Western sign names from that block so the chat handler can pass
+// reconciliation metadata back to the client for the inline chip.
+function parseReconciliationFromCache(natalText) {
+  if (!natalText || !natalText.includes('ZODIAC RECONCILIATION')) return null;
+  // The block contains: 'The Thai sun sign here (X) differs from ... (Y).'
+  const m = natalText.match(/The Thai sun sign here \(([A-Z][a-z]+)\) differs from[^()]*\(([A-Z][a-z]+)\)/);
+  if (!m) return null;
+  const isCusp = /within 1-2 days of a Western sign boundary/.test(natalText);
+  return { thaiSign: m[1], westernSign: m[2], isCusp };
 }
 
 // Get today's transiting planets for timing readings
@@ -2216,7 +2354,18 @@ OUTPUT QUALITY — GRAMMAR AND FORMATTING:
 
     const data = await response.json();
     const reply = data.content?.[0]?.text || 'The Mor Doo is silent. Please try again.';
-    return res.status(200).json({ reply });
+
+    // Attach reconciliation metadata if the cached natal chart contained a
+    // ZODIAC RECONCILIATION block. The client uses this to render the
+    // expandable 'Why?' chip after Mor Doo's first sun-sign mention.
+    let reconciliation = null;
+    try {
+      const cachedMsg = messages.find(m => (m.content||'').startsWith('[natal_chart_cached]'));
+      const cachedText = cachedMsg ? cachedMsg.content : '';
+      reconciliation = parseReconciliationFromCache(cachedText);
+    } catch(e) { /* reconciliation is optional — never block the reply */ }
+
+    return res.status(200).json(reconciliation ? { reply, reconciliation } : { reply });
 
   } catch (err) {
     console.error('Handler error:', err.message, err.stack);
