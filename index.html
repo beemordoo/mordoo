@@ -1133,6 +1133,156 @@ function extractDayPalette(text) {
   return hits >= 3 ? out : null;
 }
 
+// Royal Thai BIRTH-DAY COLOR baseline — Si Mongkol Prajam Wan Geut.
+// This is the user's PERMANENT baseline frequency, set at birth. Per Thai practitioner sources
+// (Mahamongkol, Wongnai), most Thais use birth-day colors as their everyday wardrobe, only
+// switching to the daily 5-category palette for high-stakes occasions (interviews, dates, pitches).
+//
+// In the share card, the birth-day palette is the CONSTRAINT — the scope/theme energy chooses
+// WHICH color from inside it. A Wednesday-born person reading about a settling-energy month
+// should get a settling-leaning color from the green/yellow family, not arbitrary terracotta.
+//
+// IMPORTANT — THE WEDNESDAY-RAHU SPLIT: Per Royal Thai astrology, Wednesday is the only day
+// with two distinct birth palettes. Wednesday-day (born before 18:00 local) is governed by
+// Mercury — the standard Wed palette. Wednesday-night (born at/after 18:00) is governed by
+// Rahu (the North Node, the shadow planet) — a different baseline entirely. Getting this
+// wrong means recommending a Wednesday-night-born person colors from their permanent AVOID
+// list (e.g. recommending Gold Yellow when their actual avoid list includes Gold). This is
+// a foundation error, not a calibration miss.
+const BIRTH_DAY_PALETTES = {
+  Sunday:        { wear: ['Orange','Red','Pink','Bright green','White'],          avoid: ['Blue','Navy'] },
+  Monday:        { wear: ['Bright green','Black','White','Purple'],                avoid: ['Red','Orange'] },
+  Tuesday:       { wear: ['Yellow','Black','Pink','Purple','Red'],                 avoid: ['Cream','White'] },
+  Wednesday:     { wear: ['Green','Light yellow','Gold yellow','Mustard'],         avoid: ['Pink','Bright red'] },        // Wed-day, Mercury
+  WednesdayNight:{ wear: ['Green','Black','Brown','White'],                        avoid: ['Orange','Gold','Bright red'] }, // Wed-night, Rahu (after 18:00)
+  Thursday:      { wear: ['Orange','Yellow','Blue','Navy','Bright green','Red'],   avoid: ['Black','Purple'] },
+  Friday:        { wear: ['Blue','Navy','White','Yellow','Pink'],                  avoid: ['Dark green','Brown','Grey'] },
+  Saturday:      { wear: ['Red','Yellow','Blue','Navy','Pink','Brown'],            avoid: ['Green','Bright red'] }
+};
+
+// Compute day-of-week from a birthday string. Accepts "MM/DD/YYYY", "YYYY-MM-DD", or "M/D/YYYY".
+// Returns one of: 'Sunday'..'Saturday' or null if can't parse.
+function computeBirthDayOfWeek(birthdayStr) {
+  if (!birthdayStr) return null;
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  // Normalize separators to /
+  const s = String(birthdayStr).replace(/-/g, '/').trim();
+  let m, d, y;
+  // ISO YYYY/MM/DD
+  let match = s.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if (match) { y = parseInt(match[1]); m = parseInt(match[2]); d = parseInt(match[3]); }
+  else {
+    // US M/D/YYYY
+    match = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (match) { m = parseInt(match[1]); d = parseInt(match[2]); y = parseInt(match[3]); }
+  }
+  if (!m || !d || !y) return null;
+  // Construct date in UTC to avoid local-tz drift on the day-boundary
+  const date = new Date(Date.UTC(y, m - 1, d));
+  if (isNaN(date.getTime())) return null;
+  return days[date.getUTCDay()];
+}
+
+// Determines whether a birth-time string falls in the Rahu window (18:00 onwards on Wednesday).
+// Returns:
+//   true   → confidently after 18:00 (Rahu palette applies for Wednesday-borns)
+//   false  → confidently before 18:00 (Wednesday-day palette applies)
+//   null   → can't determine (no time given, or ambiguous descriptor) — caller decides default
+//
+// Accepted formats:
+//   "12:15 AM" / "7:30 PM" / "11:45pm" / "23:00"  → exact, comparable
+//   "morning" / "afternoon"                       → before 18:00 (false)
+//   "evening" / "night"                           → at/after 18:00 (true) — per Thai convention
+//   "" or unparseable                             → null
+//
+// Edge cases worth knowing:
+//   - "12:00 AM" = 00:00 (midnight, just past) → false (Wed-day, the small hours of Wed morning)
+//   - "12:00 PM" = 12:00 (noon)                → false
+//   - "6:00 PM"  = 18:00                       → true (Rahu boundary; 18:00 itself is Rahu)
+//   - "evening" — Thai convention treats evening as Rahu-time; if they meant 5pm they'd say afternoon
+function isRahuHour(birthTimeStr) {
+  if (!birthTimeStr) return null;
+  const s = String(birthTimeStr).trim().toLowerCase();
+  if (!s) return null;
+
+  // Vague descriptors first
+  if (/\b(morning|afternoon)\b/.test(s)) return false;       // before 6pm
+  if (/\b(evening|night|midnight late)\b/.test(s)) return true; // 6pm onwards
+  // "midnight" alone is ambiguous — could mean 12:00 AM (start of day) or "late at night"
+  // Default to false (start-of-day reading) since it's safer. Users with exact times don't hit this.
+  if (/\bmidnight\b/.test(s) && !/late|past|after/.test(s)) return false;
+
+  // Exact time formats: "12:15 AM", "7:30 PM", "11:45pm", "23:00", "6:00 pm"
+  // Capture HH:MM and optional AM/PM
+  const m = s.match(/^(\d{1,2}):(\d{2})\s*(am|pm)?$/);
+  if (!m) return null;
+
+  let hour = parseInt(m[1]);
+  const min = parseInt(m[2]);
+  const ampm = m[3];
+
+  if (isNaN(hour) || isNaN(min) || hour < 0 || hour > 23 || min < 0 || min > 59) return null;
+
+  // Convert to 24-hour
+  if (ampm === 'am') {
+    if (hour === 12) hour = 0;        // 12:xx AM → 00:xx
+  } else if (ampm === 'pm') {
+    if (hour !== 12) hour += 12;       // 1:xx PM → 13:xx, 12:xx PM stays as 12:xx
+  } else {
+    // No AM/PM — treat as 24-hour input. If hour > 23 it's invalid; we already filtered.
+    // 13:00 in 24h IS 1pm, so no conversion needed.
+  }
+
+  // Rahu boundary: 18:00 onwards is Rahu. 18:00 itself is the start of Rahu's window.
+  return hour >= 18;
+}
+
+// Returns the user's permanent birth-day palette object: { day, wear[], avoid[], note? }
+// Pulls birthday from savedContext (set by fetchNatalChart). Returns null if not set.
+//
+// Wednesday-Rahu split: when day is Wednesday AND birth time is at/after 18:00 local, returns
+// the Rahu palette instead of the Mercury palette. When time is unknown, defaults to Wed-day
+// (the more common case statistically) and adds a note flagging the uncertainty.
+function getBirthDayBaseline() {
+  const birthday = (typeof savedContext !== 'undefined' && savedContext && savedContext.birthday) || null;
+  if (!birthday) return null;
+  const day = computeBirthDayOfWeek(birthday);
+  if (!day) return null;
+
+  // Wednesday-Rahu split logic
+  if (day === 'Wednesday') {
+    const birthTime = (savedContext && savedContext.birthTime) || null;
+    const rahu = isRahuHour(birthTime);
+    if (rahu === true) {
+      // Confident Rahu — use Wed-night palette
+      const p = BIRTH_DAY_PALETTES.WednesdayNight;
+      console.log('[BirthDayBaseline] Wed-Rahu detected (born after 18:00):', birthTime, '→ Wed-night palette');
+      return { day: 'Wednesday (Rahu, night-born)', wear: p.wear.slice(), avoid: p.avoid.slice(), governedBy: 'Rahu' };
+    } else if (rahu === false) {
+      // Confident Wed-day
+      const p = BIRTH_DAY_PALETTES.Wednesday;
+      console.log('[BirthDayBaseline] Wed-day detected (born before 18:00):', birthTime, '→ Wed-day palette');
+      return { day: 'Wednesday (day-born)', wear: p.wear.slice(), avoid: p.avoid.slice(), governedBy: 'Mercury' };
+    } else {
+      // Unknown — default to Wed-day with a note
+      const p = BIRTH_DAY_PALETTES.Wednesday;
+      console.log('[BirthDayBaseline] Wed birth, no time given — defaulting to Wed-day palette. May be inaccurate if user born after 18:00.');
+      return {
+        day: 'Wednesday',
+        wear: p.wear.slice(),
+        avoid: p.avoid.slice(),
+        governedBy: 'Mercury',
+        note: 'Wednesday-born without birth time — assuming day-born (Mercury). If born after 6pm, the baseline shifts to Rahu (Green / Black / Brown / White, avoid Orange / Gold / Bright red).'
+      };
+    }
+  }
+
+  // All other days — no time-based split
+  const palette = BIRTH_DAY_PALETTES[day];
+  if (!palette) return null;
+  return { day, wear: palette.wear.slice(), avoid: palette.avoid.slice() };
+}
+
 // Maps a user's question to the most relevant goal-category.
 // Default for general/unknown questions is 'charm' (overall presence and social fortune).
 // Word stems are allowed (no trailing \b) so "investing"/"working"/"dating" all match.
@@ -1148,6 +1298,29 @@ function inferGoalFromQuestion(question) {
   return 'charm'; // default for "what's my fortune today" type questions
 }
 
+// Detects what time/relational scope a reading covers, based on the user's question + trigger.
+// Returns one of: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'compatibility' | 'natal' | 'general'
+// Used to scope the share card's color logic and tip framing — a month reading needs a month-shaped tip,
+// not a "do this today" tip.
+// IMPORTANT ordering: compatibility first (most specific), then monthly BEFORE yearly so "month of May 2026"
+// resolves to monthly. Word-bounded matches on short tokens (we, us, may) to avoid false positives like
+// "we" matching the start of "week".
+function inferReadingScope(question, trigger) {
+  if (trigger === 'natal') return 'natal';
+  if (!question) return 'general';
+  const q = question.toLowerCase();
+  // Compatibility: stems matched without trailing boundary; short pronouns matched with full word boundary
+  if (/\b(compatib|together|love match|relationship match)/.test(q) || /\b(my partner|me and|him and|her and|us|we)\b/.test(q)) return 'compatibility';
+  // Monthly checked BEFORE yearly so 'month of May 2026' resolves to monthly, not yearly
+  if (/\b(this month|the month|month of|next month|month-by-month|month by month|monthly)/.test(q) || /\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/.test(q)) return 'monthly';
+  if (/\b(this year|the year|annual|yearly|year ahead|year of the|fire horse|next year)/.test(q) || /\b(2026|2027|2028)\b/.test(q)) return 'yearly';
+  if (/\b(next few months|coming months|spring|summer|fall|autumn|winter|quarter|q[1-4])\b/.test(q)) return 'quarterly';
+  if (/\b(this week|the week|next week|week ahead|weekly|coming week|7 days)/.test(q)) return 'weekly';
+  if (/\b(today|tonight|tomorrow|this evening|this morning|this afternoon|now|right now|currently)/.test(q)) return 'daily';
+  if (/\b(who am i|who i am|my chart|my birth|my foundation|my nature|tell me about myself|read me)/.test(q)) return 'natal';
+  return 'general';
+}
+
 async function generateShareSummary(readingText, trigger, planets) {
   const allText = history.map(m => m.content || '').join(' ');
   const lpMatch = allText.match(/Life Path[:\s]+(\d+)/i);
@@ -1156,44 +1329,115 @@ async function generateShareSummary(readingText, trigger, planets) {
   const zodiac = zodMatch ? zodMatch[0] : null;
   const isNatal = trigger === 'natal';
 
-  // Find the user's most recent question — this anchors the share card's color choice
-  // so the card resolves to ONE color even when the reading enumerates several.
+  // Find the user's most recent question — anchors color choice and scope detection
   const lastUserMsg = [...history].reverse().find(m => m.role === 'user' && m.content)?.content || '';
   const userQuestion = lastUserMsg.length > 250 ? lastUserMsg.slice(0, 250) + '…' : lastUserMsg;
 
-  // Try to extract today's 5-category palette from the reading text — if it's there, parse it
-  // into structured form so we can hand it to Haiku as authoritative palette data instead of
-  // making Haiku re-extract from prose.
-  const palette = extractDayPalette(readingText);
-  const paletteHint = palette
-    ? `\nTODAY'S 5-CATEGORY PALETTE (already-known data, treat as authoritative):\n  Career: ${palette.career}\n  Money: ${palette.money}\n  Luck: ${palette.luck}\n  Charm: ${palette.charm}\n  Authority: ${palette.authority}\n  AVOID (today's depleting color, never recommend): ${palette.avoid}\n`
+  // Detect the reading's scope. This determines color logic and tip framing.
+  const scope = inferReadingScope(userQuestion, trigger);
+
+  // The user's PERMANENT birth-day baseline palette (Royal Thai Si Mongkol Prajam Wan Geut).
+  // This is the constraint. Scope-energy chooses WHICH color from inside it.
+  // Per Thai practice, the birth-day color is the foundation; daily/monthly/yearly overlays
+  // sit on top. When the overlay theme clashes with the birth-day palette, the birth-day
+  // palette wins and the theme color appears as accent only.
+  const birthBaseline = getBirthDayBaseline();
+  const baselineHint = birthBaseline
+    ? `\nUSER'S BIRTH-DAY BASELINE PALETTE (PERMANENT, set at birth — Royal Thai Si Mongkol Prajam Wan Geut):\n  Born: ${birthBaseline.day}${birthBaseline.governedBy ? ' (governed by ' + birthBaseline.governedBy + ')' : ''}\n  Wear (baseline frequency, what their nature already knows): ${birthBaseline.wear.join(', ')}\n  AVOID (permanent depleting frequencies for this person): ${birthBaseline.avoid.join(', ')}\n${birthBaseline.note ? '  NOTE: ' + birthBaseline.note + '\n' : ''}  CRITICAL: Never recommend a color from their permanent AVOID list, regardless of scope or theme. The birth-day baseline is the constraint; scope-energy chooses WHICH color from inside the wear list.\n`
     : '';
 
-  // DECIDE-not-extract prompt. Haiku's job is to pick ONE color based on the reader's question +
-  // day energy + reading content, even if the reading itself enumerates a menu of colors.
+  // Day-palette only matters for daily-scope readings. For month/year/compat readings,
+  // the day's wardrobe palette is irrelevant — the color comes from the reading's theme.
+  const palette = (scope === 'daily' || scope === 'general') ? extractDayPalette(readingText) : null;
+  const paletteHint = palette
+    ? `\nTODAY'S 5-CATEGORY PALETTE (authoritative, use this for daily-scope readings):\n  Career: ${palette.career}\n  Money: ${palette.money}\n  Luck: ${palette.luck}\n  Charm: ${palette.charm}\n  Authority: ${palette.authority}\n  AVOID (depleting color, never recommend): ${palette.avoid}\n`
+    : '';
+
+  // Scope-specific guidance. Each scope needs different color logic AND different tip framing.
+  // The BIRTH-DAY BASELINE (above the prompt) is the constraint for every scope — pick a color
+  // that lives in the user's permanent wear-list, with the scope-energy choosing WHICH one.
+  const scopeGuidance = {
+    daily: {
+      colorRule: `Pick ONE color from today's 5-category palette above, matched to what the reader was asking about (career→Career, money→Money, love/general→Charm, authority/influence→Authority, luck→Luck). Or if the reading explicitly recommends a single color ("wear blue"), use that. NEVER pick today's avoid-color or the user's permanent birth-day avoid-color. When the day's goal-color is on the user's permanent AVOID list, pick the closest color from their birth-day wear-list instead and frame it as their baseline carrying the day's intention.`,
+      tipRule: `Tip is a TODAY action — something the reader does today, this morning, this evening, before sunset, before bed. Concrete, immediate. Examples: "Send the message you have been composing in your head." / "Sign agreements before noon — clarity is strongest then." / "Pause before you speak this evening."`,
+      tipLabelOptions: `"TODAY'S PRACTICE", "TONIGHT'S PRACTICE", "BEFORE YOU SPEAK", "FOR YOUR DECISION", "FOR YOUR ENERGY", "THE MOR DOO SAYS"`
+    },
+    weekly: {
+      colorRule: `Pick ONE color rooted in the WEEK's theme as established by the reading, BUT FILTERED THROUGH THE USER'S BIRTH-DAY BASELINE. Look at the user's permanent wear-list above and pick the color from THAT list that best matches the week's energy: action (red/pink leaning), settling (dark/charcoal/grounded leaning), expansion (orange/mustard/gold leaning), connection (blue/rose leaning), clarity (green/yellow leaning). Specific shade. NEVER recommend a color from the user's permanent AVOID list.`,
+      tipRule: `Tip is a WEEK-shaped practice — a CBT-style shift the reader carries through the next 7 days. Not "do this today," but "this week, when X happens, try Y." A reframe with a small repeatable action. Examples: "This week, when you feel the urge to perfect, ship instead. Watch what unfinished work teaches you." / "Through the week, end each day by writing one thing you decided. What gets named gets lighter."`,
+      tipLabelOptions: `"THIS WEEK'S PRACTICE", "THE WEEK'S SHIFT", "FOR THE WEEK AHEAD", "THE MOR DOO'S COUNSEL"`
+    },
+    monthly: {
+      colorRule: `Pick ONE color rooted in the MONTH's theme, BUT FILTERED THROUGH THE USER'S BIRTH-DAY BASELINE. Read the month's dominant energy from the reading itself — action (Mars: red/pink), settling (Saturn: dark/charcoal), expansion (Jupiter: mustard/gold/orange), commitment (earth tones), reflection (Moon: cream/silver), magnetism (Venus: blue/rose). Then pick the SHADE of that energy that lives inside the user's permanent wear-list above. Example: a Wednesday-born person reading about a settling-energy month should NOT get arbitrary terracotta — they should get a settling-leaning color from their green/yellow/mustard family (e.g. "Deep mustard" or "Olive green"). Specific shade. NEVER use just "Gold" alone — too generic. NEVER recommend a color from the user's permanent AVOID list.`,
+      tipRule: `Tip is a MONTH-shaped CBT-style shift — a single reframe the reader inhabits across the whole month. Westernized framing rooted in Thai cosmology underneath. Structure: name the pattern, give the shift, give the practice that reinforces it. Use month-scoped time language: "through May," "across the month," "as the month moves," "by month's end," "this whole cycle." NEVER say "this week" or "today" or "tonight" in a monthly tip. Examples: "Through May, let unfinished work be visible. Each time you catch yourself perfecting before showing — pause, send the imperfect version, watch the conversation it opens. The month rewards motion, not polish." / "Across this month, when you feel the pull to delay, write down what you are waiting for. By month's end you will have a written record of every false hesitation — and the courage that came from naming it." / "Treat May as one long invitation to be seen at work. Each Monday morning, name one thing you will let someone witness. Repeat. By June you will know what your visibility actually costs and what it returns."`,
+      tipLabelOptions: `"THIS MONTH'S PRACTICE", "THE MONTH'S SHIFT", "FOR THE MONTH AHEAD", "A PRACTICE FOR MAY" (substitute actual month name), "THE MOR DOO'S COUNSEL FOR THE MONTH"`
+    },
+    quarterly: {
+      colorRule: `Pick ONE color rooted in the SEASON's theme, BUT FILTERED THROUGH THE USER'S BIRTH-DAY BASELINE. Same theme-mapping as monthly. Pick the shade from the user's permanent wear-list that best matches the season's energy. Specific shade. NEVER from their permanent AVOID list.`,
+      tipRule: `Tip is a SEASON-shaped practice — a multi-month shift. Use seasonal time language: "across the season," "through the coming months," "as spring unfolds." A pattern to inhabit, not a one-time action.`,
+      tipLabelOptions: `"A PRACTICE FOR THE SEASON", "THE SEASON'S SHIFT", "FOR THE COMING MONTHS", "THE MOR DOO'S COUNSEL"`
+    },
+    yearly: {
+      colorRule: `Pick ONE color rooted in the YEAR's element (2026 = Fire Horse → warm spectrum), BUT FILTERED THROUGH THE USER'S BIRTH-DAY BASELINE. Look at the user's permanent wear-list above and pick the WARMEST item from their list — the year's Fire energy expressing itself through their personal frequency rather than overriding it. Example: a Friday-born person whose wear list lacks warm tones should get the closest-to-warm from their list (Pink or Yellow, perhaps), not arbitrary crimson. NEVER use plain "Red" or plain "Orange" — use a specific shade. NEVER from their permanent AVOID list.`,
+      tipRule: `Tip is a YEAR-shaped theme — the one shift or practice that defines the year for this reader. Use year-scoped language: "across this year," "through 2026," "by year's end," "in the months ahead." A theme to inhabit, not a single action. Often a CBT-style shift that becomes a year-long practice.`,
+      tipLabelOptions: `"THIS YEAR'S THEME", "THE YEAR'S SHIFT", "A PRACTICE FOR 2026", "YOUR FIRE HORSE PRACTICE", "THE MOR DOO'S COUNSEL FOR THE YEAR"`
+    },
+    compatibility: {
+      colorRule: `Pick ONE color that BRIDGES both charts — a color that honors both people's energies. The first person's birth-day baseline is provided above; respect it. Often a complement or middle-ground shade that lives in their wear-list. Specific shade.`,
+      tipRule: `Tip is relationship-scoped — a practice for the connection between the two people. Use we/you-both language. Examples: "When you feel the pull to over-explain, pause and let silence sit. Watch what surfaces in the space your words used to fill." / "Through the next moon cycle, take turns naming one thing you noticed about the other that day. Small acts of being seen accumulate."`,
+      tipLabelOptions: `"A PRACTICE FOR THE TWO OF YOU", "THE BRIDGE BETWEEN YOU", "FOR YOUR CONNECTION", "THE MOR DOO'S COUNSEL FOR LOVE"`
+    },
+    natal: {
+      colorRule: `Pick ONE color from the user's permanent birth-day wear-list above. This is the color that most resonates with their core nature — the foundation frequency they were born into. Specific shade preferred. NEVER from their permanent AVOID list.`,
+      tipRule: `Tip is identity-rooted — a practice for the reader's whole nature, not tied to today or this month. A shift they carry as a way of being. Examples: "Trust the part of you that builds slowly. The world rewards speed but you reward integrity — and integrity outlasts urgency every time." / "When you feel the pull to absorb other people's storms, name what you are feeling out loud (even to yourself). The naming creates a seam between you and them."`,
+      tipLabelOptions: `"YOUR PRACTICE", "THE MOR DOO'S COUNSEL", "FOR YOUR NATURE", "A PRACTICE FOR THE BUILDER" (or Pioneer/Diplomat/etc — match Life Path archetype)`
+    },
+    general: {
+      colorRule: `If the day's 5-category palette is provided above, pick ONE matching the reader's question, BUT cross-check against the user's permanent birth-day wear-list. If the day's goal-color is on their permanent AVOID list, pick the closest color from their wear-list instead. Otherwise pick a color rooted in the reading's theme that lives in their wear-list. Specific shade.`,
+      tipRule: `Tip is a present-moment action — something the reader can begin doing now. Concrete first step. Examples like the daily-scope tips work here.`,
+      tipLabelOptions: `"TODAY'S PRACTICE", "FOR YOUR DECISION", "FOR YOUR ENERGY", "THE MOR DOO SAYS"`
+    }
+  };
+
+  const guidance = scopeGuidance[scope] || scopeGuidance.general;
+
+  // DECIDE-not-extract prompt — Haiku decides color and tip from scope + reading + question.
+  // Compute scope-dependent strings BEFORE the template literal to avoid nested-quote bugs.
+  const textureNoun = (
+    scope === 'monthly' ? 'month' :
+    scope === 'yearly' ? 'year' :
+    scope === 'compatibility' ? 'connection' :
+    scope === 'natal' ? 'reading' :
+    'day'
+  );
+  const lpHint = lp ? ' (Life Path ' + lp + ')' : '';
+  const zodHint = zodiac ? ', ' + zodiac : '';
+  const summaryGuidance = 'Two short sentences in the Mor Doo voice. Weave the reading specific tension or gift' + lpHint + zodHint + ', and the texture of the ' + textureNoun + '. Plain language. Do NOT start with Your or Welcome. Do NOT repeat the reading opening sentence.';
+
   const prompt = `You are filling in a share card for a Mor Doo reading. Output ONLY a JSON object — first character must be { and last must be }. No markdown, no explanation.
 
 VOICE: The Mor Doo INTERPRETS for the reader. Plain language carries the meaning; planets and numbers grace the prose. Name a planet at most ONCE in colorReason and ONCE in tip — as a signature line, not vocabulary. The reader did not come for a tutorial.
+${baselineHint}
+READING SCOPE: ${scope.toUpperCase()}
+This is a ${scope}-scope reading. The color choice and the tip framing must match this scope, but the user's birth-day baseline (if known) is the constraint underneath every scope.
 ${paletteHint}
-THE READER'S QUESTION (use this to choose ONE color matching what they were asking about):
+THE READER'S QUESTION:
 "${userQuestion}"
 
-HOW TO CHOOSE ONE COLOR:
-- The reading may list multiple colors (especially the 5-category palette). Your job is to PICK ONE based on what the reader asked about.
-- Map question → goal-color: career/work/job/promotion → Career color · money/finance/investment/abundance → Money color · luck/chance/fortune-in-general → Luck color · love/dating/charm/social/general "what's my fortune" → Charm color · power/leadership/influence/being-seen → Authority color
-- If the reading explicitly recommends ONE color (e.g. "wear blue tomorrow"), use that exact color.
-- If the reading recommends a few colors as alternatives ("wear pink or white"), pick the one that better matches the reader's question.
-- NEVER pick today's avoid-color.
-- For natal/foundation readings (no specific question), default to Charm color since it speaks to the person's overall presence.
+COLOR LOGIC (for ${scope}-scope reading):
+${guidance.colorRule}
 
-Required shape with example values:
+TIP FRAMING (for ${scope}-scope reading):
+${guidance.tipRule}
+
+Required JSON shape (return values, not these instructions):
 {
-  "summary": "Two short sentences in the Mor Doo's voice. Weave the reading's specific tension or gift${lp ? ' (Life Path '+lp+')' : ''}${zodiac ? ', '+zodiac : ''}, and the texture of the day. Plain language. Do NOT start with 'Your' or 'Welcome'. Do NOT repeat the reading's opening sentence.",
-  "colorLabel": "5-10 words, action-framed and contextual — name what the color is FOR. The label should answer: 'why this color?' Examples: 'TO AMPLIFY MERCURY\\'S CLARITY AND COMMUNICATION' / 'TO GROUND MARS WITHOUT LOSING ITS POWER' / 'TO INVITE VENUS\\'S SOFTNESS INTO YOUR DAY' / 'TO STEADY SATURN\\'S WEIGHT WITH GRACE' / 'TO CARRY JUPITER\\'S CONFIDENCE INTO THE ROOM' / 'TO SOFTEN THE DAY\\'S URGENCY'. Action-verb framing ('TO AMPLIFY', 'TO GROUND', 'TO STEADY', 'TO CARRY', 'TO INVITE'). May name a planet. Will be displayed in uppercase by the UI, but write in normal case — caps will be applied automatically.",
-  "color": "ONE color name. Plain word, capitalized. Examples: 'Blue', 'Navy', 'Pink', 'Rose gold', 'Deep violet', 'Emerald green', 'Deep charcoal gray', 'Deep red'. Pick exactly one. Specific shades welcome ('Deep red' is better than 'Red' if the reading wants weight).",
-  "colorReason": "Short phrase, half a sentence. ONE planet name allowed as signature. Examples: 'Mercury\\'s color — sharpens speech, opens contracts, invites understanding' / 'Saturn\\'s stabilizing force — keeps Mars honest and purposeful' / 'Mars energy — for courage to act decisively on what you already know' / 'Venus\\'s frequency — the wavelength of magnetism'. The structure: '[planet]'s [quality] — [what it does for the reader]'.",
-  "tip": "One practical, secular action. Plain English with at most ONE planet mentioned as flourish. Structure: the thing to do + the simple reason it works. No temples, offerings, amulets, or food rules. Tips must work for any reader anywhere. 1-3 sentences. Examples: 'Send the message you have been composing in your head. Not the perfect version — the true version. Venus does not wait, and she rewards those who move while the channel is open.' / 'Pause before you speak this evening. Ask yourself if the words are necessary or just Mars pushing. If necessary — speak without apology. If not — let Saturn\\'s silence hold the space.' / 'Sign agreements or have difficult conversations in the morning hours — Mercury\\'s clarity is strongest before noon, and your Water element flows most freely then.' / 'Stop testing the waters. The answer you\\'ve been circling is already clear — choose it before sunset, and let Saturn\\'s evening hours confirm you chose well.'",
-  "tipLabel": "2-3 words, contextual to what the tip is about. Match the tip's content: 'TODAY\\'S PRACTICE' (general action), 'TONIGHT\\'S PRACTICE' (evening/closure), 'FOR YOUR DECISION' (when the tip is about choosing/deciding), 'FOR YOUR ENERGY' (when about presence/state), 'BEFORE YOU SPEAK' (when about communication/words), 'THE MOR DOO SAYS' (signature catch-all). Pick the one that BEST describes what the tip is doing. Will be displayed in uppercase — write in normal case."
+  "summary": "<${summaryGuidance}>",
+  "colorLabel": "<5-10 words, action-framed. Examples: TO AMPLIFY MERCURY CLARITY AND COMMUNICATION / TO GROUND MARS WITHOUT LOSING ITS POWER / TO CARRY THE MONTH DELIBERATE WEIGHT / TO INHABIT THE FIRE HORSE COURAGE. Action-verb framing (TO AMPLIFY, TO GROUND, TO STEADY, TO CARRY, TO INHABIT, TO INVITE). May name a planet OR the time-period. Will be displayed in uppercase by the UI; write in normal case>",
+  "color": "<ONE color name. Specific shade preferred. Examples: Deep red, Mustard, Deep violet, Terracotta, Burnt orange, Charcoal gray, Navy, Rose gold, Emerald green. NEVER plain Gold, Brown, Yellow, Red alone — always a specific shade with a modifier. Pick exactly one>",
+  "colorReason": "<Short phrase, half a sentence. ONE planet name allowed as signature. Match the SCOPE — for monthly use phrasing like 'Saturn steadying weight — what the month asks you to carry'; for yearly use phrasing like 'The Fire Horse warmth — courage that does not apologize'; for daily use phrasing like 'Mercury color — sharpens speech, opens contracts'. Use the planet apostrophe-s naturally (e.g. Saturn's, Mercury's, Venus's)>",
+  "tip": "<Match the TIP FRAMING above for the ${scope} scope. 1-4 sentences. Use planet apostrophe-s naturally (e.g. Saturn's, Mercury's, Venus's). Do NOT use 'this week' for a monthly reading or 'today' for a yearly reading — match the scope language>",
+  "tipLabel": "<2-5 words, contextual to what the tip is doing. Pick from: ${guidance.tipLabelOptions}. Match the tip actual content. Will be displayed in uppercase; write in normal case>"
 }
 
 Reading:
@@ -1216,15 +1460,127 @@ ${readingText.slice(0, 2000)}`;
     const dayKey = Object.keys(dayMap).find(d => r.includes(d)) || ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][new Date().getDay()];
     const dayInfo = dayMap[dayKey];
 
+    // Pick the best birth-day-palette color matching a target energy ("settling", "fire",
+    // "expansion", etc.). Returns null if user has no birth-day baseline (let scope-default win).
+    // The energy keywords map to color-temperature/saturation tendencies:
+    //   warm/fire/action  → reddish, orangish, warm tones
+    //   settling/saturn   → dark, deep, grounded tones
+    //   expansion/jupiter → mustard, gold, warm-yellow
+    //   reflection/moon   → cream, silver, pale tones
+    //   bridge/connection → middle tones (rose, navy, soft)
+    function pickFromBaseline(energy) {
+      if (!birthBaseline) return null;
+      const wear = birthBaseline.wear;
+      // Score each wear-list color by how well it matches the energy
+      const tempScores = {
+        warm:       { Red:5, Orange:5, Pink:4, 'Bright red':5, Mustard:4, 'Gold yellow':4, Yellow:3, 'Light yellow':2, Brown:3 },
+        settling:   { Black:5, Navy:4, Brown:4, Purple:4, 'Dark green':3, Grey:3 },
+        expansion:  { 'Gold yellow':5, Mustard:5, 'Light yellow':4, Yellow:4, Orange:4, Red:3, Brown:3 },
+        reflection: { White:5, Cream:5, 'Light yellow':3, Yellow:2, Pink:3 },
+        bridge:     { Pink:4, 'Rose gold':4, Navy:3, Blue:3, Purple:3, White:3 },
+        clarity:    { Green:5, 'Bright green':5, 'Light yellow':3, 'Gold yellow':3, Yellow:3, White:2 }
+      };
+      const scores = tempScores[energy] || {};
+      let best = null, bestScore = -1;
+      for (const c of wear) {
+        const s = scores[c] || 0;
+        if (s > bestScore) { best = c; bestScore = s; }
+      }
+      // If nothing scored above zero, fall back to first wear-list item (safe default)
+      return best && bestScore > 0 ? best : wear[0];
+    }
+
+    // Scope-aware fallback. The day-palette path only runs for daily/general readings.
+    // For monthly/yearly/compatibility/natal scopes, use different defaults.
+    // EVERY scope's default is filtered through the birth-day baseline if one is available.
+
+    // Monthly fallback: pick a settling/grounded color from the user's wear-list, since most
+    // monthly readings carry settling/committing energy (the "month rewards closure" frame).
+    if (scope === 'monthly') {
+      console.log('[ShareSummary] Fallback: monthly scope.');
+      const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      const monthRe = new RegExp('\\b(' + monthNames.join('|') + ')\\b', 'i');
+      const monthMatch = userQuestion.match(monthRe) || readingText.match(monthRe);
+      const monthName = monthMatch ? monthMatch[1].charAt(0).toUpperCase() + monthMatch[1].slice(1).toLowerCase() : 'the month';
+      const baselineColor = pickFromBaseline('settling');
+      const color = baselineColor || 'Deep terracotta';
+      const baselineNote = baselineColor ? " — your " + birthBaseline.day + "-born baseline carrying the month's deliberate weight" : '';
+      return {
+        summary: '',
+        colorLabel: "To carry " + monthName + "'s deliberate weight",
+        color: color,
+        colorReason: "Your foundation frequency, tuned to what the month asks you to settle" + baselineNote,
+        tip: '',
+        tipLabel: "This month's practice"
+      };
+    }
+
+    // Yearly fallback: 2026 is the Fire Horse year — warm spectrum, but filtered through baseline.
+    if (scope === 'yearly') {
+      console.log('[ShareSummary] Fallback: yearly scope.');
+      const baselineColor = pickFromBaseline('warm');
+      const color = baselineColor || 'Burnt orange';
+      const baselineNote = baselineColor ? " — your " + birthBaseline.day + "-born baseline meeting the Fire Horse's warmth" : '';
+      return {
+        summary: '',
+        colorLabel: "To inhabit the Fire Horse's courage",
+        color: color,
+        colorReason: "The year's warmth carried through your own frequency" + baselineNote,
+        tip: '',
+        tipLabel: "This year's theme"
+      };
+    }
+
+    // Compatibility fallback: bridge color from the user's baseline if available
+    if (scope === 'compatibility') {
+      console.log('[ShareSummary] Fallback: compatibility scope.');
+      const baselineColor = pickFromBaseline('bridge');
+      const color = baselineColor || 'Rose gold';
+      const baselineNote = baselineColor ? " — anchored in your " + birthBaseline.day + "-born baseline" : '';
+      return {
+        summary: '',
+        colorLabel: "To honor what runs between you",
+        color: color,
+        colorReason: "The frequency of mutual recognition" + baselineNote,
+        tip: '',
+        tipLabel: "A practice for the two of you"
+      };
+    }
+
+    // Natal fallback: pick directly from baseline — the foundation IS the answer here.
+    if (scope === 'natal') {
+      console.log('[ShareSummary] Fallback: natal scope.');
+      const color = (birthBaseline && birthBaseline.wear[0]) || 'Deep violet';
+      const baselineNote = birthBaseline ? " — your " + birthBaseline.day + "-born baseline, the frequency you were given" : '';
+      return {
+        summary: '',
+        colorLabel: birthBaseline ? "To carry your " + birthBaseline.day + "-born nature into the world" : "To carry your nature into the world",
+        color: color,
+        colorReason: "The shade your nature already knows" + baselineNote,
+        tip: '',
+        tipLabel: "Your practice"
+      };
+    }
+
+    // Daily / weekly / general — use day-of-week + palette logic, but cross-check baseline.
     // Use the structured palette if we extracted one from the reading
     if (palette) {
       const goal = inferGoalFromQuestion(userQuestion); // 'career' | 'money' | 'luck' | 'charm' | 'authority'
       const goalColor = palette[goal];
       // Pretty-cap the color (palette values may be lowercase or have separators)
-      const prettyColor = goalColor
+      let prettyColor = goalColor
         ? goalColor.split(/[\/, ]+/)[0]                     // take first token if it's "Pink/Orange"
             .replace(/\b\w/g, c => c.toUpperCase())          // capitalize
         : dayInfo.color;
+
+      // Cross-check against birth-day baseline AVOID list — if the goal-color is on the user's
+      // permanent avoid-list, swap to the closest baseline color instead.
+      if (birthBaseline && birthBaseline.avoid.some(av => av.toLowerCase() === prettyColor.toLowerCase())) {
+        const swap = birthBaseline.wear[0];
+        console.log('[ShareSummary] Fallback: goal-color', prettyColor, 'is on user permanent AVOID list — swapping to baseline', swap);
+        prettyColor = swap;
+      }
+
       // Richer per-goal labels that match the original Mor Doo voice — action-framed, planet-anchored
       const goalLabels = {
         career:    "To carry " + dayInfo.planet + "'s clarity into the work",
@@ -1676,7 +2032,9 @@ async function fetchNatalChart(birthday, birthplace, birthtime) {
     history.push({ role: 'user', content: '[natal_chart_cached]\n' + cacheText });
     history.push({ role: 'assistant', content: 'Noted.' });
     alreadyCached = true;
-    savedContext = { ...savedContext, birthday, birthplace };
+    // Persist birthtime too (not just birthday/birthplace) so getBirthDayBaseline can apply
+    // the Wednesday-Rahu split. Without this, Wed-night-born users get the wrong palette.
+    savedContext = { ...savedContext, birthday, birthplace, birthTime: birthtime || (savedContext && savedContext.birthTime) || '' };
 
     // Extract name and date for display
     const allText = history.map(m => m.content || '').join(' ');
