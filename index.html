@@ -2242,28 +2242,39 @@ function isClarification(text) {
 // Detect re-anchor intent: user wants to re-score a previous number with a
 // different birthday/personal context. Fires ONLY when a scorecard already
 // exists in this session (pendingScoreNumber is set) AND the message contains
-// exactly one date AND a re-anchor signal phrase ("what if", "try", "use",
-// "score it for", etc). Returns false on compatibility framing (two people)
-// or when there's no prior scorecard to re-anchor.
+// exactly one date AND a re-anchor signal phrase. Returns false on
+// compatibility framing (two people) or when there's no prior scorecard.
 //
 // Examples that should trigger:
+//   "What about for birthday 05/14/2025?"      <-- the case from screenshot
+//   "What about birthday 05/14/2025?"
+//   "How about birthday 05/14/2025?"
 //   "What if the birthday is 05/14/2025?"
+//   "If the birthday is 05/14/2025?"
+//   "For birthday 05/14/2025?"
+//   "With birthday 05/14/2025"
 //   "Try with 05/14/2025"
-//   "Score it for someone born 05/14/2025"
 //   "Use 05/14/2025 as the birthday"
+//   "Score it for someone born 05/14/2025"
 //   "Recalculate with birthday 05/14/2025"
 //
 // Examples that should NOT trigger:
-//   "What about my partner born 05/14/2025?"  (compatibility)
-//   "I was born 05/14/2025"                    (just stating a date, no re-score signal)
-//   "What's my reading?"                       (no date)
+//   "What about my partner born 05/14/2025?"   (compatibility)
+//   "I was born 05/14/2025"                     (just stating a date)
+//   "What's my reading?"                        (no date)
 function isReAnchorRequest(text) {
   if (!pendingScoreNumber) return false;
   const t = text.trim();
   const dateMatches = t.match(/\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/g) || [];
   if (dateMatches.length !== 1) return false;
-  const reAnchorSignal = /\b(what if|try|use|score|run|redo|recalculate|with this|for someone|with the birth|change the birth|update the birth|new birthday|different birthday)\b/i;
+  // Re-anchor signal phrases — broad enough to catch natural language. We require
+  // SOME signal (not just a bare date) because "I was born 05/14/2025" alone
+  // shouldn't re-trigger a scorecard. But the signals are common phrases users
+  // actually type when re-scoring against a new birthday. Note: we match "birth"
+  // without a trailing word boundary so it catches both "birth" and "birthday".
+  const reAnchorSignal = /\b(what about|how about|what if|if (the |it )?birth|for (the )?birth|with (the )?birth|with this|for someone|try|use|score|run|redo|recalculate|change the birth|update the birth|new birthday|different birthday|using birthday|using birth)/i;
   if (!reAnchorSignal.test(t)) return false;
+  // Compatibility framing — explicit two-person language disqualifies
   const compatibilityFraming = /\b(partner|spouse|husband|wife|boyfriend|girlfriend|compatible|compatibility|and i|and me|we are|we were|two of us|together|with my|with his|with her)\b/i;
   if (compatibilityFraming.test(t)) return false;
   return true;
@@ -3127,10 +3138,13 @@ async function sendMessage() {
       isLoading = true;
       document.getElementById('sendBtn').disabled = true;
       showTyping();
-      // Acknowledge the re-anchor in chat — short prose, then the new card
+      // Acknowledge the re-anchor in chat — short prose in Mor Doo voice,
+      // then the fresh card. No system language ("scorecard", "preparing",
+      // "generating") — the user should never feel they are interacting with
+      // software, only with the seer.
       await waitForSeerDelay();
       removeTyping();
-      addMessage('mordoo', `Ah — re-reading <strong>${pendingScoreNumber}</strong> with the birthday <strong>${newDate}</strong>. The numbers carry a different resonance now.\n\n*The Mor Doo is preparing a fresh scorecard...*`);
+      addMessage('mordoo', `Ah — the same digits, a different soul to read them against. <strong>${pendingScoreNumber}</strong> against the birth path of <strong>${newDate}</strong>.\n\n*The resonance shifts. Let the Mor Doo see anew...*`);
       history.push({ role: 'assistant', content: `Re-anchoring ${pendingScoreNumber} to birthday ${newDate}.` });
       await generateScorecard(pendingScoreNumber, pendingScoreType, reAnchorCtx);
       isLoading = false;
