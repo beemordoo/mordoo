@@ -39,8 +39,12 @@ function getLahiriAyanamsa(dateStr) {
     const date = new Date(dateStr + 'T12:00:00Z');
     if (isNaN(date.getTime())) return 23.85;
     const j2000 = new Date('2000-01-01T12:00:00Z');
-    const yearsElapsed = (date - j2000) / (365.25 * 24 * 60 * 60 * 1000);
-    return 23.85311 + (0.013964 * yearsElapsed);
+    const days = (date - j2000) / (24 * 60 * 60 * 1000);
+    const t = days / 36525;  // Julian centuries from J2000
+    // Quadratic fit to Swiss Ephemeris Lahiri values 1900-2026, max residual
+    // 0.0015°. MUST stay in sync with chart.js — both endpoints compute signs
+    // and they will silently disagree if these formulas drift apart.
+    return 23.854565 + 1.394796 * t + 0.001079 * t * t;
   } catch (e) {
     return 23.85;
   }
@@ -299,10 +303,14 @@ async function fetchPlanetPosition(jplId, dateStr) {
 // Sign placements are Thai sidereal (Lahiri-corrected). When the resulting
 // Sun sign differs from what Western astrology would assign for the same
 // date, attaches non-enumerable __sunSignMismatch metadata for downstream
-// reconciliation surfacing.
+// reconciliation surfacing. When some planets fail to fetch, attaches
+// non-enumerable __failedPlanets so the caller (and ultimately the user)
+// knows the chart is partial — silent partial charts were the original cause
+// of missing-Sun talismans plus missing reconciliation footers.
 async function getBirthChart(dateStr) {
   const planets = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn'];
   const results = {};
+  const failed = [];
 
   // Fetch all in parallel
   const fetches = planets.map(async (planet) => {
@@ -313,13 +321,30 @@ async function getBirthChart(dateStr) {
         const dignity = getDignity(planet, sign);
         const meaning = (SIGN_PLANET_MEANING[planet] && SIGN_PLANET_MEANING[planet][sign]) || '';
         results[planet] = { sign, degree, dignity, meaning };
+      } else {
+        // JPL returned a response but parseJPLLongitude couldn't extract a
+        // longitude. Almost always a JPL format change or a malformed reply.
+        failed.push({ planet, reason: 'parse_failed' });
+        console.error(`[getBirthChart] ${planet}: parseJPLLongitude returned null for date ${dateStr}`);
       }
     } catch(e) {
-      // Silently skip failed planet — reading continues with what we have
+      // fetchPlanetPosition only throws on timeout (Promise.race) or
+      // network error — not on parse failures, those return null above.
+      failed.push({ planet, reason: e.message || 'unknown' });
+      console.error(`[getBirthChart] ${planet}: ${e.message} (date ${dateStr})`);
     }
   });
 
   await Promise.allSettled(fetches);
+
+  if (failed.length > 0) {
+    console.error(`[getBirthChart] PARTIAL chart for ${dateStr}: ${failed.length}/7 planets failed:`,
+      failed.map(f => `${f.planet}(${f.reason})`).join(', '));
+    Object.defineProperty(results, '__failedPlanets', {
+      value: failed.map(f => f.planet),
+      enumerable: false, writable: true, configurable: true,
+    });
+  }
 
   // Attach mismatch metadata if Sun was successfully fetched.
   // Non-enumerable so existing Object.entries/Object.keys iteration patterns
@@ -931,6 +956,13 @@ async function geocodeBirthplace(birthplace) {
 
   return null;
 }
+
+// Request extended Vercel timeout. JPL Horizons fetches in getBirthChart use
+// 12s per-planet timeouts; without this declaration Vercel kills the function
+// at 10s and any planet still in flight is dropped silently — leaving a
+// half-rendered talisman (no Sun row, no reconciliation footer, etc.).
+// chart.js uses the same value for the same reason.
+export const config = { maxDuration: 30 };
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
