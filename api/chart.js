@@ -23,6 +23,30 @@ const PLANET_DIGNITY = {
   Saturn:  { own:['Capricorn','Aquarius'], exalted:['Libra'],      debilitated:['Aries'] },
 };
 
+// Lahiri ayanamsa — angular offset between tropical and Thai sidereal zodiacs.
+// JPL Horizons returns tropical (geocentric ecliptic) coordinates. Thai
+// horasaat uses sidereal — this offset must be subtracted before binning to
+// a sign. Reference values (Swiss Ephemeris official Lahiri):
+//   1992-02-26: 23.6938°  (within 0.05° of our linear approximation)
+//   2000-01-01: 23.8531°
+//   2026-01-01: 24.2188°
+// Linear approximation matches Swiss Ephemeris within ~0.05° in the
+// 1900-2100 window. A 0.05° error cannot push a planet across a 30° sign
+// boundary unless the planet was already within 0.05° of the cusp — in
+// which case the person is a genuine borderline case regardless.
+function getLahiriAyanamsa(dateStr) {
+  if (!dateStr) return 23.85;
+  try {
+    const date = new Date(dateStr + 'T12:00:00Z');
+    if (isNaN(date.getTime())) return 23.85;
+    const j2000 = new Date('2000-01-01T12:00:00Z');
+    const yearsElapsed = (date - j2000) / (365.25 * 24 * 60 * 60 * 1000);
+    return 23.85311 + (0.013964 * yearsElapsed);
+  } catch (e) {
+    return 23.85;
+  }
+}
+
 const SIGN_MEANINGS = {
   Sun:     { Aries:'pioneering vitality',Taurus:'determined and material',Gemini:'communicative and dual',Cancer:'protective and intuitive',Leo:'at full brightness — natural authority',Virgo:'analytical and precise',Libra:'softened — balance over dominance',Scorpio:'intense and private',Sagittarius:'expansive and visionary',Capricorn:'disciplined and ambitious',Aquarius:'independent and collective',Pisces:'compassionate and spiritually rich' },
   Moon:    { Aries:'reactive and direct emotions',Taurus:'stable and grounded — exalted',Gemini:'curious and changeable',Cancer:'deeply nurturing — at home',Leo:'warm and generous',Virgo:'orderly emotional security',Libra:'needs harmony to feel settled',Scorpio:'intense and transformative',Sagittarius:'needs freedom to feel safe',Capricorn:'restrained and achievement-driven',Aquarius:'detached but humanitarian',Pisces:'deeply empathic — boundaries dissolve easily' },
@@ -33,12 +57,16 @@ const SIGN_MEANINGS = {
   Saturn:  { Aries:'patience is the karmic lesson',Taurus:'slow material building',Gemini:'structured communication',Cancer:'emotional discipline',Leo:'earned not assumed leadership',Virgo:'disciplined service',Libra:'fairness fully expressed — exalted',Scorpio:'deep karmic transformation',Sagittarius:'wisdom earned through long journeys',Capricorn:'full discipline — at home',Aquarius:'structured innovation — at home',Pisces:'karmic lessons in boundaries' },
 };
 
-function lonToSign(lon) {
-  const normalized = ((lon % 360) + 360) % 360;
+// Convert ecliptic longitude to Thai sidereal sign and degree.
+// Subtracts the Lahiri ayanamsa for the given date before binning.
+// dateStr 'YYYY-MM-DD'. Returned `longitude` is the SIDEREAL longitude.
+function lonToSign(lon, dateStr) {
+  const ayan = getLahiriAyanamsa(dateStr);
+  const sidereal = ((lon - ayan) % 360 + 360) % 360;
   return {
-    sign: ZODIAC_SIGNS[Math.floor(normalized / 30)],
-    degree: Math.floor(normalized % 30),
-    longitude: normalized
+    sign: ZODIAC_SIGNS[Math.floor(sidereal / 30)],
+    degree: Math.floor(sidereal % 30),
+    longitude: sidereal
   };
 }
 
@@ -101,7 +129,7 @@ async function fetchPlanetPosition(jplId, dateStr) {
 
   const fetchP = fetch(url).then(r => r.text());
   // 7s timeout per planet — leaves headroom within Vercel's 10s function limit
-  const timeoutP = new Promise((_, rej) => setTimeout(() => rej(new Error('JPL timeout')), 9000));
+  const timeoutP = new Promise((_, rej) => setTimeout(() => rej(new Error('JPL timeout')), 7000));
   const text = await Promise.race([fetchP, timeoutP]);
   return parseJPLLongitude(text);
 }
@@ -116,36 +144,25 @@ async function getBirthChart(dateStr) {
   const batch1 = planets.slice(0, 4);
   const batch2 = planets.slice(4);
 
-  const fetchPlanet = async (p, attempt = 1) => {
-    try {
-      const lon = await fetchPlanetPosition(JPL_PLANETS[p], dateStr);
-      if (lon !== null) {
-        const { sign, degree } = lonToSign(lon);
-        const dignity = getDignity(p, sign);
-        const meaning = (SIGN_MEANINGS[p] && SIGN_MEANINGS[p][sign]) || '';
-        results[p] = { sign, degree, dignity, meaning };
-      } else if (attempt < 2) {
-        // Retry once if null returned
-        await new Promise(r => setTimeout(r, 500));
-        await fetchPlanet(p, attempt + 1);
-      }
-    } catch(e) {
-      if (attempt < 2) {
-        await new Promise(r => setTimeout(r, 500));
-        await fetchPlanet(p, attempt + 1);
-      } else {
-        console.error(`JPL failed for ${p} after 2 attempts:`, e.message);
-      }
-    }
-  };
-
   const runBatch = async (batch) => {
-    await Promise.allSettled(batch.map(p => fetchPlanet(p)));
+    await Promise.allSettled(batch.map(async p => {
+      try {
+        const lon = await fetchPlanetPosition(JPL_PLANETS[p], dateStr);
+        if (lon !== null) {
+          const { sign, degree } = lonToSign(lon, dateStr);
+          const dignity = getDignity(p, sign);
+          const meaning = (SIGN_MEANINGS[p] && SIGN_MEANINGS[p][sign]) || '';
+          results[p] = { sign, degree, dignity, meaning };
+        }
+      } catch(e) {
+        console.error(`JPL error for ${p}:`, e.message);
+      }
+    }));
   };
 
   await runBatch(batch1);
   await runBatch(batch2);
-  console.log('Planets fetched:', Object.keys(results).join(', ') || 'none');
+  console.log('Planets fetched:', Object.keys(results).join(', '));
   return results;
 }
 
@@ -157,8 +174,8 @@ function getRahuKetu(dateStr) {
     const rahuLon = ((125.04 - (19.3568 * years)) % 360 + 360) % 360;
     const ketuLon = (rahuLon + 180) % 360;
     return {
-      Rahu: { ...lonToSign(rahuLon), meaning: 'Karmic direction — where growth and challenge intersect' },
-      Ketu: { ...lonToSign(ketuLon), meaning: 'Karmic release — what the soul is moving away from' }
+      Rahu: { ...lonToSign(rahuLon, dateStr), meaning: 'Karmic direction — where growth and challenge intersect' },
+      Ketu: { ...lonToSign(ketuLon, dateStr), meaning: 'Karmic release — what the soul is moving away from' }
     };
   } catch(e) { return {}; }
 }
@@ -256,6 +273,14 @@ export default async function handler(req, res) {
           const e = 23.4397 * Math.PI / 180;
           let asc = Math.atan2(Math.cos(lstRad), -(Math.sin(lstRad)*Math.cos(e) + Math.tan(latRad)*Math.sin(e)));
           asc = ((asc * 180 / Math.PI) % 360 + 360) % 360;
+          // Apply Lahiri ayanamsa correction — the astronomical formula above
+          // produces a tropical longitude. Thai horasaat reads the lagna in the
+          // sidereal zodiac, so we subtract the ayanamsa before binning. This
+          // is critical: a Welmanee-style chart sits at ~28° tropical Scorpio
+          // but ~28° sidereal Libra (ราศีตุล) — a sign-level difference on the
+          // most important placement in the reading.
+          const ayanAsc = getLahiriAyanamsa(jplDate);
+          asc = ((asc - ayanAsc) % 360 + 360) % 360;
           const signs = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
           ascendant = { sign: signs[Math.floor(asc/30)], degree: Math.floor(asc%30) };
         }
