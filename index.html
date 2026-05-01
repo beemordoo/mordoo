@@ -1168,11 +1168,11 @@ HOW TO CHOOSE ONE COLOR:
 Required shape with example values:
 {
   "summary": "Two short sentences in the Mor Doo's voice. Weave the reading's specific tension or gift${lp ? ' (Life Path '+lp+')' : ''}${zodiac ? ', '+zodiac : ''}, and the texture of the day. Plain language. Do NOT start with 'Your' or 'Welcome'. Do NOT repeat the reading's opening sentence.",
-  "colorLabel": "3-6 words, plain-spoken. Match the goal you chose: 'For the work ahead' (Career), 'To draw abundance in' (Money), 'For the day's softer current' (Charm), 'To carry into the room' (Authority), 'For luck's quiet edge' (Luck)",
-  "color": "ONE color name. Plain word, capitalized. Examples: 'Blue', 'Navy', 'Pink', 'Rose gold', 'Deep violet'. Pick exactly one.",
-  "colorReason": "Short phrase. ONE planet name allowed as signature. Examples: 'Venus's frequency — the wavelength of magnetism', 'Steadies the day's restless edge', 'Saturn's quiet authority — depth where speed would fail', 'Tunes you to the day's softer current'",
-  "tip": "One practical, secular action. Plain English with at most ONE planet mentioned as flourish. Structure: the thing to do + the simple reason it works. No temples, offerings, amulets, or food rules. Tips must work for any reader anywhere. Examples: 'Send the message you have been composing in your head — Venus does not wait, and she rewards those who move while the channel is open.' / 'Pause before you speak this evening. If the words are necessary, say them without apology. If not, let the silence hold the space.' / 'Sign or settle before noon — your clearest reading of the situation will come early, not late.' / 'Hold something solid while you think today — wood, stone, the texture of a real thing.'",
-  "tipLabel": "1-3 words. 'Today's practice', 'Tonight's practice', 'The Mor Doo says', 'For your energy'. Use 'Tonight's practice' for evening/closure tips."
+  "colorLabel": "5-10 words, action-framed and contextual — name what the color is FOR. The label should answer: 'why this color?' Examples: 'TO AMPLIFY MERCURY\\'S CLARITY AND COMMUNICATION' / 'TO GROUND MARS WITHOUT LOSING ITS POWER' / 'TO INVITE VENUS\\'S SOFTNESS INTO YOUR DAY' / 'TO STEADY SATURN\\'S WEIGHT WITH GRACE' / 'TO CARRY JUPITER\\'S CONFIDENCE INTO THE ROOM' / 'TO SOFTEN THE DAY\\'S URGENCY'. Action-verb framing ('TO AMPLIFY', 'TO GROUND', 'TO STEADY', 'TO CARRY', 'TO INVITE'). May name a planet. Will be displayed in uppercase by the UI, but write in normal case — caps will be applied automatically.",
+  "color": "ONE color name. Plain word, capitalized. Examples: 'Blue', 'Navy', 'Pink', 'Rose gold', 'Deep violet', 'Emerald green', 'Deep charcoal gray', 'Deep red'. Pick exactly one. Specific shades welcome ('Deep red' is better than 'Red' if the reading wants weight).",
+  "colorReason": "Short phrase, half a sentence. ONE planet name allowed as signature. Examples: 'Mercury\\'s color — sharpens speech, opens contracts, invites understanding' / 'Saturn\\'s stabilizing force — keeps Mars honest and purposeful' / 'Mars energy — for courage to act decisively on what you already know' / 'Venus\\'s frequency — the wavelength of magnetism'. The structure: '[planet]'s [quality] — [what it does for the reader]'.",
+  "tip": "One practical, secular action. Plain English with at most ONE planet mentioned as flourish. Structure: the thing to do + the simple reason it works. No temples, offerings, amulets, or food rules. Tips must work for any reader anywhere. 1-3 sentences. Examples: 'Send the message you have been composing in your head. Not the perfect version — the true version. Venus does not wait, and she rewards those who move while the channel is open.' / 'Pause before you speak this evening. Ask yourself if the words are necessary or just Mars pushing. If necessary — speak without apology. If not — let Saturn\\'s silence hold the space.' / 'Sign agreements or have difficult conversations in the morning hours — Mercury\\'s clarity is strongest before noon, and your Water element flows most freely then.' / 'Stop testing the waters. The answer you\\'ve been circling is already clear — choose it before sunset, and let Saturn\\'s evening hours confirm you chose well.'",
+  "tipLabel": "2-3 words, contextual to what the tip is about. Match the tip's content: 'TODAY\\'S PRACTICE' (general action), 'TONIGHT\\'S PRACTICE' (evening/closure), 'FOR YOUR DECISION' (when the tip is about choosing/deciding), 'FOR YOUR ENERGY' (when about presence/state), 'BEFORE YOU SPEAK' (when about communication/words), 'THE MOR DOO SAYS' (signature catch-all). Pick the one that BEST describes what the tip is doing. Will be displayed in uppercase — write in normal case."
 }
 
 Reading:
@@ -1204,12 +1204,13 @@ ${readingText.slice(0, 2000)}`;
         ? goalColor.split(/[\/, ]+/)[0]                     // take first token if it's "Pink/Orange"
             .replace(/\b\w/g, c => c.toUpperCase())          // capitalize
         : dayInfo.color;
+      // Richer per-goal labels that match the original Mor Doo voice — action-framed, planet-anchored
       const goalLabels = {
-        career:    'For the work ahead',
-        money:     'To draw abundance in',
-        luck:      "For luck's quiet edge",
-        charm:     "For the day's softer current",
-        authority: 'To carry into the room'
+        career:    "To carry " + dayInfo.planet + "'s clarity into the work",
+        money:     "To draw abundance through " + dayInfo.planet + "'s frequency",
+        luck:      "To open " + dayInfo.planet + "'s quiet edge",
+        charm:     "To amplify " + dayInfo.planet + "'s magnetism",
+        authority: "To anchor " + dayInfo.planet + "'s weight in the room"
       };
       console.log('[ShareSummary] Fallback used structured palette. Goal:', goal, '→', prettyColor);
       return {
@@ -1233,7 +1234,7 @@ ${readingText.slice(0, 2000)}`;
 
     return {
       summary: '',  // Summary fallback stays empty so we don't paste filler that masks the issue.
-      colorLabel: 'For ' + dayInfo.planet + "'s energy today",
+      colorLabel: "To carry " + dayInfo.planet + "'s energy into the day",
       color: (directColor && directColor[0].toUpperCase() + directColor.slice(1).toLowerCase()) || dayInfo.color,
       colorReason: dayInfo.reason,
       tip: '',  // Same — leave empty rather than fabricate a tip.
