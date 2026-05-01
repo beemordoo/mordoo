@@ -300,7 +300,7 @@
     margin-bottom: 18px;
     transition: color 0.3s;
   }
-  .ndark .natal-birthdate { color: rgba(184,134,11,0.5); }
+  .ndark .natal-birthdate { color: rgba(232,200,112,0.78); }
   .nlight .natal-birthdate { color: #9A7A5A; }
   .natal-wheel { width: 100%; max-width: 380px; margin: 0 auto; display: block; }
   .natal-planets {
@@ -319,13 +319,13 @@
     font-family: 'Sarabun', sans-serif;
     transition: color 0.3s;
   }
-  .ndark .natal-p-name { color: rgba(212,168,67,0.52); }
+  .ndark .natal-p-name { color: rgba(232,200,112,0.78); }
   .nlight .natal-p-name { color: #9A7A5A; }
   .natal-p-sign { font-size: 12px; transition: color 0.3s; }
   .ndark .natal-p-sign { color: #E8D5A0; }
   .nlight .natal-p-sign { color: #3D2B1F; }
   .natal-p-dig { font-size: 10px; font-style: italic; transition: color 0.3s; margin-left: 2px; }
-  .ndark .natal-p-dig { color: rgba(184,134,11,0.48); }
+  .ndark .natal-p-dig { color: rgba(232,200,112,0.78); }
   .nlight .natal-p-dig { color: #B8860B; }
   .natal-divider {
     width: 100%;
@@ -342,7 +342,7 @@
     text-transform: uppercase; font-size: 10px;
     display: block; margin-bottom: 2px; transition: color 0.3s;
   }
-  .ndark .natal-node strong { color: rgba(184,134,11,0.52); }
+  .ndark .natal-node strong { color: rgba(232,200,112,0.78); }
   .nlight .natal-node strong { color: #9A7A5A; }
   .natal-node span { font-size: 12px; transition: color 0.3s; }
   .ndark .natal-node span { color: #C9B8E8; }
@@ -353,8 +353,8 @@
     text-transform: uppercase; font-family: 'Sarabun', sans-serif;
     transition: color 0.3s;
   }
-  .ndark .natal-footer { color: rgba(184,134,11,0.22); }
-  .nlight .natal-footer { color: rgba(184,134,11,0.3); }
+  .ndark .natal-footer { color: rgba(212,168,67,0.55); }
+  .nlight .natal-footer { color: rgba(184,134,11,0.45); }
   .natal-nasa {
     text-align: center;
     margin-top: 6px;
@@ -364,8 +364,51 @@
     font-family: 'Sarabun', sans-serif;
     transition: color 0.3s;
   }
-  .ndark .natal-nasa { color: rgba(184,134,11,0.16); }
-  .nlight .natal-nasa { color: rgba(184,134,11,0.22); }
+  .ndark .natal-nasa { color: rgba(212,168,67,0.42); }
+  .nlight .natal-nasa { color: rgba(184,134,11,0.38); }
+
+  /* Talisman reconciliation footer — appears when Thai sun sign differs from
+     Western. Travels with the chart in screenshots. Two-line block: a sign
+     statement + a one-line explanation. Both modes use lighter values in
+     dark mode for readable contrast on the #1A1008 background. */
+  .natal-reconcile {
+    margin-top: 14px; padding: 10px 12px;
+    border-radius: 8px; text-align: center;
+    font-family: 'Sarabun', sans-serif;
+    transition: background 0.3s, border-color 0.3s, color 0.3s;
+  }
+  .ndark .natal-reconcile {
+    background: rgba(184,134,11,0.08);
+    border: 1px solid rgba(212,168,67,0.25);
+  }
+  .nlight .natal-reconcile {
+    background: rgba(184,134,11,0.05);
+    border: 1px solid rgba(184,134,11,0.22);
+  }
+  .natal-reconcile-line {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    line-height: 1.5;
+    transition: color 0.3s;
+  }
+  .ndark .natal-reconcile-line { color: #F0E4C8; }
+  .nlight .natal-reconcile-line { color: #3D2B1F; }
+  .natal-reconcile-line em {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    transition: color 0.3s;
+  }
+  .ndark .natal-reconcile-line em { color: #E8C870; }
+  .nlight .natal-reconcile-line em { color: #B8860B; }
+  .natal-reconcile-sub {
+    font-size: 10px;
+    margin-top: 5px;
+    font-style: italic;
+    line-height: 1.4;
+    transition: color 0.3s;
+  }
+  .ndark .natal-reconcile-sub { color: rgba(212,168,67,0.7); }
+  .nlight .natal-reconcile-sub { color: rgba(107,76,53,0.75); }
 
   /* ── Share Card ─────────────────────────────────────────────────── */
   .share-card-wrap {
@@ -472,6 +515,23 @@
   .sc-fdate { font-size: 9px; }
   .share-card.sc-light .sc-fdate { color: #9B7A3A; }
   .share-card.sc-dark  .sc-fdate { color: #6A5428; }
+
+  /* Share card reconciliation block — appears below the natal grid when Thai
+     and Western sun signs differ. Travels with the card when downloaded or
+     screenshotted. Both modes use existing token pairs for consistent styling
+     against the cream-light and dark-brown card backgrounds. */
+  .sc-reconcile { margin-top: 10px; padding: 9px 12px; border-radius: 8px; transition: background 0.3s, border-color 0.3s; }
+  .share-card.sc-light .sc-reconcile { background: #F7F1E4; border: 0.5px solid #D4B87A; }
+  .share-card.sc-dark  .sc-reconcile { background: #0F0B04; border: 0.5px solid #3A2C10; }
+  .sc-reconcile-line { font-size: 10.5px; line-height: 1.5; text-align: center; transition: color 0.3s; }
+  .share-card.sc-light .sc-reconcile-line { color: #3A2810; }
+  .share-card.sc-dark  .sc-reconcile-line { color: #F0E4C8; }
+  .sc-reconcile-line em { font-family: 'Playfair Display', serif; font-style: italic; transition: color 0.3s; }
+  .share-card.sc-light .sc-reconcile-line em { color: #B8892A; }
+  .share-card.sc-dark  .sc-reconcile-line em { color: #E8C870; }
+  .sc-reconcile-sub { font-size: 9.5px; margin-top: 4px; font-style: italic; line-height: 1.4; text-align: center; transition: color 0.3s; }
+  .share-card.sc-light .sc-reconcile-sub { color: #8B6914; }
+  .share-card.sc-dark  .sc-reconcile-sub { color: #C9A84C; }
 
   .sc-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
   .sc-mode-btn { padding: 5px 14px; border-radius: 7px; font-size: 11px; cursor: pointer; border: 1px solid #B8892A; font-family: 'Sarabun', sans-serif; letter-spacing: 0.05em; background: transparent; color: #6B4A1E; transition: all 0.15s; }
@@ -842,6 +902,48 @@ function parseNatalCache(txt) {
   return { planets, nodes, ascendant };
 }
 
+// ── Western tropical sun sign for mismatch detection on the client side ──
+// Mirrors the server-side getWesternTropicalSunSign in chat.js. Used here so
+// the natal talisman and natal share card can both display a reconciliation
+// footer when needed — the footer travels with the chart in screenshots.
+function getWesternSunSignClient(birthdayStr) {
+  if (!birthdayStr) return null;
+  // Accept both 'YYYY-MM-DD' and 'M/D/YYYY' formats
+  let m, d;
+  if (birthdayStr.includes('-')) {
+    const parts = birthdayStr.split('-');
+    m = parseInt(parts[1], 10);
+    d = parseInt(parts[2], 10);
+  } else if (birthdayStr.includes('/')) {
+    const parts = birthdayStr.split('/');
+    m = parseInt(parts[0], 10);
+    d = parseInt(parts[1], 10);
+  } else return null;
+  if (isNaN(m) || isNaN(d)) return null;
+  const boundaries = [
+    [1,20,'Capricorn'],[1,32,'Aquarius'],[2,19,'Aquarius'],[2,30,'Pisces'],
+    [3,21,'Pisces'],[3,32,'Aries'],[4,20,'Aries'],[4,31,'Taurus'],
+    [5,21,'Taurus'],[5,32,'Gemini'],[6,21,'Gemini'],[6,31,'Cancer'],
+    [7,23,'Cancer'],[7,32,'Leo'],[8,23,'Leo'],[8,32,'Virgo'],
+    [9,23,'Virgo'],[9,31,'Libra'],[10,23,'Libra'],[10,32,'Scorpio'],
+    [11,22,'Scorpio'],[11,31,'Sagittarius'],[12,22,'Sagittarius'],[12,32,'Capricorn']
+  ];
+  for (const [bm, bd, sign] of boundaries) {
+    if (m < bm) continue;
+    if (m === bm && d < bd) return sign;
+  }
+  return 'Capricorn';
+}
+
+// Detect Thai/Western sun sign mismatch from birthday + computed Thai sign.
+// Returns null when no mismatch (so footer can be conditionally rendered).
+function detectMismatchClient(birthday, thaiSunSign) {
+  if (!birthday || !thaiSunSign) return null;
+  const western = getWesternSunSignClient(birthday);
+  if (!western || western === thaiSunSign) return null;
+  return { thaiSign: thaiSunSign, westernSign: western };
+}
+
 function signAngle(sign, degree) {
   const idx = ZODIAC_NAMES_N.indexOf(sign);
   return idx === -1 ? 0 : ((idx * 30 + (degree || 0)) - 90) * Math.PI / 180;
@@ -992,7 +1094,7 @@ function buildNatalSVG(planets, nodes) {
   return s;
 }
 
-function showNatalChart(cacheText, personName, birthDateStr) {
+function showNatalChart(cacheText, personName, birthDateStr, birthdayRaw) {
   const { planets, nodes, ascendant } = parseNatalCache(cacheText);
   if (!planets || Object.keys(planets).length === 0) return;
 
@@ -1031,6 +1133,25 @@ function showNatalChart(cacheText, personName, birthDateStr) {
   if (nodes.Rahu) nodesHTML += `<div class="natal-node"><strong>☊ Rahu · North Node</strong><span>${nodes.Rahu.sign} ${nodes.Rahu.degree}°</span></div>`;
   if (nodes.Ketu) nodesHTML += `<div class="natal-node"><strong>☋ Ketu · South Node</strong><span>${nodes.Ketu.sign} ${nodes.Ketu.degree}°</span></div>`;
 
+  // Detect Thai/Western sun sign mismatch — render footer if they differ.
+  // The footer travels with the chart in screenshots, which is essential
+  // because users will compare this chart against Western sources elsewhere.
+  let reconcileHTML = '';
+  if (planets.Sun && planets.Sun.sign && birthdayRaw) {
+    const mismatch = detectMismatchClient(birthdayRaw, planets.Sun.sign);
+    if (mismatch) {
+      reconcileHTML = `
+        <div class="natal-reconcile">
+          <div class="natal-reconcile-line">
+            In the Thai sky you are <em>${mismatch.thaiSign}</em>. The West would call you <em>${mismatch.westernSign}</em>.
+          </div>
+          <div class="natal-reconcile-sub">
+            Same sun, read against a different horizon. Mor Doo reads from the Thai source.
+          </div>
+        </div>`;
+    }
+  }
+
   const uid = 'n' + Date.now();
 
   wrap.innerHTML = `
@@ -1051,6 +1172,7 @@ function showNatalChart(cacheText, personName, birthDateStr) {
           ${wheelSVG}
           <div class="natal-planets">${pHTML}</div>
           ${nodesHTML ? `<div class="natal-divider"></div><div class="natal-nodes">${nodesHTML}</div>` : ''}
+          ${reconcileHTML}
           <div class="natal-footer">หมอดู · Mor Doo with Bee</div>
           <div class="natal-nasa">Planetary positions sourced from NASA astronomical data</div>
         </div>
@@ -1744,7 +1866,7 @@ function buildShareCardHTML(uid, insight, planets, mode, trigger) {
   const showName = firstName ? `${firstName.charAt(0).toUpperCase()}.` : 'The Seeker';
 
   // ── Bottom section: contextual based on reading type ──────────────────
-  // Natal reading → planet grid
+  // Natal reading → planet grid + reconciliation footer when relevant
   // All other readings → color + tip
   let bottomHTML = '';
   if (isNatal && planets) {
@@ -1756,8 +1878,25 @@ function buildShareCardHTML(uid, insight, planets, mode, trigger) {
           <div class="sc-natal-planet">${p}</div>
           <div class="sc-natal-sign">${planets[p].sign}</div>
         </div>`).join('');
+
+      // Detect Thai/Western sun sign mismatch for the share card. The block
+      // travels with the downloaded/screenshotted card so users have context
+      // when comparing this chart against Western horoscope sources.
+      let scReconcileHTML = '';
+      const birthdayCtx = (typeof savedContext !== 'undefined' && savedContext && savedContext.birthday) || '';
+      if (birthdayCtx && planets.Sun && planets.Sun.sign) {
+        const mismatch = detectMismatchClient(birthdayCtx, planets.Sun.sign);
+        if (mismatch) {
+          scReconcileHTML = `
+            <div class="sc-reconcile">
+              <div class="sc-reconcile-line">In the Thai sky you are <em>${mismatch.thaiSign}</em>. The West would call you <em>${mismatch.westernSign}</em>.</div>
+              <div class="sc-reconcile-sub">Same sun, read against a different horizon.</div>
+            </div>`;
+        }
+      }
+
       bottomHTML = `<span class="sc-label">Natal chart</span>
-        <div class="sc-natal-grid" id="${uid}-bottom">${natalGridHTML}</div>`;
+        <div class="sc-natal-grid" id="${uid}-bottom">${natalGridHTML}</div>${scReconcileHTML}`;
     }
   } else {
     // Color + tip — shown loading initially, filled in after API call
@@ -2066,7 +2205,7 @@ async function fetchNatalChart(birthday, birthplace, birthtime) {
     } catch(e) { chartDate = birthday; }
 
     // Show the talisman
-    showNatalChart(cacheText, chartName, chartDate);
+    showNatalChart(cacheText, chartName, chartDate, birthday);
 
     // Store planets for share card — card fires from sendMessage after reading renders
     lastNatalCacheText = cacheText;
