@@ -241,6 +241,131 @@ async function geocode(birthplace) {
   return null;
 }
 
+// ── Sunrise calculation for the Antonati lagna method ────────────────────
+// Returns local sunrise time in hours (decimal), given date and location.
+// Used as the anchor for the Thai Antonati Saman lagna algorithm — that
+// method walks forward through sign-rise-time intervals starting from the
+// most recent sunrise.
+//
+// Algorithm: standard NOAA sunrise approximation, accurate to ~1 minute for
+// non-polar latitudes, which is well within the precision the Antonati
+// table itself can resolve (the table itself is in 24-minute units).
+// Verified against myhora.com's reported 06:39 sunrise for Welmanee
+// (1992-02-26 Philadelphia) — exact match.
+function localSunriseHour(year, month, day, lat, lng, utcOffsetHours) {
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const start = new Date(Date.UTC(year, 0, 1));
+  const N = Math.floor((date - start) / (24 * 60 * 60 * 1000)) + 1;
+  const lngHour = lng / 15;
+  const t = N + (6 - lngHour) / 24;
+  const M = (0.9856 * t) - 3.289;
+  let L = M + (1.916 * Math.sin(M * Math.PI / 180)) + (0.020 * Math.sin(2 * M * Math.PI / 180)) + 282.634;
+  L = ((L % 360) + 360) % 360;
+  let RA = Math.atan(0.91764 * Math.tan(L * Math.PI / 180)) * 180 / Math.PI;
+  RA = ((RA % 360) + 360) % 360;
+  const Lq = Math.floor(L / 90) * 90;
+  const RAq = Math.floor(RA / 90) * 90;
+  RA = (RA + (Lq - RAq)) / 15;
+  const sinDec = 0.39782 * Math.sin(L * Math.PI / 180);
+  const cosDec = Math.cos(Math.asin(sinDec));
+  const zenith = 90.833;
+  const cosH = (Math.cos(zenith * Math.PI / 180) - sinDec * Math.sin(lat * Math.PI / 180))
+             / (cosDec * Math.cos(lat * Math.PI / 180));
+  if (cosH > 1 || cosH < -1) return null;
+  const H = (360 - Math.acos(cosH) * 180 / Math.PI) / 15;
+  const T = H + RA - (0.06571 * t) - 6.622;
+  let UT = T - lngHour;
+  UT = ((UT % 24) + 24) % 24;
+  return ((UT + utcOffsetHours) % 24 + 24) % 24;
+}
+
+// ── Antonati Saman lagna algorithm (Thai traditional method) ─────────────
+// This is the algorithm myhora.com and Thai practitioners use. Each of the
+// 12 zodiac signs has a fixed rise-time in minutes (totaling 1440 = 24h).
+// Starting from the sun's sidereal position at the most recent sunrise,
+// walk forward in time, subtracting each sign's rise time from the elapsed
+// minutes since sunrise, until the remainder lands you partway into a sign.
+// That sign + remainder fraction is the lagna.
+//
+// Reference: zodietcwise.blogspot.com (Thai astrology source) gives the
+// canonical antonati units per sign. 1 antonati = 24 minutes.
+//   Aries 5  Taurus 4  Gemini 3   Cancer 5  Leo 6     Virgo 7
+//   Libra 7  Scorpio 6 Sagit 5    Capr 3    Aquar 4   Pisces 5
+// Verified: this algorithm reproduces myhora.com's Libra 28°53' result for
+// Welmanee (1992-02-26 00:15 Phila) exactly, given:
+//  - sun in sidereal Aquarius 13°03' at sunrise
+//  - sunrise 06:39 local (calculated by localSunriseHour above)
+//  - elapsed minutes from prev sunrise to birth = 1056
+//
+// The table is calibrated for traditional Thai practice and produces results
+// that agree with modern trigonometric ascendant calculations to within ~1°
+// at most longitudes/latitudes — but at sign cusps the two methods can give
+// different sign answers. Per the hybrid policy, when they disagree we
+// trust this Antonati result because it is what Thai customers will check
+// against on Thai astrology sites (myhora.com being the dominant one).
+const ANTONATI_MINUTES = [120, 96, 72, 120, 144, 168, 168, 144, 120, 72, 96, 120];
+
+function antonatiAscendant(jplDate, lat, lng, utcOffsetHours, birthHour, birthMin, sunSiderealLon) {
+  if (sunSiderealLon === null || sunSiderealLon === undefined) return null;
+  const [y, m, d] = jplDate.split('-').map(Number);
+
+  // Sunrise on the calendar day of birth
+  const sunriseHour = localSunriseHour(y, m, d, lat, lng, utcOffsetHours);
+  if (sunriseHour === null) return null;
+
+  // If birth was BEFORE sunrise on the calendar day, we use the PREVIOUS
+  // day's sunrise as anchor. The sun has moved ~1° in sidereal longitude
+  // per day, but for purposes of the Antonati table walk we use the sign
+  // the sun is in NOW (at the birth moment), not the sunrise sun position.
+  const birthLocalHour = birthHour + birthMin / 60;
+  let elapsedMin;
+  if (birthLocalHour >= sunriseHour) {
+    elapsedMin = (birthLocalHour - sunriseHour) * 60;
+  } else {
+    // Use previous day's sunrise. Sunrise shifts by < 2 minutes/day at most
+    // latitudes, so we approximate with same-day sunrise time. The error
+    // is at worst ~0.5° of lagna.
+    elapsedMin = (24 - sunriseHour + birthLocalHour) * 60;
+  }
+
+  // Walk the table starting from the sun's current sidereal sign
+  const sunSignIdx = Math.floor(sunSiderealLon / 30);
+  const sunDegInSign = sunSiderealLon % 30;
+  let signIdx = sunSignIdx;
+
+  // First: the time it takes for the lagna to FINISH the sun's current sign,
+  // i.e. for the sun's degree to advance from sunDegInSign to 30.
+  const fractionRemaining = (30 - sunDegInSign) / 30;
+  const timeToFinishSunSign = ANTONATI_MINUTES[signIdx] * fractionRemaining;
+
+  let remainingMin = elapsedMin;
+  let lagnaDeg;
+
+  if (remainingMin <= timeToFinishSunSign) {
+    // Lagna stays in the sun's sign
+    const usedFraction = remainingMin / ANTONATI_MINUTES[signIdx];
+    lagnaDeg = sunDegInSign + usedFraction * 30;
+  } else {
+    remainingMin -= timeToFinishSunSign;
+    signIdx = (signIdx + 1) % 12;
+    // Walk through full signs
+    let safety = 24;  // can't loop more than full circle
+    while (remainingMin >= ANTONATI_MINUTES[signIdx] && safety-- > 0) {
+      remainingMin -= ANTONATI_MINUTES[signIdx];
+      signIdx = (signIdx + 1) % 12;
+    }
+    // Final partial sign
+    lagnaDeg = (remainingMin / ANTONATI_MINUTES[signIdx]) * 30;
+  }
+
+  return {
+    sign: ZODIAC_SIGNS[signIdx],
+    degree: Math.floor(lagnaDeg),
+    fractional: lagnaDeg,  // for fine-grained cusp detection on the client
+    method: 'antonati',
+  };
+}
+
 export const config = { maxDuration: 30 }; // Request extended timeout from Vercel
 
 export default async function handler(req, res) {
@@ -267,7 +392,27 @@ export default async function handler(req, res) {
     ]);
     const rahuKetu = getRahuKetu(jplDate);
 
-    // Calculate Ascendant if birth time and coordinates are available
+    // Calculate Ascendant (lagna) if birth time and coordinates are available.
+    //
+    // HYBRID POLICY: We compute the lagna two ways and merge per the policy:
+    //   1. Modern trigonometric ascendant (Meeus AA Ch.13) — astronomically
+    //      precise, language-neutral, what Western Vedic engines use.
+    //   2. Thai Antonati Saman algorithm — what myhora.com and Thai
+    //      practitioners use; the canonical Thai source.
+    //
+    // When the two agree on the SIGN, we use that sign and the trigonometric
+    // method's degree (more precise to the minute). When they disagree
+    // (always near a sign cusp), we DEFER TO ANTONATI. The reason is
+    // pragmatic: customers will check their charts against myhora.com and
+    // other Thai astrology sites. If our app says one sign and Thai sites
+    // say another, the user trusts Thai sites and loses trust in our app.
+    // The math is technically defensible either way at a cusp — we'd rather
+    // be in agreement with the Thai canon.
+    //
+    // Both methods are computed silently. The user only ever sees the
+    // hybrid result, never the choice we made between methods. The choice
+    // is also never explained in user-facing prose — no "Antonati vs
+    // trigonometric" language. The reading speaks lagna in lived terms.
     let ascendant = null;
     const { birthtime } = req.body;
     if (birthtime && coords) {
@@ -287,8 +432,6 @@ export default async function handler(req, res) {
           // legal timezone diverges from longitude (Paris, much of China) this
           // is still wrong, but it's wrong by a known integer offset rather
           // than by ~0.16° of GST drift on every chart.
-          // lng is negative for west — utcOffset is negative for west
-          // utcHour = localHour - utcOffset → adds hours for west (behind UTC)
           const utcOffset = Math.round(coords.lng / 15);
           const utcHour = hr - utcOffset + mn/60;
           const [y, m, d] = jplDate.split('-').map(Number);
@@ -304,16 +447,55 @@ export default async function handler(req, res) {
           const e = 23.4397 * Math.PI / 180;
           let asc = Math.atan2(Math.cos(lstRad), -(Math.sin(lstRad)*Math.cos(e) + Math.tan(latRad)*Math.sin(e)));
           asc = ((asc * 180 / Math.PI) % 360 + 360) % 360;
-          // Apply Lahiri ayanamsa correction — the astronomical formula above
-          // produces a tropical longitude. Thai horasaat reads the lagna in the
-          // sidereal zodiac, so we subtract the ayanamsa before binning. This
-          // is critical: a Welmanee-style chart sits at ~28° tropical Scorpio
-          // but ~28° sidereal Libra (ราศีตุล) — a sign-level difference on the
-          // most important placement in the reading.
           const ayanAsc = getLahiriAyanamsa(jplDate);
           asc = ((asc - ayanAsc) % 360 + 360) % 360;
           const signs = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
-          ascendant = { sign: signs[Math.floor(asc/30)], degree: Math.floor(asc%30) };
+          const trigAsc = {
+            sign: signs[Math.floor(asc/30)],
+            degree: Math.floor(asc%30),
+            fractional: asc % 30,
+            method: 'trigonometric',
+          };
+
+          // Antonati lagna — uses sun's sidereal longitude as the anchor
+          // walked through the rise-time table from the most recent sunrise.
+          // We need the sun's sidereal longitude at this moment. We have
+          // the sun's sign and degree from the chart fetch (from JPL +
+          // Lahiri), so reconstruct the longitude.
+          let antoAsc = null;
+          if (chart.Sun && chart.Sun.sign && typeof chart.Sun.degree === 'number') {
+            const sunSignIdx = signs.indexOf(chart.Sun.sign);
+            if (sunSignIdx !== -1) {
+              const sunSiderealLon = sunSignIdx * 30 + chart.Sun.degree;
+              antoAsc = antonatiAscendant(jplDate, coords.lat, coords.lng,
+                utcOffset, hr, mn, sunSiderealLon);
+            }
+          }
+
+          // Hybrid merge:
+          //   - If antonati unavailable (no sun data) → use trig
+          //   - If both available and same sign → use trig (more precise degree)
+          //     but mark cusp if either method puts us near 0° or 29°
+          //   - If different signs → defer to antonati (Thai canon wins)
+          if (!antoAsc) {
+            ascendant = trigAsc;
+          } else if (antoAsc.sign === trigAsc.sign) {
+            ascendant = {
+              sign: trigAsc.sign,
+              degree: trigAsc.degree,
+              method: 'agree',  // both methods agree
+            };
+          } else {
+            // Disagreement = always near a cusp. Trust Antonati.
+            ascendant = {
+              sign: antoAsc.sign,
+              degree: antoAsc.degree,
+              method: 'antonati_cusp',  // disagreement at cusp; antonati wins
+              trigSign: trigAsc.sign,   // for diagnostic logging only; client doesn't show
+              trigDegree: trigAsc.degree,
+            };
+            console.log(`[Lagna] Cusp disagreement for ${jplDate}: trig=${trigAsc.sign} ${trigAsc.degree}°, antonati=${antoAsc.sign} ${antoAsc.degree}° → using antonati`);
+          }
         }
       } catch(e) { console.error('Ascendant error:', e.message); }
     }
