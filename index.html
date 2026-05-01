@@ -2281,6 +2281,60 @@ async function fetchNatalChart(birthday, birthplace, birthtime) {
     if (Array.isArray(data.failedPlanets) && data.failedPlanets.length > 0) {
       lines.push('PARTIAL_FETCH: ' + data.failedPlanets.join(', ') + ' — JPL Horizons did not return data for these planets on this request. Refresh to retry. Do not invent placements for missing planets.');
     }
+
+    // Patch 10: house structure. This is the most interpretively rich data
+    // the chart can produce. Without it, a natal reading can describe planets
+    // in signs but cannot describe planets DOING JOBS in life-domains —
+    // which is the difference between a horoscope and a real reading.
+    //
+    // The lord-in-house lines tell the model "the planet that runs life
+    // domain X is currently working in life domain Y." For Welmanee:
+    //   "Lord of self (Venus) is in home/family/property"
+    // is the chart's primary identity statement (per the practitioner).
+    //
+    // House meanings are pre-translated to plain English in the chart engine
+    // so the model never has to render "tanu" or "bandhu" in user-facing
+    // text. Voice rule: weave these into prose, never quote them literally.
+    if (data.houses && data.houses.lordPlacements) {
+      lines.push('');
+      lines.push('HOUSE STRUCTURE (whole-sign, lagna-anchored):');
+      // Where each planet sits, in life-domain terms
+      lines.push('Planet placements by life-domain:');
+      for (const [planet, h] of Object.entries(data.houses.houseOfPlanet || {})) {
+        const meaning = data.houses && (data.houses.lordPlacements[h-1] || {}).houseMeaning;
+        if (meaning) lines.push(`  ${planet} sits in house ${h} (${meaning})`);
+      }
+      // Lord-in-house — the synthesis-grade interpretive structure
+      lines.push('');
+      lines.push('Life-domain lord placements (which planet runs each domain, and where it has gone to do its work):');
+      for (const lp of data.houses.lordPlacements) {
+        if (!lp.lordIn) continue;  // skip lords whose planet didn't fetch
+        lines.push(`  Lord of house ${lp.house} (${lp.houseMeaning}) → ${lp.lord} → working in house ${lp.lordIn} (${lp.lordInMeaning})`);
+      }
+      // Synthesis hint specifically for the lagna lord
+      const lagnaLord = data.houses.lordPlacements[0];
+      if (lagnaLord && lagnaLord.lordIn) {
+        lines.push('');
+        lines.push(`PRIMARY IDENTITY STATEMENT: ${lagnaLord.lord} (the planet ruling who you are) has gone to work in the life-domain of "${lagnaLord.lordInMeaning}". This is the chart's deepest answer to "who is this person?" — their identity is housed in that domain. Weave this into the reading as a primary observation, in plain language. Do NOT use the words "lord," "house," "lagna," "tanu," or "bhava" in user-facing prose. Translate to lived language: "your identity lives in your home" or "what you are runs through what you build" — match it to the specific domain.`);
+      }
+    }
+
+    // Patch 11: convergence findings. These are pre-computed structural
+    // patterns (stelliums, planet saturations, dignity balance, lagna-lord
+    // house type) that the model should LEAD WITH in synthesis rather than
+    // discover from raw placements. Per Ajarn Luck principle: convergences
+    // are the chart's primary observations; individual placements are the
+    // backup detail.
+    if (Array.isArray(data.convergences) && data.convergences.length > 0) {
+      lines.push('');
+      lines.push('CHART CONVERGENCES (lead the reading with these — they are the structural signatures, not decorations):');
+      for (const f of data.convergences) {
+        lines.push(`  [${f.type}] ${f.synthesis}`);
+      }
+      lines.push('');
+      lines.push('SYNTHESIS DIRECTIVE: Each of these convergences names a pattern the chart writes about this person. Use them as primary structural observations — not as a list of facts to enumerate, but as ONE truth seen from multiple angles. The reader is one person; convergences are how the chart shows that. Do not name the convergence type ("stellium," "saturation") in user-facing prose. Translate to lived language.');
+    }
+
     const cacheText = lines.join('\n');
 
     // Store in history
