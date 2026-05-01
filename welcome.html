@@ -759,6 +759,63 @@ body {
   font-family: 'Sarabun', sans-serif;
   opacity: 0.7;
 }
+
+/* Zodiac difference FAQ — appears after the NASA section pillars.
+   Explains why the user's sun sign here may differ from Western horoscope
+   columns. Collapsed by default; expandable on tap. <details>/<summary>
+   handles toggle natively without JavaScript. */
+.zodiac-faq {
+  max-width: 640px;
+  margin: 36px auto 0;
+  border-top: 1px solid rgba(184,134,11,0.15);
+  padding-top: 28px;
+}
+.zodiac-faq details {
+  background: rgba(255,253,248,0.5);
+  border: 1px solid rgba(184,134,11,0.15);
+  border-radius: 10px;
+  padding: 0;
+  text-align: left;
+}
+.zodiac-faq summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 14px 18px;
+  font-family: 'Sarabun', sans-serif;
+  font-size: 13px;
+  color: var(--brown-mid);
+  user-select: none;
+  font-weight: 400;
+  transition: color 0.2s ease;
+}
+.zodiac-faq summary::-webkit-details-marker { display: none; }
+.zodiac-faq summary::before {
+  content: '✦';
+  color: var(--gold);
+  margin-right: 8px;
+}
+.zodiac-faq summary::after {
+  content: '+';
+  float: right;
+  color: var(--gold);
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 1;
+}
+.zodiac-faq details[open] summary::after { content: '−'; }
+.zodiac-faq summary:hover { color: var(--brown-deep); }
+.zodiac-faq-body {
+  padding: 0 18px 16px;
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: var(--text-mid);
+  font-family: 'Sarabun', sans-serif;
+  font-weight: 300;
+}
+.zodiac-faq-body p { margin: 0 0 10px; }
+.zodiac-faq-body p:last-child { margin-bottom: 0; }
+.zodiac-faq-body strong { color: var(--gold); font-weight: 500; }
+.zodiac-faq-body em { font-style: italic; color: var(--gold); font-family: 'Playfair Display', serif; }
 </style>
 </head>
 <body>
@@ -985,6 +1042,19 @@ body {
         </div>
       </div>
       <div class="nasa-attribution">Planetary positions sourced from NASA astronomical data</div>
+
+      <!-- Zodiac difference FAQ — for users who notice their sun sign here
+           differs from the one they know from Western horoscope columns -->
+      <div class="zodiac-faq">
+        <details>
+          <summary>Why might my sun sign be different here than in Western astrology?</summary>
+          <div class="zodiac-faq-body">
+            <p>Western astrology fixes the zodiac to the seasons. Thai astrology fixes it to the actual stars. The two were aligned about 2,000 years ago, but the stars have drifted; the gap is now roughly one sign.</p>
+            <p>Mor Doo reads from the Thai source. The numerology, the colors, the day-of-week energy, the year animal — all of it is built on Thai placements. <strong>Both systems are real</strong>; they just measure different references.</p>
+            <p>People born in the first half of their Western sign usually keep the same sign in the Thai system. People born in the second half — especially close to the boundary between two signs — often shift to the previous sign. That's why a Pisces born February 20 might read as Pisces in both systems, but a Pisces born March 18 will likely read as Aquarius here.</p>
+          </div>
+        </details>
+      </div>
     </div>
   </section>
 
