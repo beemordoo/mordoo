@@ -23,6 +23,133 @@ const PLANET_DIGNITY = {
   Saturn:  { own:['Capricorn','Aquarius'], exalted:['Libra'],      debilitated:['Aries'] },
 };
 
+// ── House system (Patch 10) ──────────────────────────────────────────────
+// Whole-sign houses: house 1 = lagna's sign, house 2 = next sign, ... house
+// 12 = previous sign. This is the Thai-traditional system (also the oldest
+// Vedic system) and matches what myhora.com produces. Verified against the
+// practitioner's chart for Welmanee — all 9 placements (Sun in 5th, Moon in
+// 2nd, Venus in 4th as lagna lord, Mars/Saturn in 4th, Jupiter in 11th, etc.)
+// reproduce exactly with this formula.
+
+// Sign rulership — which planet "owns" each sign. Standard Thai/Vedic table.
+// Used to compute house lords (the planet that rules each house's sign).
+const SIGN_LORD = {
+  Aries: 'Mars',       Taurus: 'Venus',     Gemini: 'Mercury',
+  Cancer: 'Moon',      Leo: 'Sun',          Virgo: 'Mercury',
+  Libra: 'Venus',      Scorpio: 'Mars',     Sagittarius: 'Jupiter',
+  Capricorn: 'Saturn', Aquarius: 'Saturn',  Pisces: 'Jupiter',
+};
+
+// House meanings in plain English. These are user-facing strings that get
+// woven into the reading prose, so they MUST follow the migration guide's
+// voice rules: no Thai or Sanskrit terminology (no "tanu," "kalatra,"
+// "putra," "bhava"), no jargon ("ascendant," "cardinal," "succedent"),
+// just lived-language descriptions of what each life domain is.
+//
+// Mapping from the Thai bhava names used in the practitioner's chart:
+//   1 ตนุ → self/body  ·  2 กดุมภะ → money/voice  ·  3 สหัชชะ → siblings/courage
+//   4 พันธุ → home/family  ·  5 ปุตตะ → children/creativity
+//   6 อริ → struggles/health  ·  7 ปัตนิ → partnership
+//   8 มรณะ → hidden/inheritance  ·  9 สุภะ → fortune/teachers
+//   10 กัมมะ → career/reputation  ·  11 ลาภะ → gains/friendships
+//   12 วินาศ → endings/private
+const HOUSE_MEANING = {
+  1:  'self, body, how you show up in the world',
+  2:  'money, what you accumulate, your voice',
+  3:  'younger siblings, short journeys, courage',
+  4:  'home, family, mother, property, foundation',
+  5:  'children, creativity, what you originate',
+  6:  'struggles, health, daily work, debt',
+  7:  'partner, marriage, open opposition',
+  8:  'inheritance, hidden things, transformation',
+  9:  'fortune, faith, father, long journeys, teachers',
+  10: 'career, reputation, authority, what you produce',
+  11: 'gains, friendships, older siblings, hopes',
+  12: 'endings, hidden things, private life, retreat',
+};
+
+// Build the sign→house map for a given lagna sign.
+// Returns: { Libra: 1, Scorpio: 2, ..., Virgo: 12 } when lagna is Libra.
+// Used to look up which house any planet falls into based on its sign.
+function buildHouseMap(lagnaSign) {
+  const lagnaIdx = ZODIAC_SIGNS.indexOf(lagnaSign);
+  if (lagnaIdx === -1) return null;
+  const map = {};
+  for (let i = 0; i < 12; i++) {
+    const signIdx = (lagnaIdx + i) % 12;
+    map[ZODIAC_SIGNS[signIdx]] = i + 1;
+  }
+  return map;
+}
+
+// Given the chart placements + lagna, compute the house structure.
+// Returns an object suitable for direct inclusion in the chart response:
+//   {
+//     houseOfPlanet: { Sun: 5, Moon: 2, ..., Rahu: 3, Ketu: 9 },
+//     lordOfHouse:   { 1: 'Venus', 2: 'Mars', 3: 'Jupiter', ..., 12: 'Mercury' },
+//     lordPlacements: [
+//       { house: 1, lord: 'Venus', lordIn: 4, lordSign: 'Capricorn',
+//         houseMeaning: 'self, body, how you show up...',
+//         lordInMeaning: 'home, family, mother, property, foundation' },
+//       ...
+//     ]
+//   }
+// The lordPlacements array is the most interpretively useful structure —
+// each entry says "lord of house X went to house Y" in a form ready for
+// Ajarn Luck synthesis. The 1st entry (lord of lagna) is the chart's
+// primary identity statement (per the practitioner's reading).
+function computeHouseStructure(chart, rahuKetu, lagnaSign) {
+  if (!lagnaSign) return null;
+  const houseMap = buildHouseMap(lagnaSign);
+  if (!houseMap) return null;
+
+  // Where each planet falls
+  const houseOfPlanet = {};
+  for (const [p, data] of Object.entries(chart || {})) {
+    if (data && data.sign && houseMap[data.sign]) {
+      houseOfPlanet[p] = houseMap[data.sign];
+    }
+  }
+  // Include nodes — Rahu/Ketu placements are interpretively important
+  if (rahuKetu) {
+    for (const [node, data] of Object.entries(rahuKetu)) {
+      if (data && data.sign && houseMap[data.sign]) {
+        houseOfPlanet[node] = houseMap[data.sign];
+      }
+    }
+  }
+
+  // Sign in each house (inverse of houseMap)
+  const signInHouse = {};
+  for (const [sign, h] of Object.entries(houseMap)) signInHouse[h] = sign;
+
+  // Lord of each house = lord of the sign in that house
+  const lordOfHouse = {};
+  for (let h = 1; h <= 12; h++) {
+    lordOfHouse[h] = SIGN_LORD[signInHouse[h]];
+  }
+
+  // The 12 lord-in-house facts. Each tells you "the planet that runs life
+  // domain X is currently doing its work in life domain Y" — the most
+  // interpretively rich data point in the chart.
+  const lordPlacements = [];
+  for (let h = 1; h <= 12; h++) {
+    const lord = lordOfHouse[h];
+    const lordIn = houseOfPlanet[lord];  // may be undefined if planet wasn't fetched
+    const placement = {
+      house: h,
+      lord,
+      lordIn: lordIn || null,
+      lordSign: chart && chart[lord] ? chart[lord].sign : null,
+      houseMeaning: HOUSE_MEANING[h],
+      lordInMeaning: lordIn ? HOUSE_MEANING[lordIn] : null,
+    };
+    lordPlacements.push(placement);
+  }
+
+  return { houseOfPlanet, lordOfHouse, signInHouse, lordPlacements };
+}
+
 // Lahiri ayanamsa — angular offset between tropical and Thai sidereal zodiacs.
 // JPL Horizons returns tropical (geocentric ecliptic) coordinates. Thai
 // horasaat uses sidereal — this offset must be subtracted before binning to
@@ -410,6 +537,132 @@ function antonatiAscendant(jplDate, lat, lng, utcOffsetHours, birthHour, birthMi
   };
 }
 
+// ── Convergence detection (Patch 11) ──────────────────────────────────────
+// Find places where multiple independent layers of the cosmology point at
+// the same theme — these are the patterns the practitioner reads as
+// SIGNATURES rather than facts. The model gets these as starting points
+// for synthesis; without them, it has to discover convergences from raw
+// placements (which it does badly). With them, it can lead with
+// "three forces in the same sign" instead of describing each in turn.
+//
+// Detected patterns:
+//   1. STELLIUM — 3+ planets in the same sign (with the house meaning if known)
+//   2. DIGNITY BALANCE — count of strong vs constrained placements
+//   3. LAGNA LORD HOUSE TYPE — whether "who you are" went to a constructive
+//      or difficult life-domain
+//   4. PLANET SATURATION — a planet appearing across multiple independent
+//      layers (day ruler, lagna lord, dignity, sun-sign ruler). Currently
+//      detects 3+ layers; will be more sensitive once tanusesha is added.
+//
+// All synthesis strings use lived language only — no Thai, no Sanskrit, no
+// "lord" or "house" or "lagna" in the user-facing parts. The model is
+// expected to fold these directly into prose.
+function detectConvergences(chart, rahuKetu, houses, dayOfWeekRuler) {
+  const findings = [];
+  if (!chart) return findings;
+
+  // 1. Planet saturation — track which planet shows up in which layers
+  const planetWeights = {};
+  const noteLayer = (planet, layer) => {
+    if (!planet) return;
+    if (!planetWeights[planet]) planetWeights[planet] = [];
+    planetWeights[planet].push(layer);
+  };
+  if (dayOfWeekRuler) noteLayer(dayOfWeekRuler, 'day-of-week ruler');
+  if (houses && houses.lordPlacements && houses.lordPlacements[0]) {
+    noteLayer(houses.lordPlacements[0].lord, 'lagna lord');
+  }
+  if (chart.Sun && chart.Sun.sign) {
+    noteLayer(SIGN_LORD[chart.Sun.sign], 'sun-sign ruler');
+  }
+  for (const [p, d] of Object.entries(chart)) {
+    if (d && d.dignity) {
+      if (d.dignity.includes('exalted') || d.dignity.includes('own sign')) {
+        noteLayer(p, `${d.dignity} in ${d.sign}`);
+      }
+    }
+  }
+  for (const [planet, layers] of Object.entries(planetWeights)) {
+    if (layers.length >= 3) {
+      findings.push({
+        type: 'planet_saturation',
+        planet,
+        layers,
+        synthesis: `${planet} reinforces across ${layers.length} independent layers (${layers.join(', ')}). This is a saturation signature — the chart fundamentally runs on ${planet}'s frequency.`,
+      });
+    }
+  }
+
+  // 2. Stellium detection — 3+ planets in the same sign
+  const planetsBySign = {};
+  for (const [p, d] of Object.entries(chart)) {
+    if (d && d.sign) {
+      if (!planetsBySign[d.sign]) planetsBySign[d.sign] = [];
+      planetsBySign[d.sign].push(p);
+    }
+  }
+  for (const [sign, planets] of Object.entries(planetsBySign)) {
+    if (planets.length >= 3) {
+      const houseOfSign = houses && houses.houseOfPlanet && houses.houseOfPlanet[planets[0]];
+      const houseMean = houses && houses.lordPlacements && houseOfSign
+        && houses.lordPlacements[houseOfSign-1]
+        ? houses.lordPlacements[houseOfSign-1].houseMeaning : null;
+      findings.push({
+        type: 'stellium',
+        sign,
+        planets,
+        houseOfStellium: houseOfSign,
+        houseMeaning: houseMean,
+        synthesis: `${planets.length} planets sit together in ${sign}${houseMean ? ` (the life-domain of ${houseMean})` : ''}: ${planets.join(', ')}. This is a foundation signature — these forces don't run on different currents, they share one ground.`,
+      });
+    }
+  }
+
+  // 3. Dignity balance — overall chart strength
+  let strong = 0, weak = 0;
+  for (const [p, d] of Object.entries(chart)) {
+    if (d && d.dignity) {
+      if (d.dignity.includes('exalted') || d.dignity.includes('own sign')) strong++;
+      if (d.dignity.includes('debilitated') || d.dignity.includes('afflicted')) weak++;
+    }
+  }
+  if (strong + weak >= 2) {
+    findings.push({
+      type: 'dignity_balance',
+      strong, weak,
+      synthesis: strong > weak
+        ? `${strong} planet(s) are at full strength; ${weak} are constrained. A chart with more strong placements than weak ones — the foundation is solid even where there are flags.`
+        : strong < weak
+        ? `${strong} planet(s) are at full strength; ${weak} are constrained. A chart that asks for honest reckoning with what is constrained, not just celebration of what is strong.`
+        : `${strong} planet(s) at full strength, ${weak} constrained. A chart in tension — equal strength and constraint, requiring careful synthesis.`,
+    });
+  }
+
+  // 4. Lagna lord house-type — primary identity location signal
+  if (houses && houses.lordPlacements && houses.lordPlacements[0]) {
+    const ll = houses.lordPlacements[0];
+    if (ll.lordIn) {
+      const benefic = [1,4,5,7,9,10,11].includes(ll.lordIn);
+      const malefic = [6,8,12].includes(ll.lordIn);
+      if (benefic) {
+        findings.push({
+          type: 'lagna_lord_benefic_house',
+          lordIn: ll.lordIn, lordInMeaning: ll.lordInMeaning,
+          synthesis: `The planet running who you are has gone to a constructive life-domain (${ll.lordInMeaning}). What you build there is foundational, not incidental.`,
+        });
+      } else if (malefic) {
+        findings.push({
+          type: 'lagna_lord_malefic_house',
+          lordIn: ll.lordIn, lordInMeaning: ll.lordInMeaning,
+          synthesis: `The planet running who you are has gone to a difficult life-domain (${ll.lordInMeaning}). Identity here is forged through challenge, not given easily.`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
 export const config = { maxDuration: 30 }; // Request extended timeout from Vercel
 
 export default async function handler(req, res) {
@@ -544,10 +797,29 @@ export default async function handler(req, res) {
       } catch(e) { console.error('Ascendant error:', e.message); }
     }
 
+    // Day-of-week ruler — used by Patch 11 convergence detection.
+    // Standard Thai mapping: Sun day → Sun, Mon → Moon, Tue → Mars, Wed → Mercury,
+    // Thu → Jupiter, Fri → Venus, Sat → Saturn. Note Wed-night birth is
+    // Rahu-ruled in Thai tradition, but at the chart-engine level we don't
+    // distinguish; the Wed-Rahu split happens later in the chat layer.
+    const dayOfWeekRuler = (() => {
+      try {
+        const [y,m,d] = jplDate.split('-').map(Number);
+        const date = new Date(Date.UTC(y, m-1, d));
+        const map = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'];
+        return map[date.getUTCDay()];
+      } catch(e) { return null; }
+    })();
+
+    const houses = ascendant ? computeHouseStructure(chart, rahuKetu, ascendant.sign) : null;
+    const convergences = detectConvergences(chart, rahuKetu, houses, dayOfWeekRuler);
+
     return res.status(200).json({
       chart,
       rahuKetu,
       ascendant,
+      houses,
+      convergences,
       coords,
       jplDate,
       planetsFound: Object.keys(chart).length,
