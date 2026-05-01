@@ -459,7 +459,6 @@
   .share-card.sc-dark  .sc-fdate { color: #6A5428; }
 
   .sc-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-  @media (max-width: 600px) { .sc-controls { padding-right: 110px; } }
   .sc-mode-btn { padding: 5px 14px; border-radius: 7px; font-size: 11px; cursor: pointer; border: 1px solid #B8892A; font-family: 'Sarabun', sans-serif; letter-spacing: 0.05em; background: transparent; color: #6B4A1E; transition: all 0.15s; }
   .sc-mode-btn.active { background: #B8892A; color: #FDF6E8; }
   .sc-toggle-row { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #6B4A1E; }
@@ -505,7 +504,6 @@
     display: flex; align-items: center; gap: 6px;
   }
   .guide-btn:hover { background: rgba(184,134,11,0.2); border-color: var(--gold); }
-  body.session-active .guide-btn { display: none !important; }
 
   .guide-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.45);
@@ -1099,17 +1097,28 @@ async function generateShareSummary(readingText, trigger, planets) {
   const zodiac = zodMatch ? zodMatch[0] : null;
   const isNatal = trigger === 'natal';
 
-  const prompt = `You are the Mor Doo — a Thai fortune teller who reads through Thai numerology (Life Path numbers, name numbers, lek-sasat), Chinese and Thai zodiac (animal and element), and planetary positions.
+  const prompt = `You are the Mor Doo — a Thai fortune teller working in the Royal Thai Lek Sasat tradition (เลขศาสตร์, สมาคมโหรแห่งประเทศไทย). You read through Thai numerology, Chinese/Thai zodiac (animal + element), and planetary positions. The Royal Thai digit-planet mapping is: 1=Sun, 2=Moon, 3=Mars, 4=Mercury, 5=Jupiter, 6=Venus, 7=Saturn (the most challenging energy in Thai numerology), 8=Rahu, 9=Ketu (the SACRED digit — divine protection, the most prized number in Thai practice).
 
-Respond with ONE raw JSON object and NOTHING ELSE. No markdown, no backticks, no preamble like "Here is the JSON", no explanation after. The very first character of your response must be { and the very last character must be }.
+Respond ONLY with a JSON object. No markdown, no backticks, no preamble like "Here is the JSON", no explanation. The very first character must be { and the last character must be }.
 
 From this reading, extract:
-1. "summary": 2-3 sentences summarizing the ESSENCE of what was revealed in this specific reading. Do NOT just repeat the reading's opening line or welcome sentence. Capture the core insight — the tension, the gift, or the prescription. Weave together Life Path${lp ? ' ' + lp : ''}, zodiac${zodiac ? ' (' + zodiac + ')' : ''}, and planetary energy. Poetic, specific, spoken as the Mor Doo. Do not start with "Your" or "Welcome". Use the person's first name AT MOST ONCE — never repeat it.
-2. "colorLabel": a short contextual label explaining WHY this color is being recommended. 3-6 words. Examples: "What to wear today", "To counterbalance Saturn's weight", "To draw Mars energy in", "Color to carry for courage", "To invite Venus's softness", "For emotional grounding today". Make it specific to the reading's energy.
-3. "color": the color to wear or carry today FROM THE READING (just the color name, e.g. "Deep violet" or "Rose gold" or "Blue" or "Navy"). If the reading explicitly says to wear/carry a color, USE THAT EXACT COLOR. If multiple colors are mentioned, pick the primary/first one. Only derive from planetary energy if NO color is mentioned in the reading.
-4. "colorReason": one short phrase explaining the energy behind it (e.g. "Mars energy — for courage and bold action", "Venus colors — to amplify magnetism").
-5. "tip": one practical serm duang (เสริมดวง) action — rooted in Thai astrology, numerology, or cultural belief, framed as a concrete modern action. Give the astrological/numerological reason first, then the action. Never generic. Examples: "Jupiter governs Thursday — wear gold today to amplify expansion energy", "Your Life Path 4 resists change; light incense before a difficult conversation to invite clarity", "Mercury rules communication this hour — write the delayed message before noon", "Water Monkey energy flows best when moving — take a different route today to shift stagnant patterns".
-6. "tipLabel": a 1-3 word label for the tip category, e.g. "Today's practice", "The Mor Doo says", "For your energy".
+1. "summary": 2-3 sentences capturing the essence of THIS specific reading. Weave together Life Path${lp ? ' ' + lp : ''}, zodiac${zodiac ? ' (' + zodiac + ')' : ''}, and the planetary energy at play. Poetic, specific, spoken as the Mor Doo. Do not start with "Your" or "Welcome". Do NOT just repeat the reading's opening line.
+2. "colorLabel": a short contextual label (3-6 words) explaining WHY this color is being recommended. Make it specific to the reading's energy. Examples: "To amplify Jupiter's wisdom today", "To ground Mars without losing its power", "To invite Venus's softness", "To counterbalance Saturn's weight", "To draw Mercury's clarity in".
+3. "color": the specific color to wear or carry today. If the reading explicitly names a color (e.g. "wear blue or navy"), use THAT EXACT COLOR. Otherwise derive one from the day's 5-category color palette in the reading's context (Career / Money / Luck / Charm / Authority) based on what the reading is asking for. NEVER recommend the day's avoid-color (kala kinee). Just the color name (e.g. "Deep violet", "Rose gold", "Blue", "Navy", "Emerald green").
+4. "colorReason": one short phrase explaining the energy behind the color. Always anchor to a Royal Thai planet. Examples: "Jupiter's planetary resonance — expansion grounded in steadiness", "Mercury's color — sharpens speech, opens contracts", "Saturn's stabilizing force — keeps Mars honest and purposeful", "Venus's frequency — the wavelength of magnetism".
+5. "tip": one practical action grounded in Royal Thai numerology and astrology, framed as universal modern advice. Use the 5-beat pattern compressed: name the cosmic root + give the concrete action + briefly frame the mechanism. NEVER prescribe religious or culturally specific actions (no temple visits, no offerings to deities, no monk-blessed amulets, no merit-making donations, no spirit house rituals, no Thai-specific food rules). Examples of what to write:
+   - "Sign agreements or have difficult conversations in the morning hours — Mercury's clarity is strongest before noon, and your Water element flows most freely then."
+   - "Pause before you speak this evening. Ask yourself if the words are necessary or just Mars pushing. If necessary — speak without apology. If not — let Saturn's silence hold the space."
+   - "Listen beneath the words today — someone will ask for your counsel. Give it without softening it."
+   - "Light a single candle and sit with it for nine slow breaths — Ketu's number, the sacred completion, before you decide."
+   - "Send the message you have been composing in your head — Venus does not wait, and she rewards those who move while the channel is open."
+6. "tipLabel": a 1-3 word label for the tip category. Match the time of day if possible: "Today's practice", "Tonight's practice", "The Mor Doo says", "For your energy". For tips about evening/closure, use "Tonight's practice".
+
+CRITICAL — VOCABULARY:
+- Use planet names in English (Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu) as the working vocabulary
+- Thai/Sanskrit terms appear at most once in the summary as flavor, never required
+- NEVER prescribe temple visits, offerings, amulets, food avoidances, or anything assuming Thai cultural fluency
+- Tips work for someone who has never been inside a Buddhist temple
 
 Reading:
 ${readingText.slice(0, 2000)}`;
@@ -1125,7 +1134,10 @@ ${readingText.slice(0, 2000)}`;
     });
     const data = await res.json();
     const raw = (data.reply || '').trim();
-
+    if (!raw) {
+      console.error('Share summary empty reply. Server response:', data);
+      return { summary: '', color: '', colorLabel: '', colorReason: '', tip: '', tipLabel: '' };
+    }
     // Robust JSON extraction — handle preamble, fences, trailing text
     let parsed = null;
     try {
@@ -1133,51 +1145,19 @@ ${readingText.slice(0, 2000)}`;
       const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
       parsed = JSON.parse(cleaned);
     } catch(e1) {
+      // Strategy 2: extract first {...} block (greedy to last })
       try {
-        // Strategy 2: extract first {...} block via regex (greedy to last })
         const m = raw.match(/\{[\s\S]*\}/);
         if (m) parsed = JSON.parse(m[0]);
       } catch(e2) {
-        console.error('Share summary JSON parse failed:', raw.slice(0, 200));
-        parsed = null;
+        console.error('Share summary JSON parse failed. Raw reply:', raw.slice(0, 300));
       }
     }
     return parsed || { summary: '', color: '', colorLabel: '', colorReason: '', tip: '', tipLabel: '' };
   } catch(e) {
-    console.error('Share summary error:', e);
+    console.error('Share summary fetch error:', e);
     return { summary: '', color: '', colorLabel: '', colorReason: '', tip: '', tipLabel: '' };
   }
-}
-
-// Heuristic: pull a recommended color out of the reading text itself
-// Returns { color, reason } or null
-function deriveColorFromReading(readingText) {
-  if (!readingText) return null;
-  const text = readingText.replace(/\n+/g, ' ');
-  const colorWords = '(?:red|crimson|scarlet|pink|rose|orange|amber|gold|golden|yellow|cream|tan|beige|green|emerald|teal|mint|blue|navy|indigo|cobalt|sky blue|light blue|violet|purple|lavender|magenta|brown|bronze|copper|black|white|silver|gray|grey)';
-  // Match patterns like "wear blue", "wear blue or navy", "your color: blue", "Color for tomorrow: Wear blue"
-  const wearMatch = text.match(new RegExp("(?:wear|carry|color (?:for (?:today|tomorrow)|of the day)[:\\s]+|your color[:\\s]+(?:for [a-z]+ )?)\\s*\\**?(" + colorWords + "(?:\\s*(?:or|/|,|and)\\s*" + colorWords + ")?)\\b", 'i'));
-  if (wearMatch) {
-    const primary = wearMatch[1].split(/\s*(?:or|\/|,|and)\s*/i)[0].trim();
-    return { color: primary.charAt(0).toUpperCase() + primary.slice(1).toLowerCase(), reason: 'Drawn from today\'s reading' };
-  }
-  return null;
-}
-
-// Heuristic: build a real summary from the reading when AI fails
-// Skips welcome/greeting lines and pulls the most insight-bearing sentences
-function buildFallbackSummary(readingText) {
-  if (!readingText) return 'The numbers have spoken.';
-  const sentences = readingText.replace(/\n+/g, ' ').match(/[^.!?]+[.!?]+/g) || [];
-  // Filter out filler: greetings, date-stamping intros, follow-up prompts, closing flourishes
-  const skip = /^\s*(welcome\b|hello\b|hi |hey |greetings\b|the mor doo (sees|welcomes)|shall (we|the mor doo)|would you like|what (calls|would you like|will you)|(today|tomorrow) is\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|july|august|september|october|november|december)|tomorrow,? \w+,? trust|this is what the mor doo|for you,? \w+,? this)/i;
-  // Score: prefer mid-reading sentences with insight markers
-  const insightHints = /\b(life path|water monkey|fire horse|venus|saturn|mars|jupiter|mercury|moon|sun|rahu|ketu|builder|hora-?sasat|lek-?sasat|name carries|zodiac|element|the (four|builder|seer)|chart|root\b|frequency)\b/i;
-  const candidates = sentences.filter(s => !skip.test(s.trim()) && s.trim().length > 30);
-  // Prefer the first 2 sentences containing an insight marker
-  const best = candidates.filter(s => insightHints.test(s)).slice(0, 2);
-  if (best.length >= 1) return best.join(' ').replace(/\s{2,}/g,' ').trim();
-  return candidates.slice(0, 2).join(' ').replace(/\s{2,}/g,' ').trim() || sentences.slice(0, 2).join(' ').trim() || 'The numbers have spoken.';
 }
 
 function buildShareCardHTML(uid, insight, planets, mode, trigger) {
@@ -1190,8 +1170,7 @@ function buildShareCardHTML(uid, insight, planets, mode, trigger) {
   const dateIdx = allText.search(/\d{1,2}\/\d{1,2}\/\d{4}/);
   const nearDate = dateIdx > 0 ? allText.slice(Math.max(0, dateIdx - 60), dateIdx).trim() : '';
   const nameSeq = nearDate.match(/([A-Z][a-z]{2,18}(?:\s+[A-Z][a-z]{2,18})*)\s*$/);
-  const fullName = nameSeq ? nameSeq[1] : '';
-  const firstName = fullName ? fullName.split(' ')[0] : '';
+  const firstName = nameSeq ? nameSeq[1].split(' ')[0] : '';
   const initials = firstName ? firstName.slice(0,2).toUpperCase() : '✦';
 
   // Life Path + zodiac for sub-line
@@ -1215,11 +1194,7 @@ function buildShareCardHTML(uid, insight, planets, mode, trigger) {
     <circle cx="12" cy="22.5" r="1" fill="#C9A84C"/>
   </svg>`;
 
-  // Default render = Reveal name OFF = anonymized
-  // showName = first letter only, "W." style. maskedInitials = single sparkle.
-  // Real name + real initials only swap in when scTogglePII fires.
-  const showName = firstName ? `${firstName.charAt(0)}.` : 'The Seeker';
-  const maskedInitials = '✦';
+  const showName = firstName ? `${firstName}.` : 'The Seeker';
 
   // ── Bottom section: contextual based on reading type ──────────────────
   // Natal reading → planet grid
@@ -1278,9 +1253,9 @@ function buildShareCardHTML(uid, insight, planets, mode, trigger) {
         ${yantraSVG}
       </div>
       <div class="sc-user-row">
-        <div class="sc-av" id="${uid}-av" data-real="${initials}" data-masked="${maskedInitials}">${maskedInitials}</div>
+        <div class="sc-av">${initials}</div>
         <div>
-          <div class="sc-uname" id="${uid}-name" data-real="${fullName || (firstName ? firstName + '.' : 'The Seeker')}" data-masked="${showName}">${showName}</div>
+          <div class="sc-uname" id="${uid}-name">${showName}</div>
           <div class="sc-usub">${subLine}</div>
         </div>
       </div>
@@ -1339,37 +1314,9 @@ async function showShareCard(readingText, trigger, planets) {
   // Async: generate summary + insight and inject
   const insight = await generateShareSummary(readingText, trigger, planets || lastNatalPlanets);
 
-  // Inject summary — scrub PII, use smart fallback if AI returned empty
+  // Inject summary
   const summaryEl = document.getElementById(uid + '-summary');
-  if (summaryEl) {
-    const fullSummary = insight.summary || buildFallbackSummary(readingText);
-    let scrubbed = fullSummary
-      .replace(/\btoday is\s+(January|February|March|April|May|June|July|August|September|October|November|December)[^.]+\./gi, '')
-      .replace(/\bin the year\s+(19|20)\d{2}\b/gi, '')
-      .replace(/\b(born in|born a|born the|born on|born|birthday)[^,.]*[,.]/gi, '')
-      .replace(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/gi, '')
-      .replace(/\b\d{1,2}\/\d{1,2}\/\d{4}\b/g, '')
-      .replace(/\b(19|20)\d{2}\b/g, '')
-      .trim();
-    // Also scrub every name part (first + middle + last) from the scrubbed version
-    const fnAllText = history.map(m => m.content || '').join(' ');
-    const fnDateIdx = fnAllText.search(/\d{1,2}\/\d{1,2}\/\d{4}/);
-    const fnNearDate = fnDateIdx > 0 ? fnAllText.slice(Math.max(0, fnDateIdx - 60), fnDateIdx).trim() : '';
-    const fnNameSeq = fnNearDate.match(/([A-Z][a-z]{2,18}(?:\s+[A-Z][a-z]{2,18})*)\s*$/);
-    const allNameParts = fnNameSeq ? fnNameSeq[1].split(/\s+/).filter(Boolean) : [];
-    for (const part of allNameParts) {
-      // Strip name with surrounding punctuation/dashes that would otherwise dangle
-      scrubbed = scrubbed.replace(new RegExp('\\s*[—–-]\\s*' + part + '\\b', 'gi'), '');
-      scrubbed = scrubbed.replace(new RegExp('\\b' + part + '\\s*[—–-]\\s*', 'gi'), '');
-      scrubbed = scrubbed.replace(new RegExp(',\\s*' + part + '\\b', 'gi'), '');
-      scrubbed = scrubbed.replace(new RegExp('\\b' + part + '\\s*,', 'gi'), '');
-      scrubbed = scrubbed.replace(new RegExp('\\b' + part + '\\b', 'gi'), '');
-    }
-    scrubbed = scrubbed.replace(/\s{2,}/g, ' ').replace(/\s+([,.!?;:])/g, '$1').replace(/^[\s,.!?;:—–-]+/, '').trim();
-    summaryEl.dataset.full = fullSummary;
-    summaryEl.dataset.scrubbed = scrubbed;
-    summaryEl.innerHTML = fmt(scrubbed);
-  }
+  if (summaryEl && insight.summary) summaryEl.textContent = insight.summary;
 
   // Inject contextual bottom section for non-natal readings
   if (!isNatal) {
@@ -1379,16 +1326,12 @@ async function showShareCard(readingText, trigger, planets) {
     const swatchEl = document.getElementById(uid + '-swatch');
     const tipEl = document.getElementById(uid + '-tip');
     const tipLabelEl = document.getElementById(uid + '-tiplabel');
-    // Derive color from reading text if AI didn't return one
-    const derived = (!insight.color) ? deriveColorFromReading(readingText) : null;
-    const finalColor = insight.color || (derived && derived.color) || 'Gold';
-    const finalColorReason = insight.colorReason || (derived && derived.reason) || 'Aligned with today\'s planetary energy';
-    if (colorLabelEl) colorLabelEl.textContent = insight.colorLabel || 'Color for today';
-    if (colorEl) colorEl.textContent = finalColor;
-    if (colorDescEl) colorDescEl.textContent = finalColorReason;
-    if (swatchEl) swatchEl.style.background = colorNameToHex(finalColor);
-    if (tipEl) tipEl.textContent = insight.tip || 'Light a candle before an important conversation — fire clears the path.';
-    if (tipLabelEl) tipLabelEl.textContent = insight.tipLabel || "Today's practice";
+    if (colorLabelEl && insight.colorLabel) colorLabelEl.textContent = insight.colorLabel;
+    if (colorEl && insight.color) colorEl.textContent = insight.color;
+    if (colorDescEl && insight.colorReason) colorDescEl.textContent = insight.colorReason;
+    if (swatchEl && insight.color) swatchEl.style.background = colorNameToHex(insight.color);
+    if (tipEl && insight.tip) tipEl.textContent = insight.tip;
+    if (tipLabelEl && insight.tipLabel) tipLabelEl.textContent = insight.tipLabel;
   }
 }
 
@@ -1405,30 +1348,16 @@ function scTogglePII(uid) {
   const tog = document.getElementById(uid + '-tog');
   const lbl = document.getElementById(uid + '-tog-lbl');
   const nameEl = document.getElementById(uid + '-name');
-  const avEl = document.getElementById(uid + '-av');
   if (!tog) return;
   const isOn = tog.classList.toggle('on');
   lbl.textContent = isOn ? 'On' : 'Off';
-  // Swap name using stored data attributes — masked by default, real on toggle
-  if (nameEl) {
-    const real = nameEl.dataset.real || '';
-    const masked = nameEl.dataset.masked || 'The Seeker';
-    nameEl.textContent = isOn ? (real || masked) : masked;
-  }
-  // Swap avatar initials too
-  if (avEl) {
-    const realAv = avEl.dataset.real || '';
-    const maskedAv = avEl.dataset.masked || '✦';
-    avEl.textContent = isOn ? (realAv || maskedAv) : maskedAv;
-  }
-  // Swap essence between scrubbed (PII removed) and full
-  const summaryTogEl = document.getElementById(uid + '-summary');
-  if (summaryTogEl) {
-    const full = summaryTogEl.dataset.full;
-    const scrubbed = summaryTogEl.dataset.scrubbed;
-    if (isOn && full) summaryTogEl.innerHTML = fmt(full);
-    else if (!isOn && scrubbed) summaryTogEl.innerHTML = fmt(scrubbed);
-  }
+  // Extract full first name from session
+  const allText = history.map(m => m.content || '').join(' ');
+  const dateIdx = allText.search(/\d{1,2}\/\d{1,2}\/\d{4}/);
+  const nearDate = dateIdx > 0 ? allText.slice(Math.max(0, dateIdx - 60), dateIdx).trim() : '';
+  const nameSeq = nearDate.match(/([A-Z][a-z]{2,18}(?:\s+[A-Z][a-z]{2,18})*)\s*$/);
+  const firstName = nameSeq ? nameSeq[1].split(' ')[0] : '';
+  if (nameEl) nameEl.textContent = isOn && firstName ? firstName : (firstName ? firstName + '.' : 'The Seeker');
 }
 
 async function scSaveImage(uid) {
@@ -1603,14 +1532,13 @@ function isClarification(text) {
 
 function isPhoneOrAddress(text) {
   const t = text.trim();
-  // Never trigger scorecard for year references or date ranges
-  const standaloneYear = /\b(19|20)\d{2}\b/;
-  const hasWords = /[a-zA-Z]/.test(t);
-  if (standaloneYear.test(t) && hasWords) return false;
-  if (/^(19|20)\d{2}$/.test(t.trim())) return false;
 
   // Never trigger scorecard for year references or date ranges
   // e.g. "2026", "April 2026", "June 2023 to August 2023", "what is coming in 2026"
+  const standaloneYear = /\b(19|20)\d{2}\b/;
+  const hasWords = /[a-zA-Z]/.test(t);
+  if (standaloneYear.test(t) && hasWords) return false;
+  // Pure year with no other content (e.g. just "2026" typed alone) — still not a phone
   if (/^(19|20)\d{2}$/.test(t.trim())) return false;
 
   // Address check first — before any other filtering
@@ -2241,7 +2169,7 @@ function showCompatForm() {
 
   // Show reset button
   const resetBtn = document.getElementById('resetBtn');
-  if (resetBtn) { resetBtn.classList.add('visible'); document.body.classList.add('session-active'); }
+  if (resetBtn) resetBtn.classList.add('visible');
 }
 
 function isValidDate(str) {
@@ -2313,7 +2241,7 @@ function addMessage(role, content) {
   setTimeout(() => div.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
   // Show reset button and update placeholder after first interaction
   const resetBtn = document.getElementById('resetBtn');
-  if (resetBtn) { resetBtn.classList.add('visible'); document.body.classList.add('session-active'); }
+  if (resetBtn) resetBtn.classList.add('visible');
   const input = document.getElementById('userInput');
   if (input) input.placeholder = 'Type here...';
 }
