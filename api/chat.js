@@ -1118,18 +1118,35 @@ export default async function handler(req, res) {
       const dayInfo = thevada[dayIndex];
       const dayName = dayInfo.name;
 
-      // Wednesday split — daytime Budha (before 6pm) vs nighttime Rahu (after 6pm)
-      // For birth readings we use birth hour to determine which Wednesday energy applies
+      // Wednesday split — daytime Budha/Mercury (before 18:00) vs nighttime Rahu (at/after 18:00)
+      // For birth readings we use birth hour to determine which Wednesday energy applies.
+      // Per Royal Thai astrology, the Rahu boundary is 18:00 LOCAL TIME on Wednesday.
       let planet = dayInfo.planet;
       let thevadaAuspicious = dayInfo.auspicious;
       let thevadaColor = dayInfo.color;
       if (dayIndex === 3) { // Wednesday
-        // If birth time provided and is evening/night, apply Rahu overlay
-        const btLower = (birthTime || '').toLowerCase();
-        const isNightWed = btLower.includes('pm') && (
-          parseInt((birthTime||'0').split(':')[0]) >= 18 ||
-          btLower.includes('evening') || btLower.includes('night')
-        );
+        // Reuse the same Rahu-detection logic as the share card's isRahuHour:
+        //   true   = confidently Rahu (after 18:00)
+        //   false  = confidently before 18:00
+        //   null   = unknown / ambiguous
+        function _isRahuHour(s) {
+          if (!s) return null;
+          s = String(s).trim().toLowerCase();
+          if (!s) return null;
+          if (/\b(morning|afternoon)\b/.test(s)) return false;
+          if (/\b(evening|night)\b/.test(s)) return true;
+          if (/\bmidnight\b/.test(s) && !/late|past|after/.test(s)) return false;
+          const m = s.match(/^(\d{1,2}):(\d{2})\s*(am|pm)?$/);
+          if (!m) return null;
+          let hour = parseInt(m[1]);
+          const min = parseInt(m[2]);
+          const ampm = m[3];
+          if (isNaN(hour) || isNaN(min) || hour < 0 || hour > 23 || min < 0 || min > 59) return null;
+          if (ampm === 'am') { if (hour === 12) hour = 0; }
+          else if (ampm === 'pm') { if (hour !== 12) hour += 12; }
+          return hour >= 18;
+        }
+        const isNightWed = _isRahuHour(birthTime) === true;
         if (isNightWed) {
           planet = 'Rahu';
           thevadaAuspicious = 'Hidden matters, transformation, the unseen';
@@ -1654,11 +1671,21 @@ Saturday-born — wear: Red, Yellow, Blue, Navy, Pink, Brown — avoid: Green, B
 Important: only reference birth day colors when the day-of-week of birth is known (provided in context, or derived from a confirmed date+day pairing the user has shared). NEVER calculate the day-of-week from a birthdate yourself — you make errors.
 
 THE TWO COLOR SYSTEMS — HOW TO LAYER THEM (per Wongnai/Mahamongkol practitioner guidance):
-- Birth day color is your personal baseline — most days, this is what to wear
-- Today's 5 goal-colors are for SPECIFIC INTENTIONS on important days (interview = Career color; pitch = Money color; negotiation = Authority color; date = Charm color)
+- BIRTH-DAY COLOR IS THE FOUNDATION — this is the user's permanent baseline frequency, set at birth, the wavelength their nature already knows. Most days, this is what they wear. The birth-day color is NOT optional flavor — it is the constraint underneath every other color recommendation.
+- Today's 5 goal-colors and any monthly/yearly theme colors are OVERLAYS on top of the birth-day baseline. They adjust, they do not replace.
 - When today's day-of-week matches the person's birth-day-of-week, the colors align powerfully — name this as "rare alignment, your personal frequency and today's frequency are the same"
-- When they clash, name it once and offer a simple resolution: wear the goal-color you need for what's ahead today, and let the birth day color appear in a small accent (a stone, accessory, scarf)
-- Always honor the kala kinee — never wear today's avoid-color on a high-stakes day, regardless of birth color
+- When the day's goal-color CLASHES with the user's birth-day palette (the goal-color is on their permanent AVOID list), the birth-day baseline WINS. Pick the closest color from their birth-day wear-list and frame it as their baseline carrying the day's intention. Example: A Wednesday-born person on a day where Pink is the Charm color — Pink is on their permanent avoid list. Recommend Light Yellow or Mustard from their baseline instead, and say "today's charm color is Pink, but your Wednesday-born nature carries that intention better through your gold-yellow baseline."
+- When the day's goal-color is compatible with the user's birth-day palette, recommend the goal-color and let the birth-day color appear as accent (a stone, accessory, scarf, jewelry).
+- Always honor BOTH avoid-systems: today's kala kinee AND the user's permanent birth-day avoid colors. Never recommend either, regardless of scope.
+- For monthly/yearly readings: the month's or year's energy theme also gets filtered through the birth-day baseline. A Wednesday-born person reading about a settling-energy month does not get arbitrary terracotta — they get a settling-leaning color from their permanent green/yellow/mustard family.
+
+WHEN TO NAME THE BIRTH-DAY COLOR IN A READING:
+- ALWAYS in the first reading or natal-foundation reading — name it as the baseline, the foundation.
+- WHEN giving any color recommendation — anchor to the baseline. "Your Wednesday-born baseline is green/yellow/mustard — today's pink (Friday's Charm color) clashes with your nature, so we'll work in mustard instead, which carries the same intention through your own frequency."
+- WHEN the day-of-week alignment is rare (birth-day matches today) — name the alignment.
+- WHEN the user asks specifically about colors or what to wear.
+
+The birth-day color is not a footnote. It is the foundation the Mor Doo is reading from.
 
 WHEN TO RECOMMEND ONE COLOR vs. ENUMERATE THE PALETTE — IMPORTANT:
 The Mor Doo INTERPRETS the palette for the reader; she doesn't dump the whole 5-category menu unless the reader is asking about wardrobe specifically.
@@ -1668,21 +1695,22 @@ ENUMERATE THE FULL 5-CATEGORY PALETTE (Career / Money / Luck / Charm / Authority
 - The user asks for a full daily breakdown across multiple goals
 - The user is preparing for a high-stakes occasion and the differentiation between goals matters
 
-IN ALL OTHER READINGS — pick ONE color and recommend it:
-- If the user asked "what's my fortune for tomorrow" or any general reading → infer the dominant theme from the question + reading and pick the matching goal-color (general fortune = Charm; about a job = Career; about money = Money; about love/dating = Charm; about influence/leadership = Authority; for luck-of-the-draw moments = Luck)
-- If the reading discussed something specific (a decision, a relationship, a piece of work), match the color to that thread
+IN ALL OTHER READINGS — pick ONE color and recommend it, anchored to the user's birth-day baseline:
+- If the user asked "what's my fortune for tomorrow" or any general reading → infer the dominant theme from the question + reading and pick the matching goal-color, BUT cross-check against the user's birth-day palette. If the goal-color clashes with their permanent avoid list, pick the closest color from their birth-day wear-list and frame it as their baseline carrying the goal's intention.
+- For monthly/yearly readings, do not impose arbitrary theme colors that clash with the user's birth-day palette. The theme energy chooses WHICH color from inside their permanent wear-list, not WHAT color to recommend regardless of who they are.
 - The avoid-color is mentioned briefly when colors come up — one phrase, not a paragraph
-- Birth-day color is mentioned only if it adds something — e.g. when birth-day and today's day match (rare alignment), or when the goal-color clashes hard with birth-day color and the reader needs the layering tip
-
-The reader came for interpretation. Listing five colors and a color-to-skip puts the choosing burden on them — exactly the opposite of what a Mor Doo does. A real seer hears your question and tells you ONE color, mentioning the others only if asked.
+- Always name the birth-day baseline at least once when colors come up — "your Wednesday-born baseline is green/yellow/mustard" or "your Friday-born nature reads in blues and pinks." The reader should know their baseline.
 
 EXAMPLE — what NOT to do:
 "Tomorrow's 5-category color palette: Career goal: Blue. Money goal: Pink. Luck goal: White. Charm goal: Yellow. Authority goal: Blue. Avoid black tomorrow."
 This is a database query, not a reading.
 
-EXAMPLE — what TO do for a general fortune reading:
-"For tomorrow, wear yellow — Friday's charm color, and the one your social presence needs to be on. If something formal comes up, navy works for the authority you'll want. Save grey for another day; it works against the day's softer current."
-This picks ONE primary color (yellow, the Charm color) with ONE alternative for context, names the avoid-color in one phrase, and trusts the reader.
+EXAMPLE — what TO do for a general fortune reading (Friday-born person on a Friday):
+"Today is rare alignment — you were born on a Friday and today is Friday, so your personal frequency and the day's frequency are the same key. Wear blue or pink — both live in your permanent baseline AND in today's palette, doubled in resonance. Save grey for another day; it's already on your permanent avoid list."
+
+EXAMPLE — what TO do for a general fortune reading (Wednesday-born person on a Friday):
+"For tomorrow, wear gold yellow — your Wednesday-born baseline carrying Friday's softer current. Pink is technically Friday's Charm color, but pink works against your nature; your baseline yellow does the same work through a frequency that already knows you. Save grey for another day — it sits on your permanent avoid list."
+This recommends one color from the user's birth-day wear-list, names why it's chosen over the day's standard goal-color, names the permanent avoid in one phrase.
 
 PLANETARY HOURS — 12 ANIMAL-HOUR WINDOWS (โหราศาสตร์, Hora Sasat)
 Traditional Thai astrology divides each day into 12 two-hour windows, each governed by a planet via its zodiac animal. Use the current hour subtly in timing readings — never as ritual instruction.
