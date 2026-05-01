@@ -138,8 +138,26 @@ async function fetchPlanetPosition(jplId, dateStr) {
     `&CSV_FORMAT='YES'`;
 
   const fetchP = fetch(url).then(r => r.text());
-  // 7s timeout per planet — leaves headroom within Vercel's 10s function limit
-  const timeoutP = new Promise((_, rej) => setTimeout(() => rej(new Error('JPL timeout')), 7000));
+  // Per-planet timeout. Sized to fit the per-batch budget within Vercel's
+  // 30s function limit (set via maxDuration in the export config).
+  //
+  // Up to three batches run serially: batch1 (Sun/Moon/Mercury/Venus),
+  // batch2 (Mars/Jupiter/Saturn), and an optional rescue batch that retries
+  // any planets that failed on the first pass. Within each batch, fetches
+  // run in parallel, so the slowest one in the batch gates the batch.
+  // With a 9s per-planet timeout, the absolute worst case is 9s × 3 = 27s
+  // — comfortably within 30s, with ~3s of headroom for setup, parsing,
+  // ascendant calculation, and serialization.
+  //
+  // History: this was originally set to 7s under the assumption of a 10s
+  // Vercel function limit (Hobby tier). On Vercel Pro with maxDuration:30
+  // the 7s timeout was the actual bottleneck — JPL fetches that legitimately
+  // took 7-9s under load (notably Sun, Moon, and Jupiter when their servers
+  // are busy) were being killed early, producing partial charts where 3 of
+  // 7 planets came back consistently empty. Bumping to 9s plus a rescue
+  // batch removes the false-alarm timeout without putting the function as
+  // a whole at risk.
+  const timeoutP = new Promise((_, rej) => setTimeout(() => rej(new Error('JPL timeout')), 9000));
   const text = await Promise.race([fetchP, timeoutP]);
   return parseJPLLongitude(text);
 }
@@ -147,16 +165,19 @@ async function fetchPlanetPosition(jplId, dateStr) {
 async function getBirthChart(dateStr) {
   const planets = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn'];
   const results = {};
-  const failed = [];
+  let failed = [];
 
-  // Fetch in two batches to stay within Vercel's execution window
+  // Fetch in two batches to stay within Vercel's execution window.
   // Batch 1: Sun, Moon, Mercury, Venus (most important for Thai reading)
   // Batch 2: Mars, Jupiter, Saturn
+  // Within each batch, fetches run in parallel and the slowest gates the batch.
   const batch1 = planets.slice(0, 4);
   const batch2 = planets.slice(4);
 
   const runBatch = async (batch) => {
     await Promise.allSettled(batch.map(async p => {
+      // Skip planets we've already successfully fetched (relevant on retry)
+      if (results[p]) return;
       try {
         const lon = await fetchPlanetPosition(JPL_PLANETS[p], dateStr);
         if (lon !== null) {
@@ -177,9 +198,32 @@ async function getBirthChart(dateStr) {
 
   await runBatch(batch1);
   await runBatch(batch2);
-  console.log(`Planets fetched: ${Object.keys(results).join(', ')} (${results && Object.keys(results).length}/7)`);
+
+  // Rescue pass: retry any planets that failed on the first attempt. JPL
+  // Horizons occasionally times out or returns empty under load even when
+  // it's healthy — a single retry recovers most transient failures.
+  // We clear `failed` before retrying because the rescue pass will re-add
+  // anything that fails again. Successfully-rescued planets land in
+  // `results` (the `if (results[p]) return` guard at the top of runBatch
+  // makes the retry a no-op for ones that came back) and are absent from
+  // the post-rescue `failed` list.
+  //
+  // The total time budget is bounded: max 12s × 3 batches = 36s in the
+  // absolute worst case, but in practice batches complete well under their
+  // timeout and a rescue only fires for the few planets that actually
+  // failed. With Vercel maxDuration:30 we have enough headroom for the
+  // overwhelming majority of fetches; the rare worst case still completes
+  // partial-data ahead of any client-side timeout.
   if (failed.length > 0) {
-    console.error(`PARTIAL chart for ${dateStr}: ${failed.length}/7 planets failed:`,
+    console.log(`Rescue pass: retrying ${failed.length} failed planets:`, failed.map(f => f.planet).join(', '));
+    const toRetry = failed.map(f => f.planet);
+    failed = [];  // reset; runBatch will re-add anything that fails again
+    await runBatch(toRetry);
+  }
+
+  console.log(`Planets fetched: ${Object.keys(results).join(', ')} (${Object.keys(results).length}/7)`);
+  if (failed.length > 0) {
+    console.error(`PARTIAL chart for ${dateStr}: ${failed.length}/7 planets failed after rescue:`,
       failed.map(f => `${f.planet}(${f.reason})`).join(', '));
   }
   // Stash failed-list on results for the handler to expose in the response
