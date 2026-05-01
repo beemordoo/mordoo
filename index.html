@@ -56,6 +56,21 @@
   .message-user { display: flex; justify-content: flex-end; }
   .user-bubble { background: var(--surface3); border: 1px solid rgba(184,134,11,0.15); border-radius: 20px 20px 4px 20px; padding: 12px 18px; font-size: 15px; color: var(--text-mid); max-width: 80%; }
 
+  /* Zodiac Reconciliation Chip — appears below a Mor Doo bubble when the Thai
+     sun sign differs from the Western tropical sign the user likely knows.
+     Fires once per session via window._reconciliationShown flag.
+     Uses native <details>/<summary> — no JavaScript click handler needed. */
+  .zodiac-reconcile { margin: 8px 0 4px 56px; padding: 0; border-left: 2px solid var(--gold-light); background: rgba(184,134,11,0.04); border-radius: 0 6px 6px 0; font-family: 'Sarabun', sans-serif; max-width: 540px; }
+  .zodiac-reconcile summary { list-style: none; cursor: pointer; padding: 8px 14px; font-size: 12px; color: var(--text-dim); letter-spacing: 0.02em; user-select: none; transition: color 0.2s ease; }
+  .zodiac-reconcile summary::-webkit-details-marker { display: none; }
+  .zodiac-reconcile summary::after { content: '✦ Why?'; margin-left: 6px; color: var(--gold); font-size: 11px; letter-spacing: 0.05em; }
+  .zodiac-reconcile[open] summary::after { content: '✦ Close'; }
+  .zodiac-reconcile summary:hover { color: var(--text-mid); }
+  .zodiac-reconcile-body { padding: 4px 14px 14px; font-size: 12.5px; line-height: 1.7; color: var(--text-mid); }
+  .zodiac-reconcile-body p { margin: 0 0 10px; }
+  .zodiac-reconcile-body p:last-child { margin-bottom: 0; }
+  .zodiac-reconcile-body em { font-style: italic; color: var(--gold); font-family: 'Playfair Display', serif; }
+
   /* Context Card */
   .context-card { background: var(--surface); border: 1px solid rgba(184,134,11,0.25); border-radius: 16px; padding: 22px; animation: fadeUp 0.4s ease forwards; opacity: 0; box-shadow: 0 4px 20px rgba(61,43,31,0.08); }
   .context-title { font-family: 'Playfair Display', serif; font-style: italic; font-size: 15px; color: var(--brown-mid); text-align: center; margin-bottom: 16px; line-height: 1.5; }
@@ -3036,6 +3051,33 @@ async function sendMessage() {
     if (data.reply) {
       history.push({ role: 'assistant', content: data.reply });
       addMessage('mordoo', data.reply);
+
+      // ── Zodiac reconciliation chip — fires once per session when the
+      // user's Thai sun sign differs from their likely Western expectation.
+      // The server attaches data.reconciliation when the cached natal chart
+      // contains a ZODIAC RECONCILIATION block. The chip is appended after
+      // the Mor Doo bubble so the user can tap "Why?" for a calm explanation
+      // of why the sign here doesn't match their horoscope-column sign.
+      if (data.reconciliation && !window._reconciliationShown) {
+        window._reconciliationShown = true;
+        try {
+          const messages = document.querySelectorAll('.message-mordoo');
+          const lastMordoo = messages[messages.length - 1];
+          if (lastMordoo) {
+            const chip = document.createElement('details');
+            chip.className = 'zodiac-reconcile';
+            chip.innerHTML =
+              '<summary>This may be different from the sign you know</summary>' +
+              '<div class="zodiac-reconcile-body">' +
+              '<p>Western astrology fixes the zodiac to the seasons. Thai astrology fixes it to the actual stars. They were aligned 2,000 years ago; today they sit about a sign apart. Both are real measurements of the same sky — they just use different reference points.</p>' +
+              '<p>Most readings around the world today use the Western fix. <em>Mor Doo reads from the Thai source</em> — the system Thai practitioners have been using for centuries to time births, name children, choose phone numbers, and read the year ahead. The numerology, the day-of-week wavelength, the animal year, the colors — all of it is built on the Thai placements.</p>' +
+              '<p>If you\'ve been reading Western horoscopes your whole life, the Thai sign won\'t replace what you know. It just gives you a second lens — one that lines up with the rest of what Mor Doo sees.</p>' +
+              '</div>';
+            lastMordoo.appendChild(chip);
+            setTimeout(() => chip.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
+          }
+        } catch(e) { /* never block the reading on chip render */ }
+      }
 
       // ── Trigger A: natal chart share card — fires after reading renders ──
       // alreadyCached means the natal chart was fetched this session
