@@ -179,7 +179,7 @@
   .waitlist-success-text { font-size: 13px; color: var(--text-mid); line-height: 1.75; }
   .new-reading-btn { background: transparent; border: 1px solid rgba(184,134,11,0.25); border-radius: 10px; padding: 10px 20px; color: var(--text-dim); font-family: 'Sarabun', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.2s; margin-top: 18px; display: inline-block; }
   .new-reading-btn:hover { border-color: var(--gold); color: var(--gold); }
-  .reset-btn { position: fixed; top: 16px; right: 16px; z-index: 20; background: var(--surface); border: 1px solid rgba(184,134,11,0.2); border-radius: 20px; padding: 7px 14px; color: var(--text-dim); font-family: 'Sarabun', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.2s; display: none; box-shadow: 0 2px 8px rgba(61,43,31,0.08); }
+  .reset-btn { position: fixed; top: 16px; right: 165px; z-index: 20; background: var(--surface); border: 1px solid rgba(184,134,11,0.2); border-radius: 20px; padding: 7px 14px; color: var(--text-dim); font-family: 'Sarabun', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.2s; display: none; box-shadow: 0 2px 8px rgba(61,43,31,0.08); }
   .reset-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--cream-dark); }
   .reset-btn.visible { display: block; animation: fadeDown 0.4s ease forwards; }
 
@@ -204,7 +204,7 @@
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: var(--cream-dark); }
   ::-webkit-scrollbar-thumb { background: var(--gold-light); border-radius: 2px; }
-  @media (max-width: 500px) { .quick-starts { grid-template-columns: 1fr; } .main-title { font-size: 24px; } .category-label { width: 55px; font-size: 10px; } .context-btns { grid-template-columns: 1fr; } }
+  @media (max-width: 500px) { .quick-starts { grid-template-columns: 1fr; } .main-title { font-size: 24px; } .category-label { width: 55px; font-size: 10px; } .context-btns { grid-template-columns: 1fr; } .reset-btn { right: 12px; top: 56px; } .guide-btn { right: 12px; top: 16px; } }
   /* ── Natal Talisman ─────────────────────────────────────────────── */
   .natal-outer {
     max-width: 480px;
@@ -1089,6 +1089,44 @@ function nToggle(uid) {
 let lastNatalCacheText = null; // store for trigger A + D
 let lastNatalPlanets = null;   // parsed planets for share card grid
 
+// Parses the 5-category palette from a reading's text if it's listed.
+// Returns null if no palette structure is detected — natal readings, simple compatibility readings, etc.
+// Recognized variations (case-insensitive, flexible separators):
+//   "Career goal: Red"  /  "Career: Red"  /  "Career — Red"  /  "for career: red"
+function extractDayPalette(text) {
+  if (!text) return null;
+  const cats = ['career','money','luck','charm','authority'];
+  const out = {};
+  for (const cat of cats) {
+    // Match the category word followed by optional "goal", optional separator, then a color phrase up to newline or sentence break
+    const re = new RegExp('\\b' + cat + '(?:\\s+goal)?\\s*[:\\-—–]\\s*([A-Za-z][A-Za-z /]{0,30})(?=[\\.\\n,;]|$)', 'i');
+    const m = text.match(re);
+    if (m) out[cat] = m[1].trim();
+  }
+  // Match the avoid-color too (any of: "AVOID: X", "avoid black tomorrow", "kala kinee: X")
+  const avoidRe = /(?:avoid|kala\s*kinee|depleting\s+(?:frequency|color))[^.\n]*?\b(blue|navy|red|pink|orange|yellow|white|black|green|purple|grey|gray|rose gold|gold|silver|brown|cream|indigo|violet)\b/i;
+  const avoidM = text.match(avoidRe);
+  if (avoidM) out.avoid = avoidM[1];
+  // Only return if at least 3 of the 5 categories were detected — otherwise it's not a real palette listing
+  const hits = cats.filter(c => out[c]).length;
+  return hits >= 3 ? out : null;
+}
+
+// Maps a user's question to the most relevant goal-category.
+// Default for general/unknown questions is 'charm' (overall presence and social fortune).
+// Word stems are allowed (no trailing \b) so "investing"/"working"/"dating" all match.
+function inferGoalFromQuestion(question) {
+  if (!question) return 'charm';
+  const q = question.toLowerCase();
+  // Order matters — most specific buckets first
+  if (/\b(career|job|work|hire|fire|interview|boss|professional|business|compan|colleague|coworker|meeting|client|deal|contract|negotiat|launch|pitch|present|office|coding|project)/.test(q)) return 'career';
+  if (/\b(money|financ|invest|wealth|abundance|income|salary|debt|loan|buy|purchas|afford|cost|spending|saving|pay|bill|tax)/.test(q)) return 'money';
+  if (/\b(luck|chance|win|lottery|gambling|odds|fate|destiny|opportunity|good fortune|bad fortune)/.test(q)) return 'luck';
+  if (/\b(love|relationship|partner|dating|date|romance|romantic|marriage|crush|attract|charm|charisma|social|friend|friendship|affair|spouse|husband|wife|girlfriend|boyfriend)/.test(q)) return 'charm';
+  if (/\b(power|leadership|influence|authority|respect|status|position|rank|promotion|stand out|seen|noticed)/.test(q)) return 'authority';
+  return 'charm'; // default for "what's my fortune today" type questions
+}
+
 async function generateShareSummary(readingText, trigger, planets) {
   const allText = history.map(m => m.content || '').join(' ');
   const lpMatch = allText.match(/Life Path[:\s]+(\d+)/i);
@@ -1097,33 +1135,114 @@ async function generateShareSummary(readingText, trigger, planets) {
   const zodiac = zodMatch ? zodMatch[0] : null;
   const isNatal = trigger === 'natal';
 
-  const prompt = `You are the Mor Doo — a Thai fortune teller working in the Royal Thai Lek Sasat tradition (เลขศาสตร์, สมาคมโหรแห่งประเทศไทย). You read through Thai numerology, Chinese/Thai zodiac (animal + element), and planetary positions. The Royal Thai digit-planet mapping is: 1=Sun, 2=Moon, 3=Mars, 4=Mercury, 5=Jupiter, 6=Venus, 7=Saturn (the most challenging energy in Thai numerology), 8=Rahu, 9=Ketu (the SACRED digit — divine protection, the most prized number in Thai practice).
+  // Find the user's most recent question — this anchors the share card's color choice
+  // so the card resolves to ONE color even when the reading enumerates several.
+  const lastUserMsg = [...history].reverse().find(m => m.role === 'user' && m.content)?.content || '';
+  const userQuestion = lastUserMsg.length > 250 ? lastUserMsg.slice(0, 250) + '…' : lastUserMsg;
 
-Respond ONLY with a JSON object. No markdown, no backticks, no preamble like "Here is the JSON", no explanation. The very first character must be { and the last character must be }.
+  // Try to extract today's 5-category palette from the reading text — if it's there, parse it
+  // into structured form so we can hand it to Haiku as authoritative palette data instead of
+  // making Haiku re-extract from prose.
+  const palette = extractDayPalette(readingText);
+  const paletteHint = palette
+    ? `\nTODAY'S 5-CATEGORY PALETTE (already-known data, treat as authoritative):\n  Career: ${palette.career}\n  Money: ${palette.money}\n  Luck: ${palette.luck}\n  Charm: ${palette.charm}\n  Authority: ${palette.authority}\n  AVOID (today's depleting color, never recommend): ${palette.avoid}\n`
+    : '';
 
-From this reading, extract:
-1. "summary": 2-3 sentences capturing the essence of THIS specific reading. Weave together Life Path${lp ? ' ' + lp : ''}, zodiac${zodiac ? ' (' + zodiac + ')' : ''}, and the planetary energy at play. Poetic, specific, spoken as the Mor Doo. Do not start with "Your" or "Welcome". Do NOT just repeat the reading's opening line.
-2. "colorLabel": a short contextual label (3-6 words) explaining WHY this color is being recommended. Make it specific to the reading's energy. Examples: "To amplify Jupiter's wisdom today", "To ground Mars without losing its power", "To invite Venus's softness", "To counterbalance Saturn's weight", "To draw Mercury's clarity in".
-3. "color": the specific color to wear or carry today. If the reading explicitly names a color (e.g. "wear blue or navy"), use THAT EXACT COLOR. Otherwise derive one from the day's 5-category color palette in the reading's context (Career / Money / Luck / Charm / Authority) based on what the reading is asking for. NEVER recommend the day's avoid-color (kala kinee). Just the color name (e.g. "Deep violet", "Rose gold", "Blue", "Navy", "Emerald green").
-4. "colorReason": one short phrase explaining the energy behind the color. Always anchor to a Royal Thai planet. Examples: "Jupiter's planetary resonance — expansion grounded in steadiness", "Mercury's color — sharpens speech, opens contracts", "Saturn's stabilizing force — keeps Mars honest and purposeful", "Venus's frequency — the wavelength of magnetism".
-5. "tip": one practical action grounded in Royal Thai numerology and astrology, framed as universal modern advice. Use the 5-beat pattern compressed: name the cosmic root + give the concrete action + briefly frame the mechanism. NEVER prescribe religious or culturally specific actions (no temple visits, no offerings to deities, no monk-blessed amulets, no merit-making donations, no spirit house rituals, no Thai-specific food rules). Examples of what to write:
-   - "Sign agreements or have difficult conversations in the morning hours — Mercury's clarity is strongest before noon, and your Water element flows most freely then."
-   - "Pause before you speak this evening. Ask yourself if the words are necessary or just Mars pushing. If necessary — speak without apology. If not — let Saturn's silence hold the space."
-   - "Listen beneath the words today — someone will ask for your counsel. Give it without softening it."
-   - "Light a single candle and sit with it for nine slow breaths — Ketu's number, the sacred completion, before you decide."
-   - "Send the message you have been composing in your head — Venus does not wait, and she rewards those who move while the channel is open."
-6. "tipLabel": a 1-3 word label for the tip category. Match the time of day if possible: "Today's practice", "Tonight's practice", "The Mor Doo says", "For your energy". For tips about evening/closure, use "Tonight's practice".
+  // DECIDE-not-extract prompt. Haiku's job is to pick ONE color based on the reader's question +
+  // day energy + reading content, even if the reading itself enumerates a menu of colors.
+  const prompt = `You are filling in a share card for a Mor Doo reading. Output ONLY a JSON object — first character must be { and last must be }. No markdown, no explanation.
 
-CRITICAL — VOCABULARY:
-- Use planet names in English (Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu) as the working vocabulary
-- Thai/Sanskrit terms appear at most once in the summary as flavor, never required
-- NEVER prescribe temple visits, offerings, amulets, food avoidances, or anything assuming Thai cultural fluency
-- Tips work for someone who has never been inside a Buddhist temple
+VOICE: The Mor Doo INTERPRETS for the reader. Plain language carries the meaning; planets and numbers grace the prose. Name a planet at most ONCE in colorReason and ONCE in tip — as a signature line, not vocabulary. The reader did not come for a tutorial.
+${paletteHint}
+THE READER'S QUESTION (use this to choose ONE color matching what they were asking about):
+"${userQuestion}"
+
+HOW TO CHOOSE ONE COLOR:
+- The reading may list multiple colors (especially the 5-category palette). Your job is to PICK ONE based on what the reader asked about.
+- Map question → goal-color: career/work/job/promotion → Career color · money/finance/investment/abundance → Money color · luck/chance/fortune-in-general → Luck color · love/dating/charm/social/general "what's my fortune" → Charm color · power/leadership/influence/being-seen → Authority color
+- If the reading explicitly recommends ONE color (e.g. "wear blue tomorrow"), use that exact color.
+- If the reading recommends a few colors as alternatives ("wear pink or white"), pick the one that better matches the reader's question.
+- NEVER pick today's avoid-color.
+- For natal/foundation readings (no specific question), default to Charm color since it speaks to the person's overall presence.
+
+Required shape with example values:
+{
+  "summary": "Two short sentences in the Mor Doo's voice. Weave the reading's specific tension or gift${lp ? ' (Life Path '+lp+')' : ''}${zodiac ? ', '+zodiac : ''}, and the texture of the day. Plain language. Do NOT start with 'Your' or 'Welcome'. Do NOT repeat the reading's opening sentence.",
+  "colorLabel": "3-6 words, plain-spoken. Match the goal you chose: 'For the work ahead' (Career), 'To draw abundance in' (Money), 'For the day's softer current' (Charm), 'To carry into the room' (Authority), 'For luck's quiet edge' (Luck)",
+  "color": "ONE color name. Plain word, capitalized. Examples: 'Blue', 'Navy', 'Pink', 'Rose gold', 'Deep violet'. Pick exactly one.",
+  "colorReason": "Short phrase. ONE planet name allowed as signature. Examples: 'Venus's frequency — the wavelength of magnetism', 'Steadies the day's restless edge', 'Saturn's quiet authority — depth where speed would fail', 'Tunes you to the day's softer current'",
+  "tip": "One practical, secular action. Plain English with at most ONE planet mentioned as flourish. Structure: the thing to do + the simple reason it works. No temples, offerings, amulets, or food rules. Tips must work for any reader anywhere. Examples: 'Send the message you have been composing in your head — Venus does not wait, and she rewards those who move while the channel is open.' / 'Pause before you speak this evening. If the words are necessary, say them without apology. If not, let the silence hold the space.' / 'Sign or settle before noon — your clearest reading of the situation will come early, not late.' / 'Hold something solid while you think today — wood, stone, the texture of a real thing.'",
+  "tipLabel": "1-3 words. 'Today's practice', 'Tonight's practice', 'The Mor Doo says', 'For your energy'. Use 'Tonight's practice' for evening/closure tips."
+}
 
 Reading:
 ${readingText.slice(0, 2000)}`;
 
+  // Deterministic fallback — derives reasonable values from the reading text + day if Haiku fails.
+  // Never blocks the user with empty fields. Logs a warning so we can see when it kicks in.
+  function deriveFallback() {
+    const r = readingText.toLowerCase();
+    // Day-of-week → ruling planet → default color
+    const dayMap = {
+      sunday:    { planet: 'Sun',     color: 'Red',    reason: "Sun's vitality — solar authority and warmth" },
+      monday:    { planet: 'Moon',    color: 'Cream',  reason: "Moon's frequency — emotional clarity and beauty" },
+      tuesday:   { planet: 'Mars',    color: 'Pink',   reason: "Mars softened — courage with grace" },
+      wednesday: { planet: 'Mercury', color: 'Green',  reason: "Mercury's color — sharpens speech, opens contracts" },
+      thursday:  { planet: 'Jupiter', color: 'Orange', reason: "Jupiter's resonance — expansion and dharma" },
+      friday:    { planet: 'Venus',   color: 'Blue',   reason: "Venus's frequency — the wavelength of magnetism" },
+      saturday:  { planet: 'Saturn',  color: 'Purple', reason: "Saturn's stabilizing force — depth and accountability" }
+    };
+    const dayKey = Object.keys(dayMap).find(d => r.includes(d)) || ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][new Date().getDay()];
+    const dayInfo = dayMap[dayKey];
+
+    // Use the structured palette if we extracted one from the reading
+    if (palette) {
+      const goal = inferGoalFromQuestion(userQuestion); // 'career' | 'money' | 'luck' | 'charm' | 'authority'
+      const goalColor = palette[goal];
+      // Pretty-cap the color (palette values may be lowercase or have separators)
+      const prettyColor = goalColor
+        ? goalColor.split(/[\/, ]+/)[0]                     // take first token if it's "Pink/Orange"
+            .replace(/\b\w/g, c => c.toUpperCase())          // capitalize
+        : dayInfo.color;
+      const goalLabels = {
+        career:    'For the work ahead',
+        money:     'To draw abundance in',
+        luck:      "For luck's quiet edge",
+        charm:     "For the day's softer current",
+        authority: 'To carry into the room'
+      };
+      console.log('[ShareSummary] Fallback used structured palette. Goal:', goal, '→', prettyColor);
+      return {
+        summary: '',
+        colorLabel: goalLabels[goal] || ('For ' + dayInfo.planet + "'s energy today"),
+        color: prettyColor,
+        colorReason: dayInfo.reason,
+        tip: '',
+        tipLabel: "Today's practice"
+      };
+    }
+
+    // No structured palette in the reading — try to extract a color the reading explicitly mentions,
+    // prioritizing "wear/carry" instructions. This handles natal readings and other forms.
+    const colorWords = ['blue','navy','red','pink','orange','yellow','white','black','green','purple','grey','gray','rose gold','gold','silver','brown','cream','indigo','violet'];
+    const colorAlt = colorWords.join('|');
+    const wearRegex = new RegExp('(?:wear|carry|something)[^.]{0,40}?\\b(' + colorAlt + ')\\b', 'i');
+    const colorRegex = new RegExp('\\b(' + colorAlt + ')\\b', 'i');
+    const wearMatch = readingText.match(wearRegex);
+    const directColor = (wearMatch && wearMatch[1]) || (readingText.match(colorRegex) || [])[1];
+
+    return {
+      summary: '',  // Summary fallback stays empty so we don't paste filler that masks the issue.
+      colorLabel: 'For ' + dayInfo.planet + "'s energy today",
+      color: (directColor && directColor[0].toUpperCase() + directColor.slice(1).toLowerCase()) || dayInfo.color,
+      colorReason: dayInfo.reason,
+      tip: '',  // Same — leave empty rather than fabricate a tip.
+      tipLabel: "Today's practice"
+    };
+  }
+
   try {
+    console.log('[ShareSummary] Requesting summary, prompt size:', prompt.length, 'reading slice:', readingText.length);
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1132,31 +1251,64 @@ ${readingText.slice(0, 2000)}`;
         summaryMode: true
       })
     });
-    const data = await res.json();
-    const raw = (data.reply || '').trim();
-    if (!raw) {
-      console.error('Share summary empty reply. Server response:', data);
-      return { summary: '', color: '', colorLabel: '', colorReason: '', tip: '', tipLabel: '' };
+    console.log('[ShareSummary] Response status:', res.status);
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      console.error('[ShareSummary] Non-OK response. Status:', res.status, 'body:', errText.slice(0, 500));
+      return deriveFallback();
     }
+
+    const data = await res.json().catch(e => {
+      console.error('[ShareSummary] Response was not JSON:', e);
+      return null;
+    });
+    if (!data) return deriveFallback();
+
+    const raw = (data.reply || '').trim();
+    console.log('[ShareSummary] Raw reply length:', raw.length, 'first 80 chars:', raw.slice(0, 80));
+
+    if (!raw) {
+      console.error('[ShareSummary] Empty reply. Server response:', data);
+      return deriveFallback();
+    }
+
     // Robust JSON extraction — handle preamble, fences, trailing text
     let parsed = null;
     try {
-      // Strategy 1: direct parse after stripping fences
       const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
       parsed = JSON.parse(cleaned);
+      console.log('[ShareSummary] Parsed via Strategy 1 (direct).');
     } catch(e1) {
-      // Strategy 2: extract first {...} block (greedy to last })
       try {
         const m = raw.match(/\{[\s\S]*\}/);
-        if (m) parsed = JSON.parse(m[0]);
+        if (m) {
+          parsed = JSON.parse(m[0]);
+          console.log('[ShareSummary] Parsed via Strategy 2 (regex extract).');
+        }
       } catch(e2) {
-        console.error('Share summary JSON parse failed. Raw reply:', raw.slice(0, 300));
+        console.error('[ShareSummary] Both JSON strategies failed. Raw reply was:', raw);
       }
     }
-    return parsed || { summary: '', color: '', colorLabel: '', colorReason: '', tip: '', tipLabel: '' };
+
+    if (!parsed) {
+      console.warn('[ShareSummary] Falling back to deterministic values.');
+      return deriveFallback();
+    }
+
+    // Merge: AI fields take priority, fallback fills any missing
+    const fb = deriveFallback();
+    return {
+      summary:     parsed.summary     || fb.summary,
+      color:       parsed.color       || fb.color,
+      colorLabel:  parsed.colorLabel  || fb.colorLabel,
+      colorReason: parsed.colorReason || fb.colorReason,
+      tip:         parsed.tip         || fb.tip,
+      tipLabel:    parsed.tipLabel    || fb.tipLabel
+    };
   } catch(e) {
-    console.error('Share summary fetch error:', e);
-    return { summary: '', color: '', colorLabel: '', colorReason: '', tip: '', tipLabel: '' };
+    console.error('[ShareSummary] Fetch threw:', e);
+    return deriveFallback();
   }
 }
 
