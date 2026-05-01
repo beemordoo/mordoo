@@ -808,19 +808,42 @@ export default async function handler(req, res) {
   }
 
   // ── Summary mode — lightweight path for share card generation ────────────
+  // Uses raw fetch (matching the main chat path below) instead of the SDK,
+  // because the SDK dynamic import has been a fragile failure point on Vercel.
   if (summaryMode) {
     try {
-      const Anthropic = (await import('@anthropic-ai/sdk')).default;
-      const client = new Anthropic({ apiKey: process.env.ANTHROPIC_KEY });
-      const response = await client.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 800,
-        messages: messages
+      const apiKey = process.env.ANTHROPIC_KEY;
+      if (!apiKey) {
+        console.error('Summary mode: ANTHROPIC_KEY env var is missing');
+        return res.status(500).json({ error: 'API key not configured' });
+      }
+
+      const summaryResponse = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 800,
+          messages: messages
+        })
       });
-      const reply = response.content?.[0]?.text?.trim() || '';
+
+      if (!summaryResponse.ok) {
+        const errBody = await summaryResponse.text().catch(() => '');
+        console.error('Summary mode upstream error. Status:', summaryResponse.status, 'body:', errBody.slice(0, 500));
+        return res.status(summaryResponse.status).json({ error: 'Upstream API error', details: errBody.slice(0, 200) });
+      }
+
+      const summaryData = await summaryResponse.json();
+      const reply = summaryData.content?.[0]?.text?.trim() || '';
+      console.log('Summary mode: reply length', reply.length);
       return res.status(200).json({ reply });
     } catch(err) {
-      console.error('Summary mode error:', err.message);
+      console.error('Summary mode threw:', err.message, err.stack?.slice(0, 300));
       return res.status(500).json({ error: err.message });
     }
   }
