@@ -327,6 +327,20 @@
   .natal-p-dig { font-size: 10px; font-style: italic; transition: color 0.3s; margin-left: 2px; }
   .ndark .natal-p-dig { color: rgba(232,200,112,0.78); }
   .nlight .natal-p-dig { color: #B8860B; }
+  /* The lived-language note rendered next to the Rising sign when the
+     placement is interpretively notable (first/last degree of a sign, or
+     a method-disagreement near a sign threshold). Translates the technical
+     fact of "this is a borderline degree" into plain Mor Doo voice. Kept
+     lighter and italicized so it reads as commentary rather than a fact. */
+  .natal-p-note {
+    font-size: 10px;
+    font-style: italic;
+    margin-left: 4px;
+    line-height: 1.4;
+    transition: color 0.3s;
+  }
+  .ndark .natal-p-note { color: rgba(232,200,112,0.62); }
+  .nlight .natal-p-note { color: rgba(120,80,40,0.85); }
   .natal-divider {
     width: 100%;
     height: 1px;
@@ -920,8 +934,13 @@ function parseNatalCache(txt) {
     if (pm) planets[pm[1]] = { sign: pm[2], degree: parseInt(pm[3]), dignity: pm[4] || '' };
     const nm = line.match(/^(Rahu|Ketu):\s+(\w+)\s+(\d+)°/);
     if (nm) nodes[nm[1]] = { sign: nm[2], degree: parseInt(nm[3]) };
-    const am = line.match(/^Ascendant:\s+(\w+)\s+(\d+)°/);
-    if (am) ascendant = { sign: am[1], degree: parseInt(am[2]) };
+    // Ascendant line — may include an optional [method:NAME] tag at the end
+    // when the rising row should display a lived-language interpretive note.
+    // Method values: 'agree' (both methods agreed), 'antonati_cusp' (the
+    // two methods disagreed at a sign boundary; Antonati canon won),
+    // 'antonati' (only Antonati available), or absent (legacy/trig-only).
+    const am = line.match(/^Ascendant:\s+(\w+)\s+(\d+)°(?:\s+\[method:([a-z_]+)\])?/);
+    if (am) ascendant = { sign: am[1], degree: parseInt(am[2]), method: am[3] || null };
   }
   return { planets, nodes, ascendant };
 }
@@ -1153,32 +1172,46 @@ function showNatalChart(cacheText, personName, birthDateStr, birthdayRaw) {
       <span class="natal-p-sign">${sign} ${degree}°${digLabel ? ` <span class="natal-p-dig">${digLabel}</span>` : ''}</span>
     </div>`;
   }).join('');
-  // Add Ascendant if available. When the lagna is within 1° of either end of
-  // a sign, render a "near X cusp" hint — these placements are genuinely
-  // ambiguous because tropical-to-sidereal conversion via any ayanamsa source
-  // (linear, polynomial, Swiss Ephem, Indian govt tables) disagrees by up to
-  // ~0.05°, which is enough to flip the sign assignment within ~3 minutes of a
-  // cusp. Welmanee's lagna at Libra 28°53' is exactly this case: different
-  // engines may render it as Libra 28° or Scorpio 0° depending on rounding.
-  // Better to acknowledge the borderline than have the user see two answers.
+  // Add Ascendant if available. The chart endpoint returns the lagna by a
+  // hybrid policy: when the modern trigonometric method and the Thai
+  // Antonati Saman method agree on the sign, we use the trig degree (more
+  // precise). When they disagree (always near a sign boundary), we trust
+  // the Antonati result because that's what Thai astrology sites like
+  // myhora.com produce — and that's what users will check our answer
+  // against. The 'method' field tells us which case applies.
+  //
+  // We render a short lived-language note when the placement is
+  // interpretively notable: a sign's first or last degree carries
+  // genuinely different energy than its middle, and the disagreement-at-
+  // threshold case is the most notable of all. The note is intentionally
+  // short and plain — no "cusp," no "ascendant," no technical labels.
+  // Per the Mor Doo voice rules: translate, don't transcribe.
   if (ascendant) {
     const ascIdx = ZODIAC_NAMES_N.indexOf(ascendant.sign);
-    let cuspNote = '';
+    let livedNote = '';
     if (ascIdx !== -1) {
-      if (ascendant.degree === 0) {
-        // Just crossed into this sign — flag the previous sign as cusp neighbor
-        const prev = ZODIAC_NAMES_N[(ascIdx + 11) % 12];
-        cuspNote = ` <span class="natal-p-dig">near ${prev} cusp</span>`;
+      const prev = ZODIAC_NAMES_N[(ascIdx + 11) % 12];
+      const next = ZODIAC_NAMES_N[(ascIdx + 1) % 12];
+      // 'antonati_cusp' = the two methods disagreed; we're sitting right at
+      // the threshold between two signs. The Thai practitioner answer wins
+      // but the next-sign-energy is genuinely close. Most interpretively
+      // notable case.
+      if (ascendant.method === 'antonati_cusp') {
+        livedNote = ` <span class="natal-p-note">the late edge of ${ascendant.sign} — closing one chapter, with ${next} energy waiting just beneath</span>`;
       } else if (ascendant.degree === 29) {
-        // Last degree of this sign — flag the next sign
-        const next = ZODIAC_NAMES_N[(ascIdx + 1) % 12];
-        cuspNote = ` <span class="natal-p-dig">near ${next} cusp</span>`;
+        // Last full degree of the sign — late energy, ripening / closing
+        livedNote = ` <span class="natal-p-note">the closing edge of ${ascendant.sign} — what's matured, what's about to release</span>`;
+      } else if (ascendant.degree === 0) {
+        // First degree — opening, fresh, untested
+        livedNote = ` <span class="natal-p-note">the opening edge of ${ascendant.sign} — a chapter just begun, untested still</span>`;
       }
+      // Mid-sign placements get no note. The placement itself carries the
+      // meaning; no commentary needed.
     }
     pHTML += `<div class="natal-p-row">
       <span class="natal-p-sym" style="color:var(--gold)">AC</span>
       <span class="natal-p-name">Rising</span>
-      <span class="natal-p-sign">${ascendant.sign} ${ascendant.degree}°${cuspNote}</span>
+      <span class="natal-p-sign">${ascendant.sign} ${ascendant.degree}°${livedNote}</span>
     </div>`;
   }
 
@@ -2227,9 +2260,14 @@ async function fetchNatalChart(birthday, birthplace, birthtime) {
         lines.push(`${node}: ${d.sign} ${d.degree}° — ${d.meaning || ''}`);
       }
     }
-    // Ascendant requires accurate birth time — omit entirely if not provided
+    // Ascendant requires accurate birth time — omit entirely if not provided.
+    // The optional method tag tells the talisman renderer whether to add a
+    // lived-language interpretive note (last-edge, opening-edge, or threshold
+    // disagreement). The tag never appears in user-facing output; it only
+    // controls what plain-language note gets rendered.
     if (data.ascendant && hasBirthTime) {
-      lines.push(`Ascendant: ${data.ascendant.sign} ${data.ascendant.degree}°`);
+      const methodTag = data.ascendant.method ? ` [method:${data.ascendant.method}]` : '';
+      lines.push(`Ascendant: ${data.ascendant.sign} ${data.ascendant.degree}°${methodTag}`);
     }
     if (!hasBirthTime) {
       lines.push('NOTE: Birth time was not provided — Ascendant/Rising sign is unavailable and birth-hour animal cannot be determined. Do not invent these. See BIRTH TIME — HANDLE WITH CARE rules.');
