@@ -1905,22 +1905,24 @@ ${(() => {
   const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const tz = userTimezone || 'server time';
 
-  return 'TODAY\\'S CONTEXT (in user\\'s local time and location):\\n' +
-    'Date: ' + dayOfWeek + ', ' + months[month-1] + ' ' + day + ', ' + year + ' (timezone: ' + tz + ').\\n' +
-    'Day governor: ' + dayGovernor + (isWednesdayNight ? ' — Wednesday night, Rahu rules after 6pm local time (Thai-specific time-of-day shift)' : '') + '.\\n' +
-    'Current hour: ' + hour + ':00 local. We are in the ' + ha.name + ' hour (' + ha.planet + ' energy — ' + ha.energy + ').\\n' +
-    '\\n' +
-    'TODAY\\'S 5-CATEGORY COLOR PALETTE (Royal Thai สีมงคลประจำวัน standard, sourced from Thairath):\\n' +
-    '  Career goal: ' + dayColors.career + '\\n' +
-    '  Money goal: ' + dayColors.money + '\\n' +
-    '  Luck goal: ' + dayColors.luck + '\\n' +
-    '  Charm goal: ' + dayColors.charm + '\\n' +
-    '  Authority goal: ' + dayColors.authority + '\\n' +
-    '  AVOID (today\\'s depleting frequency / kala kinee): ' + dayColors.avoid + '\\n' +
-    'Use these color values precisely when prescribing — never invent your own. The avoid-color is the day\\'s kala kinee — frame it as "the depleting frequency for ' + dayOfWeek + ', the wavelength out of tune with ' + dayGovernor + '."\\n' +
-    '\\n' +
-    'Current zodiac year: ' + element + ' ' + animal + '. When discussing the current year\\'s energy, always reference the ' + element + ' ' + animal + '.\\n' +
-    'IMPORTANT: Always use ' + dayOfWeek + ' as today\\'s day. Do not recalculate. Do not guess.';
+  return [
+    `TODAY'S CONTEXT (in user's local time and location):`,
+    `Date: ${dayOfWeek}, ${months[month-1]} ${day}, ${year} (timezone: ${tz}).`,
+    `Day governor: ${dayGovernor}${isWednesdayNight ? ' — Wednesday night, Rahu rules after 6pm local time (Thai-specific time-of-day shift)' : ''}.`,
+    `Current hour: ${hour}:00 local. We are in the ${ha.name} hour (${ha.planet} energy — ${ha.energy}).`,
+    ``,
+    `TODAY'S 5-CATEGORY COLOR PALETTE (Royal Thai สีมงคลประจำวัน standard, sourced from Thairath):`,
+    `  Career goal: ${dayColors.career}`,
+    `  Money goal: ${dayColors.money}`,
+    `  Luck goal: ${dayColors.luck}`,
+    `  Charm goal: ${dayColors.charm}`,
+    `  Authority goal: ${dayColors.authority}`,
+    `  AVOID (today's depleting frequency / kala kinee): ${dayColors.avoid}`,
+    `Use these color values precisely when prescribing — never invent your own. The avoid-color is the day's kala kinee — frame it as "the depleting frequency for ${dayOfWeek}, the wavelength out of tune with ${dayGovernor}."`,
+    ``,
+    `Current zodiac year: ${element} ${animal}. When discussing the current year's energy, always reference the ${element} ${animal}.`,
+    `IMPORTANT: Always use ${dayOfWeek} as today's day. Do not recalculate. Do not guess.`
+  ].join('\n');
 })()}
 
 OUTPUT QUALITY — GRAMMAR AND FORMATTING:
