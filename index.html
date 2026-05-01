@@ -2239,6 +2239,36 @@ function isClarification(text) {
   return clarifyPatterns.some(p => p.test(t));
 }
 
+// Detect re-anchor intent: user wants to re-score a previous number with a
+// different birthday/personal context. Fires ONLY when a scorecard already
+// exists in this session (pendingScoreNumber is set) AND the message contains
+// exactly one date AND a re-anchor signal phrase ("what if", "try", "use",
+// "score it for", etc). Returns false on compatibility framing (two people)
+// or when there's no prior scorecard to re-anchor.
+//
+// Examples that should trigger:
+//   "What if the birthday is 05/14/2025?"
+//   "Try with 05/14/2025"
+//   "Score it for someone born 05/14/2025"
+//   "Use 05/14/2025 as the birthday"
+//   "Recalculate with birthday 05/14/2025"
+//
+// Examples that should NOT trigger:
+//   "What about my partner born 05/14/2025?"  (compatibility)
+//   "I was born 05/14/2025"                    (just stating a date, no re-score signal)
+//   "What's my reading?"                       (no date)
+function isReAnchorRequest(text) {
+  if (!pendingScoreNumber) return false;
+  const t = text.trim();
+  const dateMatches = t.match(/\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/g) || [];
+  if (dateMatches.length !== 1) return false;
+  const reAnchorSignal = /\b(what if|try|use|score|run|redo|recalculate|with this|for someone|with the birth|change the birth|update the birth|new birthday|different birthday)\b/i;
+  if (!reAnchorSignal.test(t)) return false;
+  const compatibilityFraming = /\b(partner|spouse|husband|wife|boyfriend|girlfriend|compatible|compatibility|and i|and me|we are|we were|two of us|together|with my|with his|with her)\b/i;
+  if (compatibilityFraming.test(t)) return false;
+  return true;
+}
+
 function isPhoneOrAddress(text) {
   const t = text.trim();
 
@@ -3066,6 +3096,49 @@ async function sendMessage() {
 
   addMessage('user', text);
   input.value = ''; input.style.height = 'auto';
+
+  // ── Re-anchor: user wants to re-score the previous number with a new
+  // birthday context ("what if the birthday is 05/14/2025?"). We rebuild
+  // savedContext with the new date and re-run generateScorecard against
+  // pendingScoreNumber. This catches the case the LLM cannot — the bot
+  // can promise a new scorecard in prose, but only the client can actually
+  // trigger one.
+  if (isReAnchorRequest(text)) {
+    const newDate = (text.match(/\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/) || [])[0];
+    if (newDate) {
+      messageCount++;
+      buildCounter();
+      // Build the re-anchored context from current savedContext, overriding birthday
+      const reAnchorCtx = {
+        purpose: (savedContext && savedContext.purpose) || 'personal',
+        goal: (savedContext && savedContext.goal) || 'harmony',
+        type: pendingScoreType || 'phone',
+        birthday: newDate,
+        birthplace: (savedContext && savedContext.birthplace) || '',
+        birthTime: (savedContext && savedContext.birthTime) || ''
+      };
+      // Persist the new birthday so future scorecards keep using it
+      savedContext = { ...savedContext, birthday: newDate };
+      // Reset the natal chart cache flag — birthday changed, so the prior
+      // chart no longer applies. fetchNatalChart will run fresh on next chat.
+      alreadyCached = false;
+      lastNatalPlanets = null;
+      lastNatalCacheText = null;
+      isLoading = true;
+      document.getElementById('sendBtn').disabled = true;
+      showTyping();
+      // Acknowledge the re-anchor in chat — short prose, then the new card
+      await waitForSeerDelay();
+      removeTyping();
+      addMessage('mordoo', `Ah — re-reading <strong>${pendingScoreNumber}</strong> with the birthday <strong>${newDate}</strong>. The numbers carry a different resonance now.\n\n*The Mor Doo is preparing a fresh scorecard...*`);
+      history.push({ role: 'assistant', content: `Re-anchoring ${pendingScoreNumber} to birthday ${newDate}.` });
+      await generateScorecard(pendingScoreNumber, pendingScoreType, reAnchorCtx);
+      isLoading = false;
+      if (messageCount < MAX_MESSAGES) document.getElementById('sendBtn').disabled = false;
+      input.focus();
+      return;
+    }
+  }
 
   const needsScorecard = isPhoneOrAddress(text);
 
